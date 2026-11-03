@@ -1,4 +1,5 @@
 # 本地环境与凭据
+/.local/
 .env
 .env.*
 !.env.example
