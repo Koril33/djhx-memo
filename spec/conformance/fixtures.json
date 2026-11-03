@@ -1,0 +1,609 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "case_id": "SYNC-01",
+      "initial": [],
+      "ops": [
+        {
+          "op": "O1",
+          "device": "A",
+          "note": "N",
+          "base_rev": "0",
+          "content": "甲",
+          "deleted": false,
+          "expect": {
+            "status": "accepted",
+            "rev": "1",
+            "seq": "1"
+          }
+        },
+        {
+          "op": "O1",
+          "device": "A",
+          "note": "N",
+          "base_rev": "0",
+          "content": "甲",
+          "deleted": false,
+          "expect": {
+            "status": "accepted",
+            "rev": "1",
+            "seq": "1"
+          }
+        },
+        {
+          "op": "O1",
+          "device": "A",
+          "note": "N",
+          "base_rev": "0",
+          "content": "甲",
+          "deleted": false,
+          "expect": {
+            "status": "accepted",
+            "rev": "1",
+            "seq": "1"
+          }
+        }
+      ],
+      "expect": {
+        "head_seq": "1",
+        "notes": [
+          {
+            "note": "N",
+            "content": "甲",
+            "deleted": false,
+            "rev": "1",
+            "seq": "1"
+          }
+        ],
+        "changes": 1,
+        "processed_ops": 1
+      }
+    },
+    {
+      "case_id": "SYNC-02",
+      "initial": [
+        {
+          "note": "N",
+          "content": "初始",
+          "deleted": false,
+          "rev": "1",
+          "seq": "1"
+        }
+      ],
+      "ops": [
+        {
+          "op": "O1",
+          "device": "A",
+          "note": "N",
+          "base_rev": "1",
+          "content": "甲",
+          "deleted": false,
+          "expect": {
+            "status": "accepted",
+            "rev": "2",
+            "seq": "2"
+          }
+        },
+        {
+          "op": "O2",
+          "device": "B",
+          "note": "N",
+          "base_rev": "1",
+          "content": "乙",
+          "deleted": false,
+          "expect": {
+            "status": "conflict",
+            "rev": "2",
+            "conflict_note": "C1",
+            "conflict_rev": "1",
+            "conflict_seq": "3",
+            "reason": "stale_edit"
+          }
+        }
+      ],
+      "expect": {
+        "head_seq": "3",
+        "notes": [
+          {
+            "note": "N",
+            "content": "甲",
+            "deleted": false,
+            "rev": "2",
+            "seq": "2"
+          },
+          {
+            "note": "C1",
+            "content": "乙",
+            "deleted": false,
+            "rev": "1",
+            "seq": "3"
+          }
+        ],
+        "changes": 3,
+        "processed_ops": 2
+      }
+    },
+    {
+      "case_id": "SYNC-07",
+      "initial": [
+        {
+          "note": "N",
+          "content": "初始",
+          "deleted": false,
+          "rev": "1",
+          "seq": "1"
+        }
+      ],
+      "ops": [
+        {
+          "op": "O1",
+          "device": "A",
+          "note": "N",
+          "base_rev": "1",
+          "content": "甲",
+          "deleted": true,
+          "expect": {
+            "status": "accepted",
+            "rev": "2",
+            "seq": "2"
+          }
+        },
+        {
+          "op": "O2",
+          "device": "B",
+          "note": "N",
+          "base_rev": "1",
+          "content": "新内容",
+          "deleted": false,
+          "expect": {
+            "status": "conflict",
+            "rev": "2",
+            "conflict_note": "C1",
+            "conflict_rev": "1",
+            "conflict_seq": "3",
+            "reason": "edit_after_delete"
+          }
+        }
+      ],
+      "expect": {
+        "head_seq": "3",
+        "notes": [
+          {
+            "note": "N",
+            "content": "甲",
+            "deleted": true,
+            "rev": "2",
+            "seq": "2"
+          },
+          {
+            "note": "C1",
+            "content": "新内容",
+            "deleted": false,
+            "rev": "1",
+            "seq": "3"
+          }
+        ],
+        "changes": 3,
+        "processed_ops": 2
+      }
+    },
+    {
+      "case_id": "SYNC-08",
+      "initial": [
+        {
+          "note": "N",
+          "content": "初始",
+          "deleted": false,
+          "rev": "1",
+          "seq": "1"
+        }
+      ],
+      "ops": [
+        {
+          "op": "O1",
+          "device": "A",
+          "note": "N",
+          "base_rev": "1",
+          "content": "新版",
+          "deleted": false,
+          "expect": {
+            "status": "accepted",
+            "rev": "2",
+            "seq": "2"
+          }
+        },
+        {
+          "op": "O2",
+          "device": "B",
+          "note": "N",
+          "base_rev": "1",
+          "content": "初始",
+          "deleted": true,
+          "expect": {
+            "status": "conflict",
+            "rev": "2",
+            "conflict_note": "C1",
+            "conflict_rev": "1",
+            "conflict_seq": "3",
+            "reason": "stale_delete"
+          }
+        }
+      ],
+      "expect": {
+        "head_seq": "3",
+        "notes": [
+          {
+            "note": "N",
+            "content": "新版",
+            "deleted": false,
+            "rev": "2",
+            "seq": "2"
+          },
+          {
+            "note": "C1",
+            "content": "初始",
+            "deleted": false,
+            "rev": "1",
+            "seq": "3"
+          }
+        ],
+        "changes": 3,
+        "processed_ops": 2
+      }
+    },
+    {
+      "case_id": "SYNC-09",
+      "initial": [
+        {
+          "note": "N",
+          "content": "初始",
+          "deleted": false,
+          "rev": "1",
+          "seq": "1"
+        }
+      ],
+      "ops": [
+        {
+          "op": "O1",
+          "device": "A",
+          "note": "N",
+          "base_rev": "1",
+          "content": "初始",
+          "deleted": true,
+          "expect": {
+            "status": "accepted",
+            "rev": "2",
+            "seq": "2"
+          }
+        },
+        {
+          "op": "O2",
+          "device": "B",
+          "note": "N",
+          "base_rev": "1",
+          "content": "初始",
+          "deleted": true,
+          "expect": {
+            "status": "already_deleted",
+            "rev": "2",
+            "seq": "2"
+          }
+        }
+      ],
+      "expect": {
+        "head_seq": "2",
+        "notes": [
+          {
+            "note": "N",
+            "content": "初始",
+            "deleted": true,
+            "rev": "2",
+            "seq": "2"
+          }
+        ],
+        "changes": 2,
+        "processed_ops": 2
+      }
+    },
+    {
+      "case_id": "SYNC-10",
+      "initial": [
+        {
+          "note": "N",
+          "content": "初始",
+          "deleted": true,
+          "rev": "1",
+          "seq": "1"
+        }
+      ],
+      "ops": [
+        {
+          "op": "O1",
+          "device": "A",
+          "note": "N",
+          "base_rev": "1",
+          "content": "初始",
+          "deleted": false,
+          "expect": {
+            "status": "accepted",
+            "rev": "2",
+            "seq": "2"
+          }
+        }
+      ],
+      "expect": {
+        "head_seq": "2",
+        "notes": [
+          {
+            "note": "N",
+            "content": "初始",
+            "deleted": false,
+            "rev": "2",
+            "seq": "2"
+          }
+        ],
+        "changes": 2,
+        "processed_ops": 1
+      }
+    },
+    {
+      "case_id": "SYNC-16",
+      "initial": [],
+      "ops": [
+        {
+          "op": "O1",
+          "device": "A",
+          "note": "N",
+          "base_rev": "0",
+          "content": "甲",
+          "deleted": false,
+          "expect": {
+            "status": "accepted",
+            "rev": "1",
+            "seq": "1"
+          }
+        },
+        {
+          "op": "O1",
+          "device": "A",
+          "note": "N",
+          "base_rev": "0",
+          "content": "乙",
+          "deleted": false,
+          "expect": {
+            "status": "error",
+            "code": "OP_ID_REUSED"
+          }
+        }
+      ],
+      "expect": {
+        "head_seq": "1",
+        "notes": [
+          {
+            "note": "N",
+            "content": "甲",
+            "deleted": false,
+            "rev": "1",
+            "seq": "1"
+          }
+        ],
+        "changes": 1,
+        "processed_ops": 1
+      }
+    },
+    {
+      "case_id": "SYNC-19",
+      "initial": [
+        {
+          "note": "N",
+          "content": "初始",
+          "deleted": false,
+          "rev": "1",
+          "seq": "1"
+        }
+      ],
+      "ops": [
+        {
+          "op": "O1",
+          "device": "A",
+          "note": "N",
+          "base_rev": "2",
+          "content": "甲",
+          "deleted": false,
+          "expect": {
+            "status": "error",
+            "code": "INVALID_BASE_REV"
+          }
+        },
+        {
+          "op": "O2",
+          "device": "A",
+          "note": "Missing",
+          "base_rev": "1",
+          "content": "甲",
+          "deleted": false,
+          "expect": {
+            "status": "error",
+            "code": "NOTE_NOT_FOUND"
+          }
+        }
+      ],
+      "expect": {
+        "head_seq": "1",
+        "notes": [
+          {
+            "note": "N",
+            "content": "初始",
+            "deleted": false,
+            "rev": "1",
+            "seq": "1"
+          }
+        ],
+        "changes": 1,
+        "processed_ops": 0
+      }
+    },
+    {
+      "case_id": "SYNC-NEW-TOMBSTONE",
+      "initial": [],
+      "ops": [
+        {
+          "op": "O1",
+          "device": "A",
+          "note": "N",
+          "base_rev": "0",
+          "content": "甲",
+          "deleted": true,
+          "expect": {
+            "status": "accepted",
+            "rev": "1",
+            "seq": "1"
+          }
+        }
+      ],
+      "expect": {
+        "head_seq": "1",
+        "notes": [
+          {
+            "note": "N",
+            "content": "甲",
+            "deleted": true,
+            "rev": "1",
+            "seq": "1"
+          }
+        ],
+        "changes": 1,
+        "processed_ops": 1
+      }
+    },
+    {
+      "case_id": "SYNC-CREATE-COLLISION",
+      "initial": [
+        {
+          "note": "N",
+          "content": "初始",
+          "deleted": false,
+          "rev": "1",
+          "seq": "1"
+        }
+      ],
+      "ops": [
+        {
+          "op": "O1",
+          "device": "A",
+          "note": "N",
+          "base_rev": "0",
+          "content": "甲",
+          "deleted": false,
+          "expect": {
+            "status": "conflict",
+            "rev": "1",
+            "conflict_note": "C1",
+            "conflict_rev": "1",
+            "conflict_seq": "2",
+            "reason": "stale_edit"
+          }
+        }
+      ],
+      "expect": {
+        "head_seq": "2",
+        "notes": [
+          {
+            "note": "N",
+            "content": "初始",
+            "deleted": false,
+            "rev": "1",
+            "seq": "1"
+          },
+          {
+            "note": "C1",
+            "content": "甲",
+            "deleted": false,
+            "rev": "1",
+            "seq": "2"
+          }
+        ],
+        "changes": 2,
+        "processed_ops": 1
+      }
+    },
+    {
+      "case_id": "SYNC-CONFLICT-CONTINUE",
+      "initial": [
+        {
+          "note": "N",
+          "content": "初始",
+          "deleted": false,
+          "rev": "1",
+          "seq": "1"
+        }
+      ],
+      "ops": [
+        {
+          "op": "O1",
+          "device": "A",
+          "note": "N",
+          "base_rev": "1",
+          "content": "甲",
+          "deleted": false,
+          "expect": {
+            "status": "accepted",
+            "rev": "2",
+            "seq": "2"
+          }
+        },
+        {
+          "op": "O2",
+          "device": "B",
+          "note": "N",
+          "base_rev": "1",
+          "content": "乙",
+          "deleted": false,
+          "expect": {
+            "status": "conflict",
+            "rev": "2",
+            "conflict_note": "C1",
+            "conflict_rev": "1",
+            "conflict_seq": "3",
+            "reason": "stale_edit"
+          }
+        },
+        {
+          "op": "O3",
+          "device": "B",
+          "note": "C1",
+          "base_rev": "1",
+          "content": "乙丙",
+          "deleted": false,
+          "expect": {
+            "status": "accepted",
+            "rev": "2",
+            "seq": "4"
+          }
+        }
+      ],
+      "expect": {
+        "head_seq": "4",
+        "notes": [
+          {
+            "note": "N",
+            "content": "甲",
+            "deleted": false,
+            "rev": "2",
+            "seq": "2"
+          },
+          {
+            "note": "C1",
+            "content": "乙丙",
+            "deleted": false,
+            "rev": "2",
+            "seq": "4"
+          }
+        ],
+        "changes": 4,
+        "processed_ops": 3
+      }
+    }
+  ]
+}
