@@ -7,7 +7,7 @@
 
 | 平台 | 首版基线 | 交付 |
 |---|---|---|
-| Windows | Windows 11 x86_64 | 安装包，托盘；依赖 WebView2 的安装与缺失提示需验证 |
+| Windows | Windows 10 22H2 x86_64（负责人当前主机）；Windows 11 兼容性另行记录 | 安装包，托盘；依赖 WebView2 的安装与缺失提示需验证 |
 | Linux | Ubuntu 24.04 LTS x86_64；GNOME Wayland + AppIndicator 托盘支持 | `.deb`；验证中文 fcitx / ibus；同时做 X11 冒烟 |
 | Android | Android 10+，arm64 真机 | APK；x86_64 模拟器供开发验证 |
 

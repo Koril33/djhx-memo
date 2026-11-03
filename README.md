@@ -12,6 +12,7 @@
 - [产品行为与 v1 验收](spec/product-v1.md)
 - [同步、数据与接口契约](spec/README.md)
 - [架构与模块边界](docs/architecture.md)
+- [开发环境与本机配置边界](docs/dev-setup.md)
 - [本地验证与三端验收](docs/validation.md)
 - [部署、备份与恢复](docs/operations.md)
 - [已接受决策](docs/adr/0001-v1-baseline.md)
