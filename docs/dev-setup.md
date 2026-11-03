@@ -22,3 +22,18 @@
 目前上述命令尚不存在。Android 真机、桌面托盘/输入法和恢复演练不能被单个“全仓检查成功”替代。无需建立 CI、Runner 或远程流水线。
 
 调试服务器可以使用显式开启的本地 HTTP 配置；生产客户端必须验证 HTTPS。测试凭据只用于临时数据库，不提交真实 token、邀请码、密码或笔记。
+
+## M0 本机验证记录
+
+基于文档提交 `4633cf7`。Windows 10 Pro x86_64（19045）、Rust 1.99.1 GNU、Android Studio JBR 25.0.4 / Kotlin 2.4.0、NDK r29。
+
+| 检查 | 结果 |
+|---|---|
+| SQLite 提交、关闭后重开、中文 trigram 查询与数据库失败路径 | Rust 主机测试通过 |
+| Kotlin → UniFFI → Rust → SQLite | Windows JVM 主机测试通过，含提交回调与错误转换 |
+| Android arm64 / x86_64 原生库 | API 29 交叉编译与链接通过，已从 arm64 库生成 Kotlin 绑定 |
+| Android 设备进程内加载和重启后读回 | 待验证，ADB 无设备且模拟器加速不可用 |
+| Windows Tauri 托盘 | 待验证，MSVC C++ 工具与 Windows SDK 尚未安装 |
+| Linux Tauri 托盘和中文输入法 | 待验证，当前无 Linux 图形会话 |
+
+复现命令见 [原生绑定验证](../tools/native-probe/README.md)。记录覆盖 M0 技术探针，发布验收依照 [本地质量检查与 v1 验收](validation.md)。
