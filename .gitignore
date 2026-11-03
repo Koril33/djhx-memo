@@ -1,0 +1,50 @@
+# 本地环境与凭据
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.local
+*.jks
+*.keystore
+
+# 运行数据与日志
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
+*.log
+
+# Rust / Tauri
+target/
+
+# Go
+/server/bin/
+coverage.out
+
+# Android / Gradle
+.gradle/
+.kotlin/
+.cxx/
+.externalNativeBuild/
+local.properties
+build/
+
+# Web / Node.js
+node_modules/
+dist/
+.svelte-kit/
+coverage/
+
+# 编辑器与系统文件
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
