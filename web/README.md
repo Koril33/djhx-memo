@@ -1,7 +1,7 @@
-# web
+# web（暂缓）
 
-TypeScript Web 客户端与桌面端共享前端组件的归属目录，编辑器规划使用 CodeMirror 6。框架当前倾向 Svelte，最终选择仍待决策。
+独立浏览器客户端不在 v1 范围。本目录只保留说明，不初始化框架、WASM、浏览器存储或共享组件包。
 
-Web v1 倾向于直接调用服务端 API 的在线客户端；WASM + SQLite OPFS 离线方案留待后续评估。共享 `packages/ui`、`packages/editor` 等布局按计划在后续里程碑确定。
+Windows/Linux 的 Svelte 与 CodeMirror 前端归 [desktop](../desktop/README.md)，独立 Web 暂缓不影响桌面使用 WebView。未来需要独立 Web 时另立 ADR，再抽取已有稳定组件。
 
-当前没有前端工程、依赖清单或运行命令。参见 [项目规划](../djhx-memo-project-plan.md) 与 [桌面端说明](../desktop/README.md)。
+当前范围见 [产品规范](../spec/product-v1.md)。

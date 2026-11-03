@@ -1,33 +1,34 @@
 # djhx-memo
 
-跨平台、多端云同步的 Markdown 备忘录，面向个人和少数朋友使用。
+面向个人和少数朋友的 Markdown 备忘录，支持本地优先保存和多设备云同步。
 
-本仓库采用 monorepo，当前完成目录初始化，尚未初始化各语言工具链或实现业务功能。项目范围、技术选型与路线图见 [项目规划文档](djhx-memo-project-plan.md)。
+**v1 目标：Windows、Android、Linux 三端可日常使用。** 桌面端包含托盘；允许未登录记笔记，提供邀请码注册、登录、同步、搜索、回收站和 Markdown 导出。Web、Apple、全局快捷键、系统分享以及 CI/Runner 暂缓。
+
+当前已建立 monorepo 与 v1 文档基线，尚无业务代码、应用构建或可执行测试。文档中的验收目标与计划命令不表示功能已实现。协议未发布，实施前仍需交叉评审。
+
+## 从这里开始
+
+- [项目计划与实施顺序](djhx-memo-project-plan.md)
+- [产品行为与 v1 验收](spec/product-v1.md)
+- [同步、数据与接口契约](spec/README.md)
+- [架构与模块边界](docs/architecture.md)
+- [本地验证与三端验收](docs/validation.md)
+- [部署、备份与恢复](docs/operations.md)
+- [已接受决策](docs/adr/0001-v1-baseline.md)
+- [协作规范](AGENTS.md) / [贡献流程](CONTRIBUTING.md)
 
 ## 仓库结构
 
 ```text
 djhx-memo/
-├── djhx-memo-project-plan.md   # 原始规划草案
-├── AGENTS.md                  # 全局协作规范
-├── .github/workflows/         # CI 工作流预留
-├── docs/                      # 架构、开发与运维文档
-│   └── adr/                   # 架构决策记录
-├── spec/                      # 待细化的协议与契约
-│   └── conformance/           # 跨语言一致性场景
-├── core/                      # Rust 核心库：本地存储、同步与冲突处理
-│   └── src/
-├── server/                    # Go 服务端：认证、同步 API 与通知
-├── android/                   # Kotlin + Jetpack Compose 客户端
-├── desktop/                   # Tauri 桌面客户端（Windows / Linux）
-├── web/                       # TypeScript 前端及桌面端共享组件
-└── apple/                     # 仅预留说明，v1 不实现
+├── spec/          # 产品行为、同步、模型、接口和一致性场景
+├── docs/          # 架构、开发、验证、运维、ADR
+├── core/          # Rust + SQLite：本地数据与客户端同步状态机
+├── server/        # Go + SQLite：账号、权威版本、同步和 SSE 通知
+├── android/       # Kotlin + Compose，经 UniFFI 调用 core
+├── desktop/       # Tauri 2 + Svelte + TypeScript，Windows / Linux
+├── web/           # 暂缓，仅保留说明；桌面前端归 desktop
+└── apple/         # 暂缓，仅保留说明
 ```
 
-Android 通过 UniFFI 调用 `core`，桌面端通过 Rust 直接链接 `core`。桌面端与 Web 端共享前端组件；共享包布局及前端框架在后续里程碑确定。Web v1 倾向于仅在线使用，尚待正式决策。
-
-## 开发起点
-
-先阅读 [协作规范](AGENTS.md) 与 [契约目录说明](spec/README.md)。下一步为 M0：细化并评审协议、数据模型、错误码、OpenAPI 和一致性用例，再建立各模块工具链、统一命令与 CI。
-
-当前没有可运行的应用、构建命令或测试套件；各模块 README 记录其职责和后续初始化内容。
+`.github/workflows/` 为此前留下的空目录，不配置工作流，也不作为交付要求。当前没有 CI 或 Runner；实施后的质量检查在开发机与目标设备上运行并记录结果。
