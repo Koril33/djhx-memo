@@ -885,3 +885,99 @@ fn delayed_old_401_preserves_reauthenticated_session() {
     client.sync();
     assert_ne!(client.state()["sync"]["state"], "auth_required");
 }
+
+#[test]
+#[ignore = "requires DJHX_SERVER_BIN; tray-style manual sync while the window is hidden"]
+fn hidden_manual_sync_uploads_queued_content() {
+    let service = Service::new();
+    let client = Client::new(); // The real coordinator is running with foreground=false.
+    client.register(&service, "hidden_manual_sync", &service.url);
+    let note = client.create("隐藏窗口时显式同步");
+    let token = client.token();
+    call(&client.app, json!({"action":"sync","wait":false}));
+    // Observe the committed server state, rather than guessing coordinator ordering.
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let status = wire(&service.url, &token, "GET", "/v1/sync/status", None);
+        if status["head_seq"] == "1" {
+            break;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "an explicit hidden-window sync was never executed"
+        );
+        thread::sleep(Duration::from_millis(20));
+    }
+    let server_status = wire(&service.url, &token, "GET", "/v1/sync/status", None);
+    let epoch = server_status["epoch"].as_str().unwrap();
+    let page = wire(
+        &service.url,
+        &token,
+        "GET",
+        &format!("/v1/sync/pull?epoch={epoch}&cursor=0"),
+        None,
+    );
+    assert_eq!(page["changes"].as_array().unwrap().len(), 1);
+    assert_eq!(page["changes"][0]["id"], note["id"]);
+    assert_eq!(page["changes"][0]["content"], "隐藏窗口时显式同步");
+}
+
+#[test]
+#[ignore = "requires DJHX_SERVER_BIN; measures foreground core coordinator and SSE latency"]
+fn foreground_automatic_sse_converges_within_latency_target() {
+    let service = Service::new();
+    let a = Client::new();
+    let b = Client::new();
+    a.register(&service, "automatic_sse_latency", &service.url);
+    b.login("automatic_sse_latency", &service.url);
+    let initial = a.create("Automatic coordinator latency fixture");
+    let id = initial["id"].as_str().unwrap();
+    a.sync();
+    b.sync();
+    let b_profile = b.profile();
+    call(&a.app, json!({"action":"foreground","active":true}));
+    call(&b.app, json!({"action":"foreground","active":true}));
+    let mut samples = Vec::with_capacity(30);
+    for sample in 0..30 {
+        let content = format!("fixture {sample}\n{}", "a".repeat(65_480));
+        assert!(content.len() <= 65_536);
+        a.save(id, &content); // Measures from a real acknowledged local transaction.
+        let saved_at = Instant::now();
+        loop {
+            let visible = call(
+                &b.app,
+                json!({"action":"get","profile_id":b_profile,"id":id}),
+            );
+            if visible["content"].as_str() == Some(content.as_str()) {
+                samples.push(saved_at.elapsed());
+                break;
+            }
+            assert!(
+                saved_at.elapsed() < Duration::from_secs(10),
+                "automatic convergence timed out at numeric sample {sample}"
+            );
+            thread::sleep(Duration::from_millis(20));
+        }
+    }
+    call(&a.app, json!({"action":"foreground","active":false}));
+    call(&b.app, json!({"action":"foreground","active":false}));
+    samples.sort_unstable();
+    println!(
+        "core_auto_sse_sorted_ms={:?}",
+        samples
+            .iter()
+            .map(|duration| (duration.as_secs_f64() * 1_000_000.0).round() / 1000.0)
+            .collect::<Vec<_>>()
+    );
+    let p95 = samples[28]; // nearest-rank ceil(30 * .95) = 29
+    let maximum = samples[29];
+    println!(
+        "core_auto_sse_samples=30 p95_ms={:.3} max_ms={:.3}",
+        p95.as_secs_f64() * 1000.0,
+        maximum.as_secs_f64() * 1000.0
+    );
+    assert!(
+        p95 <= Duration::from_secs(5),
+        "core automatic SSE P95 exceeded 5000ms"
+    );
+}
