@@ -1,7 +1,44 @@
-# android
+# Android 客户端
 
-Kotlin + Jetpack Compose 客户端，通过 UniFFI 使用 core 的数据库、搜索、回收站、导出和同步逻辑。v1 允许未登录使用，支持邀请注册/登录、Markdown 编辑/预览和前台自动同步；后台通过 WorkManager 尽力补同步。
+0.1.0 自用候选，v1 尚未发布。Kotlin + Jetpack Compose 原生客户端，通过 UniFFI 调用共享 Rust core。最低系统设为 Android 10（API 29），APK 同时包含 arm64-v8a 与 x86_64；实际验证设备见下方记录。发布应用 ID 为 `app.djhx.memo`，调试为 `app.djhx.memo.debug`，两者数据隔离。应用数据与加密凭据在 Android 私有目录；卸载或清除数据前请先导出。
 
-Android 10+、arm64 真机是默认首版基线，application ID 为 `app.djhx.memo`。系统分享与全局快捷能力暂缓，不属于本轮工程。
+## 构建
 
-当前没有 Gradle 工程、绑定或构建命令。下一轮先验证核心 SQLite 读写、回调和生命周期；产品验收见 [product-v1](../spec/product-v1.md)，平台验证见 [validation](../docs/validation.md)。
+先按 [开发环境](../docs/dev-setup.md) 准备 Rust、cargo-ndk、JDK 21、Android SDK 36 与 NDK 30.0.16248370。网络受限时可使用本机代理；代理写在本机 `~/.gradle/gradle.properties`，不提交到仓库。
+
+```bash
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+export ANDROID_HOME="$HOME/Android/Sdk"
+export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/30.0.16248370"
+./android/scripts/build.sh
+```
+
+该入口先编译真实 core，生成 Kotlin 绑定并打包两种 ABI，然后运行 JVM 测试、detekt（包含 Kotlin 格式）、Android Lint 和 debug/release APK 构建。直接运行 Gradle 前也必须先运行 `android/scripts/build-native.sh`，生成文件不入仓库。依赖锁文件与 Wrapper SHA256 随源码提交。`uniffi.toml` 使用 Android cleaner 配置：API 34+ 用系统 cleaner，低版本回退 JNA，不能把生成绑定当作普通 JVM 默认配置。APK assets 随包包含 core 与 Android 运行时依赖的许可证通知；更新依赖后运行 `python3 android/scripts/generate-notices.py` 重新生成 Android 通知。
+
+- debug APK：`android/app/build/outputs/apk/debug/app-debug.apk`，使用 Android 调试签名，可对本机测试服务器使用 HTTP。
+- release APK：`android/app/build/outputs/apk/release/`，仅支持 HTTPS；签名环境变量缺失时生成 unsigned APK。
+- 正式可安装 APK 需要本机持有发布密钥，设置 `DJHX_ANDROID_KEYSTORE`、`DJHX_ANDROID_STORE_PASSWORD`、`DJHX_ANDROID_KEY_ALIAS`（默认 `djhx-memo`）和 `DJHX_ANDROID_KEY_PASSWORD`。不得提交密钥或密码，也不得将它们写进命令日志。持续升级必须使用同一签名密钥。
+
+格式整理使用 `cd android && ./gradlew detekt -Pformat`；随后再运行无 `-Pformat` 的 detekt 确认结果。
+
+## 测试
+
+```bash
+cd android
+./gradlew testDebugUnitTest detekt lintDebug
+./gradlew connectedDebugAndroidTest
+```
+
+仪器测试除独立验证桥接 UI 协调的故障注入案例外，实际调用 JNI 和 SQLite，验证中文/emoji、重开持久性、搜索、任务源码勾选、回收站、ZIP、Keystore、持续输入保存、旋转与组合输入 span。服务端联调测试默认跳过；通过环境变量 `DJHX_ANDROID_TEST_SERVER_URL` 和 `DJHX_ANDROID_TEST_INVITE_CODE` 注入隔离测试实例地址及单次邀请码才运行（Gradle 将其传为 `serverUrl` / `inviteCode` instrumentation 参数）。不得将变量内容提交到仓库或打印到日志。邀请码只用于临时 fixture，不使用真实账号。模拟器访问开发机使用 `http://10.0.2.2:<port>`，此功能仅在 debug 构建允许。
+
+实际结果、设备信息和未验证项见 [Android 验证记录](../docs/android-validation.md)。
+
+## 交互与边界
+
+未登录即可新建笔记；空白草稿不创建数据库记录。正常输入 300ms 防抖、连续输入最多约 1 秒请求提交，失焦、切换及后台立即请求提交。仅成功事务返回后显示已保存；保存失败保留缓冲，可重试、复制或另存新笔记。源码编辑使用 EditText，语法着色不重设文本或移除输入法组合 span。
+
+账号与设置包含邀请注册、登录、已保存空间切换、注销、本机笔记显式复制导入、恢复空间复制与设备吊销。本机内容默认暂不导入。预览只原生渲染 CommonMark AST，HTML 展示为文本，图片不加载，链接仅允许 http/https 并交系统浏览器。ZIP 由 core 生成，通过系统文件选择器创建新文档，失败不显示成功。
+
+UI、网络恢复触发及 WorkManager 共享应用单例 core；后台仅尽力执行，不承诺固定时间同步。UI 不实现同步、outbox、冲突裁决或数据迁移。安全凭据使用每个账号独立的 Keystore AES-GCM key，加密失败由 core 保持进程内凭据并提示用户。
+
+独立评审及修复依据见 [Android 评审](../docs/reviews/android-review.md)。创建已提交但回包未知时，平台保留原创建请求内容，获取原 Note 后继续提交全部续写；只有返回正文与可见缓冲一致才显示保存成功。跨空间切换前先完成本地提交并清空旧空间的界面列表。
