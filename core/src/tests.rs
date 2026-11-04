@@ -198,6 +198,30 @@ fn retry_after_blocks_requests_and_wait_returns_sync_info() {
 }
 
 #[test]
+fn explicit_sync_wakes_the_coordinator_with_a_hidden_window() {
+    let app = Arc::new(engine());
+    let (server, handle) = status_server(
+        json!({"protocol_version":1,"epoch":id(),"head_seq":"0"}),
+        "200 OK",
+        "",
+        1,
+    );
+    let profile = install_account(&app, server);
+    app.foreground.store(false, Ordering::SeqCst);
+    Engine::start(&app);
+    invoke(&app, json!({"action":"sync","profile_id":profile.id}));
+    let deadline = Instant::now() + Duration::from_secs(3);
+    while !handle.is_finished() && Instant::now() < deadline {
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    assert!(
+        handle.is_finished(),
+        "explicit tray sync must send the status request while hidden"
+    );
+    handle.join().unwrap();
+}
+
+#[test]
 fn malformed_confirmation_keeps_the_frozen_operation() {
     let mut db = db::open(&engine().root.join("malformed.sqlite")).unwrap();
     let note_id = id();

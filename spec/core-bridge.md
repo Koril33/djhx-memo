@@ -46,6 +46,8 @@ sync 的 wait=true 仍返回成功桥接结果与 SyncInfo；认证、网络和�
 
 UI 保留未提交编辑缓冲，300ms 防抖且最长 1 秒提交；切换、失焦、后台与关闭前等待保存。保存返回新 generation 后才能显示已保存。刷新列表、事件或同步状态不能覆盖未提交缓冲；LOCAL_GENERATION_CONFLICT 时保留缓冲并提供重试/复制救援。
 
+create 的同 request_id 重试返回该笔记当前 NoteView，可能与本次发送缓冲不同（例如首次已提交但 UI 未收到确认，期间用户继续输入）。UI 只能按返回的 content/generation 确认本机基线；缓冲仍有差异时继续 save，不能将本次请求正文直接标为已保存。关闭/退出确认期间应先完成输入法组合并建立输入屏障，提交最终缓冲后再确认生命周期操作。
+
 笔记读写、列表、导入和导出请求同时携带 UI 已读取的 `profile_id`。当前空间已变化时返回 PROFILE_CHANGED，不把旧空间缓冲写入新账号。state 可返回 `redirects` 对象（原笔记 ID → 冲突副本 ID）；UI 在 event_seq 更新时消费一次映射并迁移焦点，不能因此覆盖未提交缓冲。
 
 state 的 event_seq 变化提示重新读取；前台可定期调用 state。不得在 UI 生成 base_rev/op_id、裁决冲突或从显示时间推导同步状态。导出 ZIP 的目标选择和原子落盘由平台完成。

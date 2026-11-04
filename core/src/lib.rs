@@ -93,6 +93,7 @@ pub(crate) struct Engine {
     retry_after: Mutex<HashMap<String, Instant>>,
     auto_blocked: Mutex<HashSet<String>>,
     requested: Mutex<HashSet<String>>,
+    manual_requested: Mutex<HashSet<String>>,
     running: Mutex<HashSet<String>>,
     finished: Condvar,
     redirects_seen: Mutex<HashMap<String, Value>>,
@@ -166,6 +167,7 @@ impl Engine {
             retry_after: Mutex::new(HashMap::new()),
             auto_blocked: Mutex::new(HashSet::new()),
             requested: Mutex::new(HashSet::new()),
+            manual_requested: Mutex::new(HashSet::new()),
             running: Mutex::new(HashSet::new()),
             finished: Condvar::new(),
             redirects_seen: Mutex::new(HashMap::new()),
@@ -329,6 +331,7 @@ impl Engine {
                 // Sync failures belong in SyncInfo, including background work.
                 let _ = self.synchronize(&profile);
             } else {
+                lock(&self.manual_requested)?.insert(profile.id.clone());
                 self.changed(&profile);
             }
             return Ok(json!(self.sync_info(&profile)?));

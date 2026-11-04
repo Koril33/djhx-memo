@@ -571,12 +571,19 @@ impl Engine {
                 let Some(engine) = weak.upgrade() else {
                     break;
                 };
-                if !engine.foreground.load(Ordering::SeqCst) {
-                    continue;
-                }
                 let Ok(profile) = engine.profile(&json!({})) else {
                     continue;
                 };
+                let manual = engine
+                    .manual_requested
+                    .lock()
+                    .ok()
+                    .is_some_and(|mut requested| requested.remove(&profile.id));
+                // Tray "sync now" is a one-shot request even when its window
+                // is hidden. Background polling/SSE still require foreground.
+                if !engine.foreground.load(Ordering::SeqCst) && !manual {
+                    continue;
+                }
                 if profile.kind != "account" || engine.token(&profile).is_err() {
                     continue;
                 }
@@ -592,6 +599,9 @@ impl Engine {
                         .get(&profile.id)
                         .is_some_and(|deadline| *deadline > Instant::now())
                 }) {
+                    if manual && let Ok(mut requested) = engine.manual_requested.lock() {
+                        requested.insert(profile.id.clone());
+                    }
                     continue;
                 }
                 let requested = engine
@@ -602,7 +612,7 @@ impl Engine {
                 let due = next
                     .get(&profile.id)
                     .is_none_or(|deadline| *deadline <= Instant::now());
-                if !requested && !due {
+                if !requested && !manual && !due {
                     continue;
                 }
                 let result = engine.synchronize(&profile);
