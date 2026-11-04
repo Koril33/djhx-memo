@@ -15,6 +15,6 @@
 
 ## 本地检查
 
-检查标准见 [validation.md](docs/validation.md)。当前仅有文档，不存在可运行的应用测试或统一命令；仅执行文档链接、OpenAPI 结构/引用检查和 `git diff --check`。实现后补充真正可执行的本地入口和测试适配器。
+检查标准见 [validation.md](docs/validation.md)。本地入口为 `bash scripts/validate-local.sh core|server|integration|desktop|android`，每次选择一个模块；真实目标系统/模拟器验收另见各模块 README 和验证记录。同时检查文档链接、OpenAPI 结构/引用和 `git diff --check`。
 
 文档内的接口表、示例和验收场景均为契约，不得用假数据通过检查后宣称业务已完成。依赖版本与工具链记录在开发说明，锁文件纳入版本控制。

@@ -1,6 +1,6 @@
 # v1 产品与技术契约
 
-版本：0.1.0（未发布的实现基线），更新于 2026-11-03。产品选择依据项目负责人本轮授权确定；同步、迁移与鉴权契约仍需实施前交叉评审，不表示已实现或已通过测试。
+版本：0.1.0（未发布的实现基线），更新于 2026-11-04。产品选择依据项目负责人授权确定；工程已进入自用候选实现与三端验收，实际检查和独立评审见 [验证索引](../docs/validation.md)，规范中的要求不自动表示已通过。
 
 | 文档 | 定义内容 |
 |---|---|
@@ -10,6 +10,7 @@
 | [auth.md](auth.md) | 邀请注册、登录、设备凭据、注销和授权 |
 | [api.md](api.md) / [openapi.yaml](openapi.yaml) | HTTP/SSE 行为说明与机器可读 API |
 | [core-api.md](core-api.md) | UI 与核心库的接口职责和事件 |
+| [core-bridge.md](core-bridge.md) | 当前 UniFFI/桌面 JSON 包装、调用与返回类型 |
 | [error-codes.md](error-codes.md) | 稳定错误码和重试行为 |
 | [conformance/scenarios.md](conformance/scenarios.md) | 首批一致性场景及期望结果 |
 

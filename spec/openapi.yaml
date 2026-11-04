@@ -3,7 +3,7 @@
   "info": {
     "title": "djhx-memo v1 API",
     "version": "0.1.0",
-    "description": "未发布的实现基线；尚未实现。计数为十进制字符串。错误与字节限制详见同目录规范。"
+    "description": "未发布的 0.1.0 自用候选实现契约。计数为十进制字符串。错误与字节限制详见同目录规范；实际验收见 docs/validation.md。"
   },
   "security": [
     {

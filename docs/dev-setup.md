@@ -2,6 +2,8 @@
 
 本文件区分**可供所有开发主机参考的要求**与**此前 Windows 开发主机的实测记录**。本机路径、代理端口、SDK 位置和设备信息不属于项目配置，不得复制为所有主机的默认值。
 
+当前 Linux 主机实际安装见 [dev-setup-linux](dev-setup-linux.md)。下文 Windows 记录来自另一台机器；本轮 QEMU/KVM VM 的新安装与客户端验收见 [桌面验证](desktop-validation.md)，不能混同两台机器。
+
 ## 1. 通用要求
 
 | 范围 | 所需工具 | 跨主机约定 |

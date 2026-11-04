@@ -35,10 +35,10 @@ for package in sorted(metadata["packages"], key=lambda p: (p["name"], p["version
                  "\nSource: https://crates.io/crates/" + package["name"] + "/" + package["version"] +
                  "\nUpstream: " + (package.get("repository") or package.get("homepage") or "crates.io") + "\n")
     for path in sorted(notices):
-        content = path.read_text(encoding="utf-8", errors="replace")
+        content = "\n".join(line.rstrip() for line in path.read_text(encoding="utf-8", errors="replace").splitlines()).rstrip() + "\n"
         identifier = hashlib.sha256(content.encode("utf-8")).hexdigest()[:16]
         texts[identifier] = content
         parts.append("License file: " + path.name + " — full text " + identifier + "\n")
 for identifier, content in sorted(texts.items()):
     parts.append("\n" + "=" * 72 + "\nLicense text " + identifier + "\n\n" + content + "\n")
-args.output.write_text("".join(parts), encoding="utf-8")
+args.output.write_text("".join(parts).rstrip() + "\n", encoding="utf-8")

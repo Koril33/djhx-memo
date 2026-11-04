@@ -4,9 +4,11 @@
 
 项目没有 CI/Runner，v1 不部署它们。提交人执行检查并记录：提交 SHA、平台、工具版本、命令、结果和未运行原因。另一位协作者评审同步、迁移与鉴权实现；没有评审或未通过必要检查的变更不能因“远程无 CI”而直接投入真实数据。
 
-业务工程尚未初始化。文档阶段检查本地链接/锚点、OpenAPI 结构及引用、文档一致性、编码和 Git 差异；环境阶段的仓库外构建探针记录在 [开发说明](dev-setup.md)。这些结果不代表三端业务测试、正式应用构建或真机验收通过。
+业务工程已建立。入口为 `bash scripts/validate-local.sh core|server|integration|desktop|android`，每次选择一个模块；工具与原生构建前置条件见各模块 README。真实结果分别记录于 [core](core-validation.md)、[server](server-validation.md)、[desktop](desktop-validation.md)、[Android](android-validation.md)，独立评审见 [核心](reviews/core-review.md)、[服务端](reviews/server-review.md)、[桌面](reviews/desktop-review.md) 和 [Android](reviews/android-review.md)。环境阶段的仓库外探针不等同于这些业务检查。
 
-## 2. 实施后必须建立的检查
+文档结构检查入口为 `python3 scripts/check-docs.py`（Markdown 本地目标、OpenAPI JSON/元数据/内部引用/operationId），再执行 `git diff --check`；该脚本不冒充完整 OpenAPI 3.1 语义校验或业务接口测试。
+
+## 2. 必需的本地检查
 
 | 范围 | 格式/静态检查 | 行为验证 |
 |---|---|---|

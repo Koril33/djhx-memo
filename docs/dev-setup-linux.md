@@ -1,8 +1,8 @@
 # 本机开发环境
 
-本轮按项目负责人要求完成 Linux 本机 Go、Rust 和 Android 环境配置。工具来源与隔离方式见 [ADR-0001](adr/0004-linux-development-toolchains.md)。
+本记录按项目负责人要求完成 Linux 本机 Go、Rust 和 Android 环境配置。工具来源与隔离方式见 [ADR-0004](adr/0004-linux-development-toolchains.md)。这是环境阶段的历史记录；当前业务工程与检查见 [验证索引](validation.md)。
 
-仓库仍只有目录骨架：没有 `go.mod`、`Cargo.toml`、Android Gradle 工程、`justfile` 或 CI。本文记录本机环境，不定义正式协议，不固定未来项目的最低 Android 版本、依赖版本或 CI 工具链。后续工程初始化时需提交对应工具链配置、Gradle Wrapper 和依赖锁文件。
+环境阶段仓库仅有目录骨架；此后已建立 Go、Cargo、Gradle 与 Tauri 工程并提交锁文件。本文不定义正式协议，应用最低 Android 版本和项目依赖以当前工程及 ADR 为准，没有 CI/Runner。
 
 ## 本机版本与路径
 
@@ -17,6 +17,7 @@
 | Rust / Cargo | 1.99.1 | rustup 的 `stable-x86_64-unknown-linux-gnu`，入口位于 `~/.cargo/bin` |
 | Rust 开发组件 | rustfmt、Clippy、rust-analyzer、rust-docs | 与当前稳定工具链配套 |
 | cargo-ndk | 4.1.2 | `~/.cargo/bin/cargo-ndk`，通过 `--locked` 安装 |
+| Node / npm | 22.23.2 / 10.9.8 | `~/.local/opt/node` 指向独立的官方 Linux x64 发行包；2026-11-04 为桌面工程补齐 |
 | Android Studio | Rabbit 2 / 2026.2.2 | `~/.local/opt/android-studio`，build `AI-262.10968.63.2622.16730706` |
 | IDE 运行时 | JBR 25.0.4 | Studio 随附 `jbr/`，启动器通过 `STUDIO_JDK` 指向它 |
 | 命令行 JDK | OpenJDK 21.0.12.1 | `JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64` |
@@ -61,6 +62,8 @@ android --version
 ```
 
 配置设置 `JAVA_HOME`、`ANDROID_HOME`、`ANDROID_NDK_HOME`、`NDK_HOME`，并将 Go、Cargo、Go 工具目录及 SDK 的命令行工具、adb、模拟器加入 PATH。重复加载不会重复追加这些 PATH 条目。Go 的 `GOROOT` 由工具自身确定，不手工固定。
+
+2026-11-04 恢复检查发现 Node 仅存在于其他应用的私有目录，新终端无法直接执行 `node/npm`。已从 [Node 官方 v22.23.2 目录](https://nodejs.org/dist/v22.23.2/) 下载 Linux x64 包，核对同目录 SHASUMS256.txt，独立安装并接入上述 env.sh；没有依赖其他应用的安装生命周期。SHA-256：`d60acfe00a2932254bb0ad20e01b0d74397a0875595de719654b214f4b03f307`。env.sh 变更前备份为 `~/.local/state/djhx-dev-setup/backups/env-before-node-2026-11-04.sh`。
 
 此配置在加载时选择 JDK 21；如果其他项目需要 SDKMAN 的其他 JDK，可在该终端中加载本配置后执行 `sdk use java ...`。Android Studio 始终使用自己随附的 JBR 25；新 Android 工程的 Gradle JDK 应显式选择与命令行一致的 JDK 21，再结合实际 Gradle / AGP 版本确认兼容性。
 
@@ -148,7 +151,7 @@ adb devices -l
 
 独立验证材料保存在 `~/.local/state/djhx-dev-setup/`：`smoke/` 为源码，`artifacts/` 为 APK 与四种 ABI 的共享库，`runtime-verification.txt` 为运行记录，`android-smoke.png` 为截图，`android-build.log` 为构建日志。这些文件均在仓库外。
 
-本仓库尚无业务测试、仪器测试或跨语言一致性测试，本轮没有声称这些测试通过。Kotlin、AGP、Compose、Gradle Wrapper、ktlint、detekt 和项目级 lint 规则将在 Android 工程初始化时统一配置；本轮没有安装全局 Kotlin 或 Gradle。
+环境阶段没有执行业务测试、仪器测试或跨语言一致性测试，以上探针结果不代表这些检查通过。随后业务检查分别记录在模块验证文档；项目使用 Gradle Wrapper 与工程内 detekt/格式规则，没有安装全局 Kotlin 或 Gradle。
 
 ## 本机变更与回退
 
