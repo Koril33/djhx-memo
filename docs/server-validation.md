@@ -36,7 +36,7 @@ govulncheck ./...
 
 ## 实际边界
 
-独立交叉评审和 core 的真实多库联调由另一位协作者进行，结果应在合并记录中关联；本文件不提前宣称通过。没有在云 Debian 主机安装 systemd 单元、执行 Nginx 配置检查、安装公网证书或完成异地备份/RPO/RTO。示例为可部署材料，云端部署由项目负责人执行。没有宣称完成 7 天自用、三端安装、真实 Android 设备或 Windows 的验收。
+独立交叉评审见 [server-review](reviews/server-review.md)，core 的真实多库联调见 [core-review](reviews/core-review.md)。本机 Debian 13 VM 的 systemd、Nginx/TLS 与备份恢复结果见下文；没有在云主机安装服务或公网证书，也未完成异地备份/RPO/RTO。云端部署由项目负责人执行。没有宣称完成 7 天自用、三端安装、真实 Android 设备或 Windows 的验收。
 
 ## 2026-11-04 重启后复验与 Debian 13 VM
 
@@ -55,3 +55,11 @@ govulncheck ./...
 - 检查该服务 journal 不含测试正文、密码、邀请码和 token。临时验证记录不含密码或 token；VM 部署凭据没有进入仓库。
 
 服务端 systemd 演练已完成，但云端公网证书、异地加密上传、RPO/RTO 及 Debian 12 仍未验证。VM 的测试账号及示例服务为本机验证用途。
+
+### Debian VM 的真实 HTTPS 与 SSE 代理
+
+在同一 Debian 13 VM 安装 Nginx `1.26.3-3+deb13u10`；将仓库 Nginx 样例仅替换域名和证书路径后 `nginx -t` 与 reload 通过。生成有效期 2 天、含 DNS/IP SAN 的临时验证证书；Python SSL 客户端显式信任该验证证书并执行主机名/IP 校验，未使用跳过证书验证。
+
+真实 TLS 路径通过：HTTPS 注册及 Push；SSE 建连立即信号、实际提交信号、15 秒心跳；logout 后流 EOF；HTTP Host 命中样例返回 301 HTTPS 重定向。该私有 VM 验证不代表公网证书签发或云部署完成。最终替换为包含 `ab1886c` 吊销修复的纯 Go 二进制后保持原数据库/epoch，重新验证登录、Pull、TLS 与 SSE。
+
+独立评审另发现纯 Markdown 标题标记（例如 `# `）派生标题为空时，Go 导出与 core 的“无标题”不一致，已修正并加入函数边界与真实 ZIP manifest 断言。此后再次执行 vet、lint（0 issues）、race/覆盖率测试均通过，服务库覆盖率 75.2%。

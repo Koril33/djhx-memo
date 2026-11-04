@@ -871,3 +871,46 @@ func TestStaleAuthenticatedRevocationCannotRevokeReplacementSession(t *testing.T
 		t.Fatalf("repeated revocation failed: %v", e)
 	}
 }
+
+func TestEmptyDerivedTitlesRemainUntitledInZIPManifest(t *testing.T) {
+	for content, want := range map[string]string{"": "无标题", " \n\t": "无标题", "# ": "无标题", "  ##  \n下一行": "无标题", "# 标题": "标题", strings.Repeat("🙂", 81): strings.Repeat("🙂", 80)} {
+		if got := noteTitle(content); got != want {
+			t.Errorf("derived title %q, want %q", got, want)
+		}
+	}
+	env := setup(t)
+	account := env.account(t, "alice")
+	noteID := uuid()
+	env.push(t, account, Operation{uuid(), noteID, "0", "# ", false})
+	status, raw, _ := env.request("GET", "/v1/export", account.Token, nil)
+	if status != 200 {
+		t.Fatal(status)
+	}
+	archive, e := zip.NewReader(bytes.NewReader(raw), int64(len(raw)))
+	if e != nil {
+		t.Fatal(e)
+	}
+	found := false
+	for _, file := range archive.File {
+		if file.Name != "manifest.json" {
+			continue
+		}
+		input, e := file.Open()
+		if e != nil {
+			t.Fatal(e)
+		}
+		var m manifest
+		e = json.NewDecoder(input).Decode(&m)
+		_ = input.Close()
+		if e != nil {
+			t.Fatal(e)
+		}
+		if len(m.Notes) != 1 || m.Notes[0].ID != noteID || m.Notes[0].Title != "无标题" {
+			t.Fatalf("invalid untitled manifest: %+v", m)
+		}
+		found = true
+	}
+	if !found {
+		t.Fatal("ZIP manifest missing")
+	}
+}

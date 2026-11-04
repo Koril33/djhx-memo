@@ -32,6 +32,9 @@ func noteTitle(content string) string {
 			continue
 		}
 		line = strings.TrimSpace(strings.TrimLeft(line, "#"))
+		if line == "" {
+			return "无标题"
+		}
 		if utf8.RuneCountInString(line) > 80 {
 			line = string([]rune(line)[:80])
 		}
