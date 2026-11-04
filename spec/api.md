@@ -34,6 +34,8 @@ Pull 的 epoch 和 cursor 必填；until 首次可省略；limit 为 1～100，�
 
 JSON 响应可以新增可选字段，客户端忽略未知响应字段；服务端仍严格校验请求。JSON 解析和 UTF-8 字节校验在写入前完成。
 
+正文必须已统一 LF；服务端收到含 CR 的正文返回逐项 INVALID_REQUEST，不静默改写后参与幂等指纹计算。
+
 ## 4. SSE
 
 原生客户端通过可携带 Authorization 头的流式 HTTP 连接，Accept: text/event-stream。建立连接后立即发送 `event: sync`，data 为 `{"epoch":"UUID","head_seq":"42"}`；每次账号数据事务提交后发送同类信号。信号不含正文，不使用该 seq 推进本地 cursor。
