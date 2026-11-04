@@ -16,8 +16,9 @@ object MarkdownSafety {
     }.getOrDefault(false)
 
     fun taskLine(item: ListItem, source: List<String>): Pair<Int, Boolean>? {
-        val line = item.sourceSpans.firstOrNull()?.lineIndex ?: return null
-        val text = source.getOrNull(line) ?: return null
+        val span = item.sourceSpans.firstOrNull() ?: return null
+        val line = span.lineIndex
+        val text = source.getOrNull(line)?.drop(span.columnIndex) ?: return null
         val marker = Regex("^\\s*(?:[-+*]|[0-9]+[.)])\\s+\\[([ xX])\\](?:\\s|$)").find(text) ?: return null
         return line to (marker.groupValues[1] != " ")
     }

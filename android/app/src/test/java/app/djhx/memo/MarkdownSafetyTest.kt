@@ -48,4 +48,16 @@ class MarkdownSafetyTest {
         assertEquals(1, htmlCount)
         assertEquals(1, imageCount)
     }
+
+    @Test fun quotedTaskUsesTheListMarkerSourceColumn() {
+        val source = "> - [x] 引用内任务"
+        val tasks = mutableListOf<Pair<Int, Boolean>>()
+        MarkdownSafety.parse(source).accept(object : AbstractVisitor() {
+            override fun visit(item: ListItem) {
+                MarkdownSafety.taskLine(item, source.lines())?.let(tasks::add)
+                super.visit(item)
+            }
+        })
+        assertEquals(listOf(0 to true), tasks)
+    }
 }

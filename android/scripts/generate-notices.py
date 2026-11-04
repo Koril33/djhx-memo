@@ -46,5 +46,5 @@ for package in PACKAGES:
     for artifact_file in sorted(directory.glob("*/*")):
         if artifact_file.suffix in (".aar", ".jar") and not artifact_file.name.endswith(("-sources.jar", "-javadoc.jar")):
             collect(artifact_file, package)
-(ROOT / "THIRD_PARTY_NOTICES.txt").write_text("".join(parts))
+(ROOT / "THIRD_PARTY_NOTICES.txt").write_text("".join(parts).rstrip() + "\n")
 print(f"generated Android notices: {len(PACKAGES)} locked packages, {len(seen)} distinct archive notices")
