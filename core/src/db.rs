@@ -112,7 +112,7 @@ pub(crate) fn list(db: &Connection, query: &str, deleted: bool) -> Result<Vec<Lo
     Ok(values)
 }
 pub(crate) fn put(db: &Connection, n: &LocalNote) -> Result<()> {
-    db.execute("INSERT INTO notes(id,content,deleted,generation,acknowledged,base_rev,created_at,updated_at,conflict) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9) ON CONFLICT(id) DO UPDATE SET content=excluded.content,deleted=excluded.deleted,generation=excluded.generation,acknowledged=excluded.acknowledged,base_rev=excluded.base_rev,updated_at=excluded.updated_at,conflict=excluded.conflict",params![n.id,n.content,n.deleted,n.generation,n.acknowledged,n.base_rev,n.created_at,n.updated_at,n.conflict.as_ref().map(serde_json::to_string).transpose()?])?;
+    db.execute("INSERT INTO notes(id,content,deleted,generation,acknowledged,base_rev,created_at,updated_at,conflict) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9) ON CONFLICT(id) DO UPDATE SET content=excluded.content,deleted=excluded.deleted,generation=excluded.generation,acknowledged=excluded.acknowledged,base_rev=excluded.base_rev,created_at=excluded.created_at,updated_at=excluded.updated_at,conflict=excluded.conflict",params![n.id,n.content,n.deleted,n.generation,n.acknowledged,n.base_rev,n.created_at,n.updated_at,n.conflict.as_ref().map(serde_json::to_string).transpose()?])?;
     Ok(())
 }
 pub(crate) fn get_state(db: &Connection, key: &str) -> Result<Option<String>> {
@@ -202,10 +202,20 @@ pub(crate) fn apply_page(
         if !valid_id(&wire.id) || wire.content.len() > MAX_CONTENT || counter(&wire.rev)? < 1 {
             return Err(AppError::new("INVALID_REQUEST", "服务器返回无效笔记"));
         }
-        if shadow(&tx, &wire.id)?
-            .is_some_and(|s| counter(&s.rev).unwrap_or(i64::MAX) > counter(&wire.rev).unwrap_or(-1))
-        {
-            continue;
+        if let Some(previous) = shadow(&tx, &wire.id)? {
+            let known_revision = counter(&previous.rev)?;
+            let incoming_revision = counter(&wire.rev)?;
+            if known_revision > incoming_revision {
+                continue;
+            }
+            if known_revision == incoming_revision
+                && (previous.content != wire.content || previous.deleted != wire.deleted)
+            {
+                return Err(AppError::new(
+                    "INVALID_REQUEST",
+                    "同一权威版本出现不同内容，原状态已保留",
+                ));
+            }
         }
         set_shadow(&tx, wire)?;
         match note(&tx, &wire.id) {
@@ -216,11 +226,25 @@ pub(crate) fn apply_page(
                     |r| r.get(0),
                 )?;
                 if n.generation == n.acknowledged && !has_frozen {
+                    let revision = counter(&wire.rev)?;
+                    if n.base_rev == revision
+                        && (n.content != wire.content || n.deleted != wire.deleted)
+                    {
+                        return Err(AppError::new(
+                            "INVALID_REQUEST",
+                            "同一版本笔记内容不一致，已保留本地数据",
+                        ));
+                    }
+                    // An accepted push already installed this revision. Its
+                    // eventual change-log replay only normalizes metadata;
+                    // it must not invalidate the UI's acknowledged generation.
+                    if n.base_rev != revision {
+                        n.generation += 1;
+                    }
                     n.content = wire.content.clone();
                     n.deleted = wire.deleted;
-                    n.generation += 1;
                     n.acknowledged = n.generation;
-                    n.base_rev = counter(&wire.rev)?;
+                    n.base_rev = revision;
                     n.created_at = wire.created_at.clone();
                     n.updated_at = wire.updated_at.clone();
                     n.conflict = wire.conflict.clone();

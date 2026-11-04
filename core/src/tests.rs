@@ -241,6 +241,69 @@ fn malformed_confirmation_keeps_the_frozen_operation() {
 }
 
 #[test]
+fn replay_of_an_acknowledged_revision_keeps_the_ui_generation_valid() {
+    let app = engine();
+    let profile = install_account(&app, "http://127.0.0.1:1".into());
+    let created = invoke(
+        &app,
+        json!({"action":"create","content":"首段","request_id":id(),"profile_id":profile.id}),
+    );
+    let mut database = db::open(&app.path(&profile)).unwrap();
+    let (op, generation) = db::freeze(&mut database).unwrap().unwrap();
+    db::acknowledge(
+        &mut database,
+        &op,
+        generation,
+        &confirmation(&op, json!({"status":"accepted","rev":"1","seq":"1"})),
+        &profile,
+    )
+    .unwrap();
+    let mut acknowledged = wire(&op.note_id, &op.content, 1, 1);
+    acknowledged.created_at = "2020-01-01T00:00:00.000Z".into();
+    db::apply_page(&mut database, &[acknowledged.clone()], "1", "1", false).unwrap();
+    assert_eq!(
+        db::note(&database, &op.note_id).unwrap().generation,
+        generation
+    );
+    assert_eq!(
+        db::note(&database, &op.note_id).unwrap().created_at,
+        acknowledged.created_at
+    );
+    let saved = invoke(
+        &app,
+        json!({"action":"save","profile_id":profile.id,"id":created["id"],"expected_generation":created["generation"],"content":"首段续写"}),
+    );
+    assert_eq!(saved["content"], "首段续写");
+    let (next, _) = db::freeze(&mut database).unwrap().unwrap();
+    assert_eq!(next.base_rev, "1");
+    assert_eq!(next.content, "首段续写");
+    assert_eq!(
+        db::apply_page(
+            &mut database,
+            &[wire(&op.note_id, "同版本错误正文", 1, 2)],
+            "2",
+            "2",
+            false
+        )
+        .unwrap_err()
+        .code,
+        "INVALID_REQUEST"
+    );
+    assert_eq!(
+        db::get_state(&database, "cursor").unwrap().as_deref(),
+        Some("1")
+    );
+    assert_eq!(
+        db::note(&database, &op.note_id).unwrap().content,
+        "首段续写"
+    );
+    assert_eq!(
+        db::freeze(&mut database).unwrap().unwrap().0.op_id,
+        next.op_id
+    );
+}
+
+#[test]
 fn local_creation_is_idempotent_lf_and_generation_checked() {
     let app = engine();
     let request = id();
