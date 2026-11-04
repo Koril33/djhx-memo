@@ -16,6 +16,8 @@
 | P2：冷启动关闭可能丢失生命周期事件 | Rust emit_to 不代表前端已有 listener，过早建立 pending 后可能一直不再发事件 | frontend_ready 在注册监听后握手；未就绪不建立 pending，已有 pending 可安全重发，前端忽略同时重复处理。已复核代码，未在实际 WebView 做大量冷启动关闭压力验证 |
 | P2：可见但未聚焦窗口停止前台同步 | 前台状态原同时要求 document.hasFocus，失焦即停 SSE/协调器 | 改为可见状态，失焦仍立即 flush；真正隐藏由 native 生命周期传 false。已复核代码；三端可见延迟的 UI 实测仍待单独记录 |
 
+生命周期屏障还核对了文档切换入口：`memo-new` / `memo-sync`、Ctrl/Cmd+N/S、列表选择、全部/回收站、设置中的空间切换/登录/注销/导入和救援进入空间均经过 `run`。该入口在 `busy || lifecyclePending` 时立即返回；生命周期回调在第一个 await 前同步设置 lifecyclePending，再由 inputLocked 覆盖最终保存至 native 确认，因此屏障覆盖这些操作，而非只限制文本框。
+
 上述修复没有将同步/冲突裁决放入 UI。前端只持有未提交缓冲与 core 返回的本地 generation；profile_id 跟随 UI 所读取空间，空间变化时原输入保留并提供救援导出。
 
 ## 正向核对
