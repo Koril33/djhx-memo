@@ -37,3 +37,21 @@ govulncheck ./...
 ## 实际边界
 
 独立交叉评审和 core 的真实多库联调由另一位协作者进行，结果应在合并记录中关联；本文件不提前宣称通过。没有在云 Debian 主机安装 systemd 单元、执行 Nginx 配置检查、安装公网证书或完成异地备份/RPO/RTO。示例为可部署材料，云端部署由项目负责人执行。没有宣称完成 7 天自用、三端安装、真实 Android 设备或 Windows 的验收。
+
+## 2026-11-04 重启后复验与 Debian 13 VM
+
+开发机重启后重新确认 Go 1.27.3，模块缓存 `/home/koril/go/pkg/mod`、构建缓存 `/home/koril/.cache/go-build` 均可用；二进制改放持久目录 `.local/server/memo-server`。再次运行 vet、golangci-lint（0 issues）、`go test -race -cover ./...`（通过，库覆盖率 74.8%）、CLI smoke，全部通过。独立 core/服务端联调另见 [core-review](reviews/core-review.md)。
+
+独立交叉评审发现原设备吊销路径在 handler 认证与实际更新之间允许同设备重新登录，旧 actor 可误吊销替换后的新 token。现 `Store.revoke` 在单个事务中重新校验 actor 的 user/device/token_hash、有效期与吊销状态后更新；新回归验证旧 identity 无法吊销自己新会话或另一个设备，当前 identity 正常及重复吊销仍成功。Push 原有同事务复验、login 的密码哈希重读、register 邀请消费事务也复核。
+
+在本机 QEMU/KVM **Debian 13.7 amd64** 虚拟机实测以下行为（该系统不是目标 Debian 12，不能据此宣称 Debian 12 已验收）：
+
+- `CGO_ENABLED=0 GOOS=linux GOARCH=amd64` 构建二进制，原样安装 `server/deploy/djhx-memo.service`；`systemd-analyze verify` 通过，启用并启动后 ActiveState=active、SubState=running、NRestarts=0。
+- 专用 `djhx-memo` 系统账号，StateDirectory 权限 0700，数据库及独立 epoch 权限 0600；服务仅监听回环 8080。
+- 通过本机可信代理头 `X-Forwarded-Proto: https` 验证生产传输入口、邀请码注册、Push/Pull。此步骤仅验证应用的代理信任规则，不等同实际 TLS 证书或公网 HTTPS 验收。
+- `systemctl restart` 后 epoch、账号及 token 稳定；在线 `VACUUM INTO` 快照可通过 integrity_check。
+- 停止服务、整体保全原 db/WAL/SHM、恢复快照、轮换独立 epoch，再启动：旧 Push 得到 SYNC_EPOCH_MISMATCH，新 Pull 得到备份正文，备份后版本未混入。
+- guest OS 完整 reboot 后启用的服务自动恢复 active；重新登录并 Pull 验证持久 epoch、账号、笔记与 head_seq 不变。
+- 检查该服务 journal 不含测试正文、密码、邀请码和 token。临时验证记录不含密码或 token；VM 部署凭据没有进入仓库。
+
+服务端 systemd 演练已完成，但云端公网证书、异地加密上传、RPO/RTO 及 Debian 12 仍未验证。VM 的测试账号及示例服务为本机验证用途。

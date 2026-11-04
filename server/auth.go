@@ -253,13 +253,26 @@ func (s *Store) ResetPassword(ctx context.Context, username, password string) er
 	return tx.Commit()
 }
 func (s *Store) revoke(ctx context.Context, a identity, id string) error {
-	r, e := s.db.ExecContext(ctx, "UPDATE devices SET revoked_at=COALESCE(revoked_at,?) WHERE user_id=? AND id=?", stamp(s.now()), a.UserID, id)
+	tx, e := s.db.BeginTx(ctx, nil)
+	if e != nil {
+		return e
+	}
+	defer func() { _ = tx.Rollback() }()
+	// Authentication can precede a concurrent login. Recheck the captured
+	// actor token in the same transaction as the revocation, including logout.
+	if e = validIdentity(ctx, tx, a, stamp(s.now())); e != nil {
+		return e
+	}
+	r, e := tx.ExecContext(ctx, "UPDATE devices SET revoked_at=COALESCE(revoked_at,?) WHERE user_id=? AND id=?", stamp(s.now()), a.UserID, id)
 	if e != nil {
 		return e
 	}
 	n, e := r.RowsAffected()
-	if e == nil && n == 0 {
+	if e != nil {
+		return e
+	}
+	if n == 0 {
 		return apiError("NOT_FOUND")
 	}
-	return e
+	return tx.Commit()
 }

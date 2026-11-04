@@ -826,3 +826,48 @@ func TestProductionTransportAndProxyIsolation(t *testing.T) {
 		t.Fatal("spoofed proxy trusted")
 	}
 }
+
+func TestStaleAuthenticatedRevocationCannotRevokeReplacementSession(t *testing.T) {
+	env := setup(t)
+	original := env.account(t, "alice")
+	staleActor := env.identity(t, original)
+	login := func(device string) Session {
+		status, raw, _ := env.request("POST", "/v1/auth/login", "", map[string]string{"username": "alice", "password": "correct long password", "device_id": device, "device_name": "Replacement"})
+		if status != 200 {
+			t.Fatalf("login %d: %s", status, raw)
+		}
+		var session Session
+		if e := json.Unmarshal(raw, &session); e != nil {
+			t.Fatal(e)
+		}
+		return session
+	}
+	other := login(uuid())
+	replacement := login(original.DeviceID)
+	if replacement.Token == original.Token {
+		t.Fatal("login reused an old credential")
+	}
+	// Model a request that authenticated, then another request replaced its token
+	// before its authorization-sensitive write acquired the SQLite transaction.
+	for _, target := range []string{original.DeviceID, other.DeviceID} {
+		e := env.store.revoke(context.Background(), staleActor, target)
+		var protocol *APIError
+		if !errors.As(e, &protocol) || protocol.Code != "AUTH_REQUIRED" {
+			t.Fatalf("stale actor revoked %s: %v", target, e)
+		}
+	}
+	for _, session := range []Session{replacement, other} {
+		if _, e := env.store.authenticate(context.Background(), session.Token); e != nil {
+			t.Fatalf("valid session was revoked: %v", e)
+		}
+	}
+	if e := env.store.revoke(context.Background(), env.identity(t, replacement), other.DeviceID); e != nil {
+		t.Fatal(e)
+	}
+	if _, e := env.store.authenticate(context.Background(), other.Token); e == nil || internal(e).Code != "AUTH_REQUIRED" {
+		t.Fatalf("current actor failed to revoke: %v", e)
+	}
+	if e := env.store.revoke(context.Background(), env.identity(t, replacement), other.DeviceID); e != nil {
+		t.Fatalf("repeated revocation failed: %v", e)
+	}
+}
