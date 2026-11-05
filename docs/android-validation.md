@@ -30,6 +30,7 @@ cd android
 | Android Lint | 0 errors，19 条提示；主要为固定依赖版本/target SDK 更新建议及 KTX 风格建议；未屏蔽 NewApi |
 | release/debug APK | 两种 ABI 均编入，debug 与 release application ID、签名及私有数据隔离 |
 | APK 签名与对齐 | apksigner v2 签名验证通过；zipalign 16KiB 检查通过 |
+| 原生 ELF 对齐 | 2026-11-05 主协作者独立解析最终 APK 的全部 6 个 `.so`：arm64-v8a/x86_64 的 core、JNA、AndroidX graphics 各 PT_LOAD 对齐均至少 16384 字节 |
 | 许可通知 | APK assets 中 core/Android 通知分别与仓库源文件逐字节一致 |
 
 | 仪器测试 | 真实验证内容 |
@@ -58,6 +59,8 @@ cd android
 - 两者旁均有 `SHA256SUMS`；release SHA-256：`429325866c0ed24941d339bcc702d6214d8ca4a2cca245489fdb4cd809ebd0bd`。
 - APK 同时包含 arm64-v8a / x86_64 的 core、JNA、AndroidX graphics 原生库。
 - 本次为项目生成独立发布密钥：`.local/android-release.jks`，口令文件 `.local/android-signing-password`，均不入仓库。证书 SHA-256：`ec8a88aa7aad47d51fa07ffddb4a17bb69c4aad71ee3c0dd4b3ad0eb4f5cdcdb`。后续升级必须保留并备份这两个本机文件，不能改用 debug 签名覆盖真实数据安装。
+
+2026-11-05 已另作仓库外的本机长期副本：`~/.local/state/djhx-memo/signing/`，目录权限 0700、两文件权限 0600，并逐字节核对一致。原构建路径保留；此本机副本不等于异地保管，后续由项目负责人自行离线备份。
 
 ## 未验收项
 
