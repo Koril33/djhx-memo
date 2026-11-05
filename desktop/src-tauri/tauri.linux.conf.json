@@ -1,0 +1,12 @@
+{
+  "productName": "djhx-memo",
+  "bundle": {
+    "linux": {
+      "deb": {
+        "recommends": ["gnome-keyring"],
+        "section": "utils",
+        "desktopTemplate": "linux/djhx-memo.desktop.hbs"
+      }
+    }
+  }
+}

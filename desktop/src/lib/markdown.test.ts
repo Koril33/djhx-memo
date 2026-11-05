@@ -1,0 +1,45 @@
+import { describe, expect, it } from 'vitest';
+import { renderMarkdown, safeUrl } from './markdown';
+
+describe('restricted Markdown preview', () => {
+  it('shows raw HTML as text and never loads images or embeds', () => {
+    const html = renderMarkdown(
+      '<script>alert(1)</script>\n\n<iframe src="https://evil.test"></iframe>\n\n![beacon](https://evil.test/a.png)',
+    );
+    expect(html).not.toMatch(/<(script|iframe|img)\b/i);
+    expect(html).toContain('&lt;script&gt;');
+    expect(html).not.toContain('src="');
+  });
+  it('rejects dangerous protocols and permits only absolute HTTP(S)', () => {
+    for (const url of [
+      'javascript:alert(1)',
+      'data:text/html,test',
+      'file:///etc/passwd',
+      'tauri://localhost',
+      '//evil.test',
+      'https://user:pass@test.test',
+      'https://test.test/\n',
+    ])
+      expect(safeUrl(url)).toBeNull();
+    expect(safeUrl('https://example.test/a?q=中文')).toContain('https://example.test/');
+    expect(renderMarkdown('[bad](javascript:alert%281%29)')).not.toContain('href=');
+    expect(renderMarkdown('[ok](https://example.test)')).toContain('rel="noreferrer noopener"');
+  });
+  it('maps tasks to source lines, excluding fenced and indented code and raw HTML', () => {
+    const source =
+      '```md\n- [ ] identical\n```\n\n    - [ ] identical\n\n- [ ] identical\n  - [x] 中文\n\n> - [ ] 引用\n';
+    const html = renderMarkdown(source);
+    expect([...html.matchAll(/data-task-line="(\d+)"/g)].map((m) => Number(m[1]))).toEqual([
+      6, 7, 9,
+    ]);
+    expect(renderMarkdown(source, false)).not.toContain('data-task-line');
+  });
+  it('preserves formatting and exposes no IPC attributes from source', () => {
+    const html = renderMarkdown(
+      '# 标题\n\n**粗体** `- [ ] code`\n\n<button data-task-line="0" onclick="alert(1)">bad</button>',
+    );
+    expect(html).toContain('<h1>标题</h1>');
+    expect(html).toContain('<strong>粗体</strong>');
+    expect(html).not.toContain('<button');
+  });
+});
