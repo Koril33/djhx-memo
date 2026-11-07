@@ -8,5 +8,6 @@
 - [ADR-0006：Go 服务端依赖](0006-server-dependencies.md)
 - [ADR-0007：桌面依赖](0007-desktop-dependencies.md)
 - [ADR-0008：Android 依赖](0008-android-dependencies.md)
+- [ADR-0009：云端公钥加密备份与本机拉取工具](0009-backup-tools.md)
 
 新增依赖前记录确切版本、理由、许可证与维护来源；工具探针的通过不能代替业务验收。

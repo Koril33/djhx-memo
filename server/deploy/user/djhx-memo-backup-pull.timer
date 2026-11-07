@@ -1,0 +1,12 @@
+[Unit]
+Description=Fetch djhx-memo encrypted backups hourly while user manager runs
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+RandomizedDelaySec=2min
+AccuracySec=1min
+Unit=djhx-memo-backup-pull.service
+
+[Install]
+WantedBy=timers.target

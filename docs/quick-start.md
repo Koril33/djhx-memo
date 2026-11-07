@@ -28,7 +28,9 @@ Windows 包尚无代码签名证书；版本和文件来源以本机校验值为
 
 ## 接入自有服务器
 
-服务端包为 `dist/server/djhx-memo-server-0.1.0-linux-amd64.tar.gz`，包含静态 Go 二进制、systemd/Nginx 样例、许可证与运维说明。由项目负责人按 [部署、备份和恢复](operations.md) 配置云服务器及 HTTPS。
+候选服务根地址为 `https://memo.djhx.site`，客户端账号设置直接填写此地址，不追加 `/v1` 或 `/healthz`。它提供同步 API，浏览器中没有网页版笔记界面；[健康检查](https://memo.djhx.site/healthz) 正常返回 `{"status":"ok"}`。首次注册的一次性邀请码由管理员单独交付，不在仓库或安装包中。
+
+自建其他实例时，服务端包 `dist/server/djhx-memo-server-0.1.0-linux-amd64.tar.gz` 包含静态 Go 二进制、systemd/Nginx 配置、许可证与运维说明。按 [部署、备份和恢复](operations.md) 配置自己的域名和证书；仓库配置当前对应 `memo.djhx.site` 与已有通配符证书。
 
 在客户端账号设置填写 HTTPS 根地址、用户名、密码和设备名，使用管理员生成的一次性邀请码注册。登录后本机空间内容保持独立；需要上传时明确选择复制导入。冲突会保留原笔记并生成副本，设备吊销和注销不会删除本地笔记。
 

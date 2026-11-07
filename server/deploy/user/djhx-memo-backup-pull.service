@@ -1,0 +1,10 @@
+[Unit]
+Description=Fetch djhx-memo encrypted backups to this computer
+
+[Service]
+Type=oneshot
+EnvironmentFile=-%h/.config/djhx-memo-backup/config
+ExecStart=%h/.local/bin/djhx-memo-backup-pull
+UMask=0077
+NoNewPrivileges=true
+TimeoutStartSec=10min

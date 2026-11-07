@@ -11,9 +11,11 @@ mkdir -p "$memo_package/deploy"
     -ldflags "-s -w -X main.version=0.1.0-candidate -X main.commit=$memo_revision" \
     -o "$memo_package/memo-server-linux-amd64" ./cmd/memo-server
 )
-cp server/deploy/djhx-memo.service server/deploy/nginx.conf "$memo_package/deploy/"
+cp -R server/deploy/. "$memo_package/deploy/"
+cp scripts/backup-pull.sh "$memo_package/deploy/"
 cp server/THIRD_PARTY_NOTICES.txt "$memo_package/"
-cp docs/operations.md docs/server-validation.md server/README.md "$memo_package/"
+cp docs/operations.md docs/server-validation.md docs/cloud-deployment.md \
+  docs/backup-local.md server/README.md "$memo_package/"
 printf '%s\n' "version=0.1.0-candidate" "source_commit=$memo_revision" > "$memo_package/BUILD.txt"
 tar -C dist/server -czf dist/server/djhx-memo-server-0.1.0-linux-amd64.tar.gz \
   djhx-memo-server-0.1.0-linux-amd64

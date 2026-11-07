@@ -41,7 +41,7 @@ djhx-memo/
 
 本机工具链加载：`. "$HOME/.config/djhx-dev/env.sh"`；新机器先阅读开发说明。各工程提交 Cargo/npm/Gradle 锁文件，构建步骤见 [server](server/README.md)、[core](core/README.md)、[desktop](desktop/README.md)、[android](android/README.md)。本地检查入口：`bash scripts/validate-local.sh core|server|integration|desktop|android`，每次选择一个模块。
 
-客户端首次打开即可离线记录，本机空间不会自动上传。部署服务端并配置 HTTPS 根地址后，在客户端使用管理员生成的一次性邀请码注册；登录后可明确选择将本机笔记复制到账号空间。部署命令与备份恢复见 [operations](docs/operations.md)，云服务器由项目负责人部署。
+客户端首次打开即可离线记录，本机空间不会自动上传。候选服务已部署到 `https://memo.djhx.site`，在客户端填写此根地址并使用管理员生成的一次性邀请码注册；登录后可明确选择将本机笔记复制到账号空间。该地址提供同步 API；当前没有独立 Web 客户端。部署检查见 [云部署记录](docs/cloud-deployment.md)，备份恢复见 [operations](docs/operations.md)。
 
 安装包和校验值输出到本机忽略目录 `dist/`，不会把二进制、运行数据或发布签名密钥提交 Git。
 

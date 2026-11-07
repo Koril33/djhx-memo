@@ -1,6 +1,6 @@
 # Go 服务端
 
-已实现 v1 HTTP API、SQLite 权威存储、邀请码注册登录、设备管理、幂等 Push、固定上界 Pull、SSE、完整 ZIP 导出和本机管理命令。行为以 [spec](../spec/README.md) 为准；同步、鉴权与迁移仍需独立交叉评审及三端联调后用于真实数据。
+已实现 v1 HTTP API、SQLite 权威存储、邀请码注册登录、设备管理、幂等 Push、固定上界 Pull、SSE、完整 ZIP 导出和本机管理命令。行为以 [spec](../spec/README.md) 为准；已有 [独立交叉评审](../docs/reviews/server-review.md) 及 core 联调，完整三端验收仍待完成。候选实例 `https://memo.djhx.site` 的实际部署检查见 [云部署记录](../docs/cloud-deployment.md)。
 
 ## 构建与本地运行
 

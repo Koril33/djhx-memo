@@ -36,7 +36,7 @@ govulncheck ./...
 
 ## 实际边界
 
-独立交叉评审见 [server-review](reviews/server-review.md)，core 的真实多库联调见 [core-review](reviews/core-review.md)。本机 Debian 13 VM 的 systemd、Nginx/TLS 与备份恢复结果见下文；没有在云主机安装服务或公网证书，也未完成异地备份/RPO/RTO。云端部署由项目负责人执行。没有宣称完成 7 天自用、三端安装、真实 Android 设备或 Windows 的验收。
+独立交叉评审见 [server-review](reviews/server-review.md)，core 的真实多库联调见 [core-review](reviews/core-review.md)。本机 Debian 13 VM 的 systemd、Nginx/TLS 与备份恢复结果见下文；2026-11-07 的 Debian 12 云主机、公网 TLS 与同步检查另见 [云部署记录](cloud-deployment.md)。本记录不代表完整三端设备矩阵或 7 天自用已通过。
 
 ## 2026-11-04 重启后复验与 Debian 13 VM
 
@@ -54,7 +54,7 @@ govulncheck ./...
 - guest OS 完整 reboot 后启用的服务自动恢复 active；重新登录并 Pull 验证持久 epoch、账号、笔记与 head_seq 不变。
 - 检查该服务 journal 不含测试正文、密码、邀请码和 token。临时验证记录不含密码或 token；VM 部署凭据没有进入仓库。
 
-服务端 systemd 演练已完成，但云端公网证书、异地加密上传、RPO/RTO 及 Debian 12 仍未验证。VM 的测试账号及示例服务为本机验证用途。
+截至本节 2026-11-04 演练时，云端公网证书、异地加密上传、RPO/RTO 及 Debian 12 仍未验证；后续云部署见单独记录。VM 的测试账号及示例服务为本机验证用途。
 
 ### Debian VM 的真实 HTTPS 与 SSE 代理
 
