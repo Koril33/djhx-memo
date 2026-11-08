@@ -4,7 +4,7 @@
 
 **v1 目标：Windows、Android、Linux 三端可日常使用。** 桌面端包含托盘；允许未登录记笔记，提供邀请码注册、登录、同步、搜索、回收站和 Markdown 导出。Web、Apple、全局快捷键、系统分享以及 CI/Runner 暂缓。
 
-当前提供 **0.1.0 自用候选版**：Go 服务端、Rust 核心与 Windows/Linux/Android 客户端已实现，并产出可安装的软件包。已执行核心/服务端联调及目标系统的部分实际使用验证；完整设备矩阵与连续 7 天日常试用仍待完成，协议与 v1 尚未正式发布。实际结果和限制见各模块验证记录。
+当前客户端提供 **0.1.1 界面预览**，基于 0.1.0 自用候选的服务端与核心功能：Go 服务端、Rust 核心与 Windows/Linux/Android 客户端已实现，并产出可安装的软件包。已执行核心/服务端联调及目标系统的部分实际使用验证；完整设备矩阵与连续 7 天日常试用仍待完成，协议与 v1 尚未正式发布。实际结果和限制见各模块验证记录。
 
 ## 从这里开始
 
@@ -17,6 +17,7 @@
 - [核心验证](docs/core-validation.md) / [服务端验证](docs/server-validation.md) / [桌面验证](docs/desktop-validation.md) / [Android 验证](docs/android-validation.md)
 - [部署、备份与恢复](docs/operations.md)
 - [品牌母版、图标尺寸与统一替换](docs/brand-guidelines.md)
+- [0.1.1 界面设计](docs/ui-design.md) / [桌面预览验证](docs/desktop-ui-preview-validation.md) / [Android 预览验证](docs/android-ui-preview-validation.md)
 - [已接受决策](docs/adr/0001-v1-baseline.md)
 - [协作规范](AGENTS.md) / [贡献流程](CONTRIBUTING.md)
 

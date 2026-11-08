@@ -38,7 +38,7 @@ fun MarkdownPreview(
     val tree = remember(source) { MarkdownSafety.parse(source) }
     val lines = remember(source) { source.lines() }
     Column(
-        modifier.verticalScroll(rememberScrollState()).padding(16.dp),
+        modifier.verticalScroll(rememberScrollState()).padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         MarkdownChildren(tree, lines, editable, onTask, onLink)

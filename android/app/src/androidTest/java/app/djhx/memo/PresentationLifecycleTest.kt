@@ -36,7 +36,13 @@ class PresentationLifecycleTest {
         fun find(
             node: android.view.accessibility.AccessibilityNodeInfo
         ): android.view.accessibility.AccessibilityNodeInfo? {
-            if (node.text?.toString() == text || node.contentDescription?.toString() == text) return node
+            node.refresh()
+            if (node.text?.toString()?.lineSequence()?.any {
+                    it == text
+                } == true || node.contentDescription?.toString() == text
+            ) {
+                return node
+            }
             for (index in 0 until node.childCount) {
                 node.getChild(index)?.let { find(it)?.let { result -> return result } }
             }
@@ -192,17 +198,20 @@ class PresentationLifecycleTest {
         try {
             ActivityScenario.launch(MainActivity::class.java).use { scenario ->
                 scenario.onActivity { it.presentation.update(DisplayPreferences("en", "system", "Asia/Shanghai")) }
-                clickText("Account / Settings")
-                clickText("Language: English")
+                clickText("More")
+                clickText("Settings")
+                clickText("Language")
                 clickText("简体中文")
-                waitFor { visibleText("外观: 跟随系统") != null && visibleText("账号与设置") != null }
-                clickText("外观: 跟随系统")
+                waitFor { visibleText("外观") != null && visibleText("设置") != null }
+                clickText("外观")
                 clickText("深色")
-                waitFor { visibleText("外观: 深色") != null }
-                clickText("语言: 简体中文")
+                waitFor { visibleText("深色") != null }
+                clickText("语言")
                 clickText("English")
-                waitFor { visibleText("Appearance: Dark") != null && visibleText("Account and settings") != null }
-                clickText("Done")
+                waitFor {
+                    visibleText("Appearance") != null && visibleText("Settings") != null && visibleText("Dark") != null
+                }
+                clickText("Close settings")
             }
         } finally {
             InstrumentationRegistry.getInstrumentation().runOnMainSync { PresentationStore(context).update(original) }

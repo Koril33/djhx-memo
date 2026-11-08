@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { listen, type UnlistenFn } from '@tauri-apps/api/event';
   import Editor from './Editor.svelte';
+  import Icon from './Icon.svelte';
   import { call, native, errorText, coreErrorText } from './lib/bridge';
   import { EditorSession } from './lib/editor-session';
   import { renderMarkdown } from './lib/markdown';
@@ -85,7 +86,7 @@
   let notice: Message | null = null;
   let failure: unknown = null;
   let settings = false;
-  let settingsTab: 'account' | 'devices' | 'data' | 'appearance' = 'account';
+  let settingsTab: 'account' | 'devices' | 'data' | 'appearance' = 'appearance';
   let authMode: 'login' | 'register' = 'login';
   let serverUrl = DEFAULT_SERVER_URL;
   let username = '';
@@ -158,16 +159,52 @@
   function time(value: string | null, locale = language, zone = preferences.timeZone): string {
     return formatTime(value, locale, zone, t('noRecord'));
   }
-  function excerpt(note: Note, translate = t): string {
+  function excerpt(note: Note): string {
     return (
       note.content
         .split('\n')
         .filter((line) => line.trim())
         .slice(1)
         .join(' ')
-        .slice(0, 90) || translate('excerptEmpty')
+        .slice(0, 90) || ''
     );
   }
+  function closeMenus(except?: Node, restoreFocus = false): void {
+    document.querySelectorAll<HTMLDetailsElement>('details[data-menu][open]').forEach((menu) => {
+      if (!except || !menu.contains(except)) {
+        const focused = menu.contains(document.activeElement);
+        menu.open = false;
+        if (restoreFocus && focused) menu.querySelector('summary')?.focus();
+      }
+    });
+  }
+  function menuAction(event: MouseEvent, work: () => Promise<void>): void {
+    const menu = (event.currentTarget as HTMLElement).closest('details');
+    if (menu) {
+      menu.open = false;
+      menu.querySelector('summary')?.focus();
+    }
+    void run(work);
+  }
+  $: saveLabel = t(
+    editor.error
+      ? 'saveFailed'
+      : editor.saving || editor.unsaved || editor.composing
+        ? 'saving'
+        : editor.note
+          ? 'saved'
+          : 'blankDraft',
+  );
+  $: saveShortLabel = t(
+    editor.error
+      ? 'saveFailed'
+      : editor.saving || editor.unsaved || editor.composing
+        ? 'saving'
+        : editor.note
+          ? 'savedShort'
+          : 'draftShort',
+  );
+
   function notify(key: MessageKey, args?: MessageArgs): void {
     notice = { key, args };
     failure = null;
@@ -469,7 +506,7 @@
     await navigator.clipboard.writeText(editor.content);
     notify('copied');
   }
-  async function openSettings(tab: typeof settingsTab = 'account'): Promise<void> {
+  async function openSettings(tab: typeof settingsTab = 'appearance'): Promise<void> {
     settingsTab = tab;
     settings = true;
     if (tab === 'devices' && state?.profile.kind === 'account')
@@ -497,6 +534,7 @@
     }).catch(() => {});
   }
   function blur(): void {
+    closeMenus();
     void editor.flush().catch((error) => {
       failure = error;
     });
@@ -626,12 +664,15 @@
 </script>
 
 <svelte:window
+  on:pointerdown={(event) => closeMenus(event.target instanceof Node ? event.target : undefined)}
+  on:focusin={(event) => closeMenus(event.target instanceof Node ? event.target : undefined)}
   on:blur={blur}
   on:focus={foreground}
   on:online={() => {
     void call({ action: 'sync' }).catch(() => {});
   }}
   on:keydown={(event) => {
+    if (event.key === 'Escape') closeMenus(undefined, true);
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'n') {
       event.preventDefault();
       void run(newNote);
@@ -650,88 +691,87 @@
 />
 
 <main class="app-shell" aria-busy={booting}>
-  <aside class="sidebar">
-    <div class="brand">
-      <strong>DJHX Memo</strong>
-    </div>
+  <nav class="nav-rail" aria-label={t('navigation')}>
     <button
-      class="new-button"
+      class="rail-button primary-icon"
       aria-label={t('newNote')}
+      title={t('newNote') + ' · Ctrl N'}
       disabled={busy || booting || !!state?.profile.read_only || activeMismatch}
-      on:click={() => run(newNote)}><span>＋</span> {t('newNote')} <kbd>Ctrl N</kbd></button
+      on:click={() => run(newNote)}><Icon name="plus" size={24} /></button
     >
-    <div class="nav-caption">{t('workspace')}</div>
-    <button
-      class:active={!trash}
-      class="nav-item"
-      aria-label={t('allNotes')}
-      on:click={() => run(() => changeSection(false))}><span>▤</span> {t('allNotes')}</button
-    >
-    <button
-      class:active={trash}
-      class="nav-item"
-      aria-label={t('trash')}
-      on:click={() => run(() => changeSection(true))}><span>♲</span> {t('trash')}</button
-    >
-    <div class="sidebar-rule"></div>
-    <button
-      class="nav-item muted"
-      aria-label={t(trash ? 'exportTrash' : 'exportNotes')}
-      on:click={() => run(exportNotes)}
-      disabled={!state || busy}><span>↓</span> {t(trash ? 'exportTrash' : 'exportNotes')}</button
-    >
-    <button
-      class="nav-item muted"
-      aria-label={t('settings')}
-      on:click={() => run(() => openSettings())}><span>⚙</span> {t('settings')}</button
-    >
-    <div class="sidebar-bottom">
-      <div class="space-label">
-        <span class="space-dot"></span>{state?.profile.kind === 'local'
-          ? t('localSpace')
-          : state?.profile.kind === 'recovery'
-            ? t('recoverySpace')
-            : t('accountSpace')}
-      </div>
-      <strong class="profile-name"
-        >{state
-          ? profileLabel(state.profile, t, language, preferences.timeZone)
-          : t('openingEllipsis')}</strong
+    <div class="rail-group">
+      <button
+        class="rail-button"
+        class:active={!trash}
+        aria-label={t('allNotes')}
+        title={t('allNotes')}
+        aria-pressed={!trash}
+        on:click={() => run(() => changeSection(false))}><Icon name="file-text" /></button
       >
-      <small
-        >{state?.profile.kind === 'account' ? state.profile.server_url : t('localTagline')}</small
-      >
-      <button class="space-switch" on:click={() => run(() => openSettings())}
-        >{t('switchSpace')} <span>↗</span></button
+      <button
+        class="rail-button"
+        class:active={trash}
+        aria-label={t('trash')}
+        title={t('trash')}
+        aria-pressed={trash}
+        on:click={() => run(() => changeSection(true))}><Icon name="trash-2" /></button
       >
     </div>
-  </aside>
-
+    <div class="rail-bottom">
+      <button
+        class="rail-button"
+        aria-label={t('settings')}
+        title={t('settings')}
+        on:click={() => run(() => openSettings())}><Icon name="settings" /></button
+      >
+    </div>
+  </nav>
   <section class="note-column" aria-label={t('noteList')}>
     <header class="list-header">
-      <div>
-        <h1>{trash ? t('trash') : t('allNotes')}</h1>
-        <span>{t(query ? 'matches' : 'records', { count: notes.length })}</span>
+      <div class="brand-row">
+        <strong class="brand">DJHX Memo</strong>
+        <details class="action-menu" data-menu>
+          <!-- svelte-ignore a11y_no_redundant_roles (WebKitGTK exposes an unknown AT-SPI role without this explicit role.) -->
+          <summary
+            role="button"
+            class="icon-button"
+            aria-label={t('moreActions')}
+            title={t('moreActions')}><Icon name="ellipsis" /></summary
+          >
+          <div class="menu-panel">
+            <button disabled={!state || busy} on:click={(event) => menuAction(event, exportNotes)}
+              ><Icon name="download" />{t(trash ? 'exportTrash' : 'exportNotes')}</button
+            >
+            <button on:click={(event) => menuAction(event, () => openSettings('account'))}
+              ><Icon name="user" />{t('accountTab')}</button
+            >
+            <button on:click={(event) => menuAction(event, () => openSettings())}
+              ><Icon name="settings" />{t('settings')}</button
+            >
+          </div>
+        </details>
       </div>
-      <button
-        class="icon-button"
-        aria-label={t('refreshList')}
-        title={t('refresh')}
-        disabled={busy}
-        on:click={() => run(() => refreshState(true))}>↻</button
+      <div class="list-heading">
+        <h1>{t(trash ? 'trash' : 'allNotes')}</h1>
+        <span>{t(query ? 'matches' : 'records', { count: notes.length })}</span>
+        <button
+          class="icon-button"
+          aria-label={t('refreshList')}
+          title={t('refresh')}
+          disabled={busy}
+          on:click={() => run(() => refreshState(true))}
+          ><Icon name="refresh-cw" size={16} /></button
+        >
+      </div>
+      <label class="search"
+        ><Icon name="search" size={20} /><input
+          aria-label={t('searchCurrent')}
+          bind:value={query}
+          on:input={search}
+          placeholder={t('searchNotes')}
+        /></label
       >
     </header>
-    <label class="search"
-      ><span>⌕</span><input
-        aria-label={t('searchCurrent')}
-        bind:value={query}
-        on:input={search}
-        placeholder={t('searchPlaceholder')}
-      /><kbd>{t('localBadge')}</kbd></label
-    >
-    <div class="list-context">
-      {trash ? t('trashContext') : query ? t('searchContext') : t('recentNotes')}
-    </div>
     <div class="notes-scroll">
       {#each notes as note (note.id)}
         <button
@@ -741,10 +781,10 @@
           disabled={busy}
         >
           <div class="note-card-title">{note.content.trim() ? note.title : t('untitled')}</div>
-          <p>{excerpt(note, t)}</p>
+          {#if excerpt(note)}<p>{excerpt(note)}</p>{/if}
           <div class="note-meta">
-            <time>{time(note.updated_at, language, preferences.timeZone)}</time
-            >{#if note.conflict}<span class="conflict-chip">{t('conflictCopy')}</span
+            <time>{time(note.updated_at, language, preferences.timeZone)}</time>
+            {#if note.conflict}<span class="conflict-chip">{t('conflictCopy')}</span
               >{:else if note.sync_state === 'pending'}<span
                 class="pending-dot"
                 title={t('pendingShort')}
@@ -753,40 +793,101 @@
         </button>
       {:else}
         <div class="list-empty">
-          <span>{query ? '⌕' : trash ? '♲' : '✎'}</span><strong
-            >{query ? t('noSearchResults') : trash ? t('emptyTrash') : t('emptyNotes')}</strong
+          <Icon name={query ? 'search' : trash ? 'trash-2' : 'file-text'} size={24} /><strong
+            >{t(query ? 'noSearchResults' : trash ? 'emptyTrash' : 'noNotesYet')}</strong
           >
-          <p>
-            {query ? t('searchHelp') : trash ? t('trashHelp') : t('emptyHelp')}
-          </p>
         </div>
       {/each}
     </div>
     <footer class="list-footer">
-      <span
-        class:warning={state?.sync.state === 'error' || state?.sync.state === 'auth_required'}
-        class="status-dot"
-      ></span>{syncLabel}
+      <button
+        class="profile-button"
+        aria-label={t('switchSpace')}
+        title={state
+          ? profileLabel(state.profile, t, language, preferences.timeZone)
+          : t('currentSpace')}
+        on:click={() => run(() => openSettings('account'))}
+      >
+        <Icon name={state?.profile.kind === 'account' ? 'cloud' : 'file-text'} size={18} />
+        <span
+          >{state?.profile.kind === 'account'
+            ? state.profile.username
+            : t(state?.profile.kind === 'recovery' ? 'recoverySpace' : 'localNotes')}</span
+        ><Icon name="chevron-down" size={16} />
+      </button>
     </footer>
   </section>
-
   <section class="workspace" aria-label={t('noteEditor')}>
     <header class="workspace-header">
-      <div class="breadcrumb">
-        {state
-          ? profileLabel(state.profile, t, language, preferences.timeZone)
-          : t('localNotes')}<span>/</span><strong>{editor.note ? title : t('newDraft')}</strong>
+      <strong class="document-title">{editor.note ? title : t('newDraft')}</strong>
+      <div class="editor-actions">
+        <div class="view-switch" aria-label={t('editorMode')}>
+          <button
+            class:chosen={mode === 'source'}
+            aria-label={t('source')}
+            title={t('source')}
+            aria-pressed={mode === 'source'}
+            on:click={() => {
+              mode = 'source';
+            }}><Icon name="pencil" /></button
+          >
+          <button
+            class:chosen={mode === 'preview'}
+            aria-label={t('preview')}
+            title={t('preview')}
+            aria-pressed={mode === 'preview'}
+            on:click={() => {
+              mode = 'preview';
+            }}><Icon name="eye" /></button
+          >
+          <button
+            class:chosen={mode === 'split'}
+            aria-label={t('split')}
+            title={t('split')}
+            aria-pressed={mode === 'split'}
+            on:click={() => {
+              mode = 'split';
+            }}><Icon name="columns-2" /></button
+          >
+        </div>
+        <details class="action-menu" data-menu>
+          <!-- svelte-ignore a11y_no_redundant_roles (WebKitGTK exposes an unknown AT-SPI role without this explicit role.) -->
+          <summary
+            role="button"
+            class="icon-button"
+            aria-label={t('noteActions')}
+            title={t('noteActions')}><Icon name="ellipsis" /></summary
+          >
+          <div class="menu-panel">
+            {#if editor.note?.deleted}<button
+                disabled={busy || state?.profile.read_only}
+                on:click={(event) => menuAction(event, () => setDeleted(false))}
+                ><Icon name="rotate-ccw" />{t('restoreNote')}</button
+              >{:else}<button
+                class="danger"
+                disabled={busy || !editor.note || state?.profile.read_only}
+                on:click={(event) => menuAction(event, () => setDeleted(true))}
+                ><Icon name="trash-2" />{t('moveToTrash')}</button
+              >{/if}
+            <button
+              disabled={busy || !editor.content}
+              on:click={(event) => menuAction(event, copyBuffer)}
+              ><Icon name="copy" />{t('copyText')}</button
+            >
+            <button
+              disabled={busy || !editor.content}
+              on:click={(event) => menuAction(event, () => rescue())}
+              ><Icon name="download" />{t('exportCurrent')}</button
+            >
+          </div>
+        </details>
       </div>
-      <button
-        class="sync-button"
-        disabled={busy || state?.profile.kind !== 'account'}
-        on:click={() => run(synchronize)}
-        ><span class:spinning={state?.sync.state === 'syncing'}>↻</span>
-        {state?.profile.kind === 'account' ? t('sync') : t('localOnly')}</button
-      >
     </header>
-    {#if runtime && !runtime.tray_available}<div class="info-strip">
-        {t('trayUnavailable')}
+    {#if runtime && !runtime.tray_available}<div
+        class="info-strip compact-notice"
+        title={t('trayUnavailable')}
+      >
+        <Icon name="info" size={16} /><span>{t('closeToQuitHelp')}</span>
       </div>{/if}
     {#if state && !state.credential_persistent && state.profile.kind === 'account'}<div
         class="info-strip warning-strip"
@@ -794,7 +895,7 @@
         {t('keyringUnavailable')}
       </div>{/if}
     {#if state?.sync.state === 'auth_required'}<div class="info-strip warning-strip">
-        {t('signInAgainHelp')}<button on:click={() => run(() => openSettings())}
+        {t('signInAgainHelp')}<button on:click={() => run(() => openSettings('account'))}
           >{t('signInAgain')}</button
         >
       </div>{/if}
@@ -809,16 +910,18 @@
     {#if failure}<div class="message error-message" role="alert">
         <span>{errorText(failure, language)}</span><button
           aria-label={t('dismiss')}
+          title={t('dismiss')}
           on:click={() => {
             failure = null;
-          }}>×</button
+          }}><Icon name="x" size={20} /></button
         >
       </div>{:else if notice}<div class="message success-message" role="status">
         <span>{notice ? t(notice.key, notice.args) : ''}</span><button
           aria-label={t('dismiss')}
+          title={t('dismiss')}
           on:click={() => {
             notice = null;
-          }}>×</button
+          }}><Icon name="x" size={20} /></button
         >
       </div>{/if}
     {#if editor.error || activeMismatch}<div class="save-rescue">
@@ -851,81 +954,108 @@
           on:click={() => run(() => setDeleted(false))}>{t('restoreNote')}</button
         >
       </div>{/if}
-    <div class="editor-toolbar">
-      <div class="view-switch" aria-label={t('editorMode')}>
-        <button
-          class:chosen={mode === 'source'}
-          on:click={() => {
-            mode = 'source';
-          }}>{t('source')}</button
-        ><button
-          class:chosen={mode === 'preview'}
-          on:click={() => {
-            mode = 'preview';
-          }}>{t('preview')}</button
-        ><button
-          class:chosen={mode === 'split'}
-          on:click={() => {
-            mode = 'split';
-          }}>{t('split')}</button
-        >
-      </div>
-      <span class="format-hint">Markdown</span><button
-        class="text-button danger"
-        disabled={busy || !editor.note || !!editor.note.deleted || state?.profile.read_only}
-        on:click={() => run(() => setDeleted(true))}>{t('moveToTrash')}</button
-      >
-    </div>
     {#if booting}<div class="boot-state">{t('openingLocal')}</div>{:else if !state}<div
         class="boot-state"
       >
         {t('openFailed')}<button on:click={() => run(() => refreshState(true))}>{t('retry')}</button
         >
       </div>{:else}<div class="editor-body" class:split={mode === 'split'}>
-        {#if mode !== 'preview'}<div class="source-pane">
-            {#key documentKey}<Editor
-                value={editor.content}
-                {language}
-                readonly={readOnly}
-                onEdit={(text) => editor.edit(text)}
-                onComposition={(active) => editor.setComposing(active)}
-                onBlur={() => {
-                  void editor.flush().catch((error) => {
-                    failure = error;
-                  });
-                }}
-              />{/key}
-          </div>{/if}
-        {#if mode !== 'source'}<div class="preview-pane">
-            <div class="preview-label">{t('readingPreview')}</div>
-            <article
-              class="markdown"
-              use:previewEvents
-              role="document"
-              aria-label={t('safePreview')}
-            >
-              {#if editor.content}{@html preview}{:else}<div class="preview-empty">
-                  <span>✎</span>
-                  <h2>{t('previewEmptyTitle')}</h2>
-                  <p>{t('previewEmptyHelp')}</p>
-                </div>{/if}
-            </article>
-          </div>{/if}
+        <div
+          class="source-pane"
+          class:concealed={mode === 'preview'}
+          aria-hidden={mode === 'preview'}
+        >
+          {#key documentKey}<Editor
+              value={editor.content}
+              {language}
+              readonly={readOnly}
+              onEdit={(text) => editor.edit(text)}
+              onComposition={(active) => editor.setComposing(active)}
+              onBlur={() => {
+                void editor.flush().catch((error) => {
+                  failure = error;
+                });
+              }}
+            />{/key}
+        </div>
+        <div
+          class="preview-pane"
+          class:concealed={mode === 'source'}
+          aria-hidden={mode === 'source'}
+        >
+          <article class="markdown" use:previewEvents role="document" aria-label={t('safePreview')}>
+            {#if editor.content}{@html preview}{:else}<div class="preview-empty">
+                <Icon name="file-text" size={24} />
+                <h2>{t('emptyNoteTitle')}</h2>
+              </div>{/if}
+          </article>
+        </div>
       </div>{/if}
     <footer class="editor-footer">
-      <span class:error={!!editor.error} class:saving={editor.saving || editor.unsaved}
-        ><span class="small-dot"></span>{t(
-          editor.error
-            ? 'saveFailed'
-            : editor.saving || editor.unsaved || editor.composing
-              ? 'saving'
-              : editor.note
-                ? 'saved'
-                : 'blankDraft',
-        )}</span
-      ><span
-        >{t('characters', { count: [...editor.content].length.toLocaleString(language) })} <i>·</i>
-        UTF-8 <i>·</i> LF</span
+      <details class="status-popover" data-menu>
+        <!-- svelte-ignore a11y_no_redundant_roles (WebKitGTK exposes an unknown AT-SPI role without this explicit role.) -->
+        <summary
+          role="button"
+          class="status-button"
+          class:error={!!editor.error}
+          aria-label={t('statusDetails')}
+          title={t('statusDetails')}
+        >
+          <Icon
+            name={editor.error
+              ? 'circle-alert'
+              : editor.saving || editor.unsaved || editor.composing
+                ? 'refresh-cw'
+                : editor.note
+                  ? 'check'
+                  : 'file-text'}
+            size={16}
+          />
+          <span>{saveShortLabel}</span><span class="status-divider"></span>
+          <Icon
+            name={state?.profile.kind !== 'account'
+              ? 'file-text'
+              : state.sync.state === 'synced'
+                ? 'cloud-check'
+                : state.sync.state === 'offline' || state.sync.state === 'error'
+                  ? 'cloud-off'
+                  : state.sync.state === 'syncing'
+                    ? 'refresh-cw'
+                    : 'cloud'}
+            size={16}
+          />
+          <span
+            class:cloud-warning={state?.sync.state === 'error' ||
+              state?.sync.state === 'auth_required' ||
+              state?.sync.state === 'recovery_required'}>{syncLabel}</span
+          ><Icon name="chevron-down" size={14} />
+        </summary>
+        <div class="status-panel">
+          <h3>{t('statusDetails')}</h3>
+          <dl class="status-details">
+            <dt>{t('localStatus')}</dt>
+            <dd>{saveLabel}</dd>
+            <dt>{t('cloudStatus')}</dt>
+            <dd>{syncLabel}</dd>
+            <dt>{t('lastSync')}</dt>
+            <dd>{time(state?.sync.last_success ?? null, language, preferences.timeZone)}</dd>
+          </dl>
+          {#if runtime && !runtime.tray_available}<p class="help-text">
+              {t('trayUnavailable')}
+            </p>{/if}
+          {#if state?.sync.error}<p class="inline-error">
+              {coreErrorText(state.sync.error, language)}
+            </p>{/if}
+          <button
+            class="secondary-button"
+            disabled={busy || state?.profile.kind !== 'account'}
+            on:click={(event) => menuAction(event, synchronize)}
+            ><Icon name="refresh-cw" size={16} />{t('syncNow')}</button
+          >
+        </div>
+      </details>
+      <span class="character-count"
+        >{t('characters', { count: [...editor.content].length.toLocaleString(language) })}</span
       >
     </footer>
   </section>
@@ -945,33 +1075,34 @@
     >
       <header class="dialog-header">
         <div>
-          <small>{t('settingsTagline')}</small>
           <h2 id="settings-heading">{t('settings')}</h2>
         </div>
         <button
           class="icon-button settings-close"
           aria-label={t('closeSettings')}
+          title={t('closeSettings')}
           disabled={busy}
           on:click={() => {
             settings = false;
-          }}
-          ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg
-          ></button
+          }}><Icon name="x" size={20} /></button
         >
       </header>
-      <nav class="settings-tabs">
+      <nav class="settings-tabs" aria-label={t('settingsSections')}>
+        <button
+          class:chosen={settingsTab === 'appearance'}
+          on:click={() => run(() => openSettings('appearance'))}>{t('appearanceTab')}</button
+        >
         <button
           class:chosen={settingsTab === 'account'}
           on:click={() => run(() => openSettings('account'))}>{t('accountTab')}</button
-        ><button
+        >
+        <button
           class:chosen={settingsTab === 'devices'}
           on:click={() => run(() => openSettings('devices'))}>{t('devicesTab')}</button
-        ><button
+        >
+        <button
           class:chosen={settingsTab === 'data'}
           on:click={() => run(() => openSettings('data'))}>{t('dataTab')}</button
-        ><button
-          class:chosen={settingsTab === 'appearance'}
-          on:click={() => run(() => openSettings('appearance'))}>{t('appearanceTab')}</button
         >
       </nav>
       <div class="dialog-content">
@@ -985,7 +1116,10 @@
           <h3>{t('currentSpace')}</h3>
           <div class="current-profile">
             <span class="avatar"
-              >{state?.profile.kind === 'local' ? t('localAvatar') : t('cloudAvatar')}</span
+              ><Icon
+                name={state?.profile.kind === 'local' ? 'file-text' : 'cloud'}
+                size={20}
+              /></span
             >
             <div>
               <strong
@@ -1009,9 +1143,14 @@
                 class:profile-selected={state?.profile.id === profile.id}
                 disabled={busy}
                 on:click={() => run(() => switchProfile(profile.id))}
-                ><span
-                  >{profile.kind === 'local' ? '▤' : profile.kind === 'recovery' ? '◇' : '☁'}</span
-                >
+                ><Icon
+                  name={profile.kind === 'local'
+                    ? 'file-text'
+                    : profile.kind === 'recovery'
+                      ? 'rotate-ccw'
+                      : 'cloud'}
+                  size={20}
+                />
                 <div>
                   <strong>{profileLabel(profile, t, language, preferences.timeZone)}</strong><small
                     >{profile.kind === 'local'
@@ -1021,7 +1160,10 @@
                         : profile.server_url}</small
                   >
                 </div>
-                <span>{state?.profile.id === profile.id ? '✓' : '→'}</span></button
+                <Icon
+                  name={state?.profile.id === profile.id ? 'check' : 'chevron-down'}
+                  size={16}
+                /></button
               >{/each}
           </div>
           <div class="auth-heading">
@@ -1041,7 +1183,7 @@
                 bind:value={serverUrl}
                 placeholder={DEFAULT_SERVER_URL}
                 autocomplete="url"
-              /><small>{runtime?.debug_http ? t('debugServerHelp') : t('serverHelp')}</small></label
+              />{#if runtime?.debug_http}<small>{t('debugServerHelp')}</small>{/if}</label
             >
             <div class="field-row">
               <label class="field"
@@ -1100,7 +1242,7 @@
               {t('devicesNeedAccount')}
             </div>{:else}<div class="device-list">
               {#each devices as device (device.id)}<div class="device-row">
-                  <span class="device-symbol">▣</span>
+                  <span class="device-symbol"><Icon name="monitor" size={20} /></span>
                   <div>
                     <strong
                       >{device.name}
@@ -1132,8 +1274,6 @@
                 </div>{/each}
             </div>{/if}
         {:else if settingsTab === 'appearance'}
-          <h3>{t('appearanceTab')}</h3>
-          <p class="help-text">{t('preferencesHelp')}</p>
           <label class="field"
             >{t('language')}<select bind:value={preferences.language} on:change={updatePreferences}>
               <option value="system">{t('followSystem')}</option><option value="zh-CN"
@@ -1161,7 +1301,7 @@
             {t('exportHelp')}
           </p>
           <button class="secondary-button" disabled={busy} on:click={() => run(exportNotes)}
-            >↓ {t(trash ? 'exportDeleted' : 'exportActive')}</button
+            ><Icon name="download" size={18} />{t(trash ? 'exportDeleted' : 'exportActive')}</button
           >
           <div class="settings-separator"></div>
           <h3>{t('copySpace')}</h3>
@@ -1223,7 +1363,7 @@
       aria-labelledby="import-heading"
       tabindex="-1"
     >
-      <span class="import-icon">▤ → ☁</span>
+      <span class="import-icon"><Icon name="copy" size={24} /></span>
       <h2 id="import-heading">{t('importTitle')}</h2>
       <p>
         {t('importCount', { count: state.local_import_count })}

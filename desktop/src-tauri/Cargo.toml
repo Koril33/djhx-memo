@@ -1,6 +1,6 @@
 [package]
 name = "djhx-memo-desktop"
-version = "0.1.0"
+version = "0.1.1"
 description = "本地优先的 Markdown 备忘录"
 authors = ["djhx-memo contributors"]
 edition = "2024"

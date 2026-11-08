@@ -81,6 +81,13 @@ class PresentationTest {
         assertEquals("Pending sync · %1\$d items", english.getValue("cloud_pending.other"))
     }
 
+    @Test fun listExcerptUsesOnlyTheFirstBodyLineAndPreservesUnicode() {
+        assertEquals("第一行😀", noteExcerpt("\n# 标题\n\n第一行😀\n第二行"))
+        assertEquals("", noteExcerpt("只有标题"))
+        assertEquals("  保留空格", noteExcerpt("# 标题\n  保留空格\n其他内容"))
+        assertEquals("😀".repeat(160), noteExcerpt("标题\n" + "😀".repeat(160)))
+    }
+
     @Test fun unknownErrorsUseFixedSafeMessage() {
         assertEquals(R.string.operation_failed, errorResource("UNTRUSTED_SERVER_TEXT"))
         assertEquals(R.string.error_auth_invalid, errorResource("AUTH_INVALID_CREDENTIALS"))

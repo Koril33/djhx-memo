@@ -1,3 +1,4 @@
+import { icons } from './icons';
 import { createTranslator, type Language } from './i18n';
 import { Marked, type Tokens, type Token } from 'marked';
 
@@ -23,6 +24,20 @@ export function safeUrl(value: string): string | null {
   } catch {
     return null;
   }
+}
+
+// Only the statically bundled, reviewed check icon enters generated preview HTML.
+// Markdown and user text never provide a tag, attribute name or SVG path.
+function checkIcon(): string {
+  const elements = icons.check
+    .map(
+      ([tag, attributes]) =>
+        `<${tag} ${Object.entries(attributes)
+          .map(([name, value]) => `${name}="${escapeHtml(value)}"`)
+          .join(' ')} />`,
+    )
+    .join('');
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${elements}</svg>`;
 }
 
 type LocatedCheckbox = Tokens.Checkbox & { sourceLine?: number };
@@ -78,8 +93,8 @@ export function renderMarkdown(
       },
       checkbox(token: LocatedCheckbox) {
         if (token.sourceLine === undefined || !interactive)
-          return `<span class="task-static">${token.checked ? '☑' : '☐'}</span> `;
-        return `<button type="button" class="task-check ${token.checked ? 'checked' : ''}" data-task-line="${token.sourceLine}" data-preview-version="${escapeHtml(previewVersion)}" role="checkbox" aria-checked="${token.checked}" aria-label="${token.checked ? t('taskUncheck') : t('taskCheck')}">${token.checked ? '✓' : ''}</button> `;
+          return `<span class="task-static ${token.checked ? 'checked' : ''}" role="checkbox" aria-readonly="true" aria-checked="${token.checked}" aria-label="${token.checked ? t('taskUncheck') : t('taskCheck')}">${token.checked ? checkIcon() : ''}</span> `;
+        return `<button type="button" class="task-check ${token.checked ? 'checked' : ''}" data-task-line="${token.sourceLine}" data-preview-version="${escapeHtml(previewVersion)}" role="checkbox" aria-checked="${token.checked}" title="${token.checked ? t('taskUncheck') : t('taskCheck')}" aria-label="${token.checked ? t('taskUncheck') : t('taskCheck')}">${token.checked ? checkIcon() : ''}</button> `;
       },
     },
   });

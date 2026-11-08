@@ -1,6 +1,20 @@
 // Local presentation only. Never translate note content or user-provided names.
 export type Language = 'zh-CN' | 'en';
 export const messages = {
+  closeToQuitHelp: { 'zh-CN': '关闭窗口会保存并退出。', en: 'Closing saves and exits.' },
+  navigation: { 'zh-CN': '导航', en: 'Navigation' },
+  moreActions: { 'zh-CN': '更多操作', en: 'More actions' },
+  noteActions: { 'zh-CN': '笔记操作', en: 'Note actions' },
+  settingsSections: { 'zh-CN': '设置分类', en: 'Settings sections' },
+  searchNotes: { 'zh-CN': '搜索笔记', en: 'Search notes' },
+  noNotesYet: { 'zh-CN': '暂无笔记', en: 'No notes yet' },
+  emptyNoteTitle: { 'zh-CN': '空白笔记', en: 'Empty note' },
+  savedShort: { 'zh-CN': '已保存', en: 'Saved' },
+  draftShort: { 'zh-CN': '草稿', en: 'Draft' },
+  statusDetails: { 'zh-CN': '保存与同步状态', en: 'Save & sync status' },
+  localStatus: { 'zh-CN': '本地保存', en: 'Local save' },
+  cloudStatus: { 'zh-CN': '云端同步', en: 'Cloud sync' },
+  syncNow: { 'zh-CN': '立即同步', en: 'Sync now' },
   desktopDevice: { 'zh-CN': '{platform} 桌面', en: '{platform} Desktop' },
   localOnly: {
     'zh-CN': '仅本机',
@@ -471,12 +485,12 @@ export const messages = {
     en: 'Register with an invitation',
   },
   registerLink: {
-    'zh-CN': '注册账号 →',
-    en: 'Create account →',
+    'zh-CN': '注册账号',
+    en: 'Create account',
   },
   loginLink: {
-    'zh-CN': '已有账号，登录 →',
-    en: 'Have an account? Sign in →',
+    'zh-CN': '已有账号，登录',
+    en: 'Have an account? Sign in',
   },
   serverAddress: {
     'zh-CN': '服务器地址',
@@ -708,8 +722,8 @@ export const messages = {
     en: 'Could not save preferences. Check application storage permissions.',
   },
   editorPlaceholder: {
-    'zh-CN': '从一个念头开始…\n\n支持 Markdown，输入后自动保存到本机。',
-    en: 'Start with a thought…\n\nMarkdown supported. Changes save automatically on this device.',
+    'zh-CN': '开始书写…',
+    en: 'Start writing…',
   },
   imageLabel: {
     'zh-CN': '图片',

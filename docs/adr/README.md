@@ -10,5 +10,6 @@
 - [ADR-0008：Android 依赖](0008-android-dependencies.md)
 - [ADR-0009：云端公钥加密备份与本机拉取工具](0009-backup-tools.md)
 - [ADR-0010：统一品牌母版与开发期图标生成工具](0010-brand-assets.md)
+- [ADR-0011：客户端统一使用离线 Lucide 图标子集](0011-offline-interface-icons.md)
 
 新增依赖前记录确切版本、理由、许可证与维护来源；工具探针的通过不能代替业务验收。

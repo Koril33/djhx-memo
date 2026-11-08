@@ -2,7 +2,7 @@
 
 Windows / Linux Tauri 2 客户端。Rust 后端直接链接 core，本地前端在本目录内采用 Svelte + TypeScript + Vite，编辑器使用 CodeMirror 6；不依赖尚未开发的独立 Web 工程。
 
-当前 0.1.0 自用候选实现包含托盘、未登录笔记、账号、Markdown、搜索、回收站、导出与同步。全局快捷键、开机自启、自动升级暂缓。Windows 首先验收负责人当前的 Windows 10 22H2 x86_64，Windows 11 兼容性另行记录；Linux 默认 Ubuntu 24.04 x86_64，验证 Wayland/X11、输入法及 AppIndicator 环境。
+当前 0.1.1 界面预览保留 0.1.1 界面预览的功能，包含托盘、未登录笔记、账号、Markdown、搜索、回收站、导出与同步。全局快捷键、开机自启、自动升级暂缓。Windows 首先验收负责人当前的 Windows 10 22H2 x86_64，Windows 11 兼容性另行记录；Linux 默认 Ubuntu 24.04 x86_64，验证 Wayland/X11、输入法及 AppIndicator 环境。
 
 ## 开发与构建
 
@@ -38,3 +38,11 @@ Linux 包名为 `djhx-memo`，桌面显示“DJHX Memo”；GNOME 托盘需启�
 双语文案集中在 `src/lib/i18n.ts`，偏好解析与日期格式集中在 `src/lib/preferences.ts`；新增可见文案应补齐两个语言和相同插值参数。错误按 core 错误码及已知安全的外壳消息映射，不展示任意原始异常。账号与设备自定义名称、笔记内容和导出 UTC 时间保持原样。CodeMirror 通过 compartment 更新占位符和可访问名称，主题通过成对颜色变量更新，切换偏好不重建编辑器或清空撤销与组合输入。设置关闭使用固定 36×36 点击区域内的 20×20 SVG，避免不同平台字体基线和默认按钮内边距裁切图标。
 
 Windows 安装器使用 `src-tauri/windows/installer.nsi`，来自已锁定 `@tauri-apps/cli` 2.12.4 的[同版本官方模板](https://github.com/tauri-apps/tauri/blob/tauri-cli-v2.12.4/crates/tauri-bundler/src/bundle/windows/nsis/installer.nsi)（上游双许可，此处按 MIT 分发，原文随包附带）。仅为本次品牌改名固定旧候选版的安装注册表身份与默认目录“简记”，显示名、窗口名及新快捷方式仍为 DJHX Memo；旧快捷方式仅在目标确认为本安装目录的二进制时改名迁移，目标已存在或改名失败时保留旧入口；`/UPDATE` 和 `/NS` 下也不会先删掉所有入口。已有候选版可覆盖安装，避免因 Tauri 默认将卸载键绑定产品名而形成第二套安装。升级 CLI 时须同步上游模板并保留该差异，重新验证旧版升级、重装和卸载；模板内部旧名称不应当作用户可见品牌进行批量替换。
+
+## 0.1.1 界面预览
+
+界面采用共享的纸白/炭灰与品牌绿语义色、系统字体及 4/8 间距。60px 导航保留新建、笔记、回收站和设置；列表顶部显示 DJHX Memo，列表更多菜单提供当前空间导出和账号入口。编辑器更多菜单提供删除/恢复、复制与当前文字导出。底部紧凑状态可展开查看本地保存、云同步与最近同步时间，并保留手动同步入口；保存失败救援、凭据失效、冲突及恢复提示仍直接显示。
+
+通用操作使用离线随包的 Lucide 线性图标，来源和许可见[共同界面设计说明](../docs/ui-design.md)；Markdown 任务标记也使用同一静态 `check` 图标，用户 Markdown 不能注入 SVG。普通图标目标至少 36px，具备双语可访问名称与悬停提示。源码、预览和对照切换只隐藏相应面板，保留 CodeMirror 实例及撤销/组合输入状态；切换笔记仍先保存。本轮仅修改展示，不改 core、同步、鉴权或数据目录。实际构建记录见[桌面界面预览验证](../docs/desktop-ui-preview-validation.md)。
+
+0.1.1 的紧凑导航、图标和菜单入口见[界面设计](../docs/ui-design.md)，本轮实际检查见[预览验证](../docs/desktop-ui-preview-validation.md)。

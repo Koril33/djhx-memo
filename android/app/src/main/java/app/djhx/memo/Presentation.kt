@@ -13,7 +13,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.view.WindowCompat
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -109,9 +113,29 @@ internal fun MemoPresentation(store: PresentationStore, content: @Composable () 
     }
     val zone = if (prefs.timeZone == "system") systemZone else displayZone(prefs.timeZone)
     val colors = if (dark) {
-        darkColorScheme(primary = Color(0xFF91D5BE), secondary = Color(0xFFB4CBBE))
+        darkColorScheme(
+            primary = Color(0xFF91BBA7), onPrimary = Color(0xFF1D211F),
+            secondary = Color(0xFFA5AEA5), background = Color(0xFF1D211F),
+            onBackground = Color(0xFFE7EBE6), surface = Color(0xFF242A26),
+            onSurface = Color(0xFFE7EBE6), surfaceVariant = Color(0xFF2A312C),
+            onSurfaceVariant = Color(0xFFA5AEA5), outline = Color(0xFF737D74),
+            outlineVariant = Color(0xFF373E38), surfaceTint = Color(0xFF91BBA7),
+            primaryContainer = Color(0xFF304638), onPrimaryContainer = Color(0xFFE7EBE6),
+            surfaceContainer = Color(0xFF242A26), surfaceContainerLow = Color(0xFF242A26),
+            surfaceContainerHigh = Color(0xFF2A312C), surfaceContainerHighest = Color(0xFF303831)
+        )
     } else {
-        lightColorScheme(primary = Color(0xFF32695B), secondary = Color(0xFF52645D), background = Color(0xFFF8FAF7))
+        lightColorScheme(
+            primary = Color(0xFF3D7963), onPrimary = Color(0xFFFCFBF8),
+            secondary = Color(0xFF6B726B), background = Color(0xFFF7F6F2),
+            onBackground = Color(0xFF292E2B), surface = Color(0xFFFCFBF8),
+            onSurface = Color(0xFF292E2B), surfaceVariant = Color(0xFFEAF0E9),
+            onSurfaceVariant = Color(0xFF6B726B), outline = Color(0xFFA4ACA3),
+            outlineVariant = Color(0xFFE5E7DE), surfaceTint = Color(0xFF3D7963),
+            primaryContainer = Color(0xFFEAF0E9), onPrimaryContainer = Color(0xFF292E2B),
+            surfaceContainer = Color(0xFFFCFBF8), surfaceContainerLow = Color(0xFFFCFBF8),
+            surfaceContainerHigh = Color(0xFFF3F2ED), surfaceContainerHighest = Color(0xFFEAF0E9)
+        )
     }
     CompositionLocalProvider(
         LocalContext provides localizedContext,
@@ -142,10 +166,24 @@ internal fun formattedTime(
 
 /** Dialog 是独立 Android window，显式重新提供最新配置，避免宿主缓存初次打开时的语言。 */
 @Composable
-internal fun LocalizedDialog(onDismissRequest: () -> Unit, content: @Composable () -> Unit) {
+internal fun LocalizedDialog(
+    onDismissRequest: () -> Unit,
+    properties: DialogProperties = DialogProperties(),
+    content: @Composable () -> Unit
+) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
-    Dialog(onDismissRequest = onDismissRequest) {
+    val dark = LocalDarkAppearance.current
+    Dialog(onDismissRequest = onDismissRequest, properties = properties) {
+        val window = (LocalView.current.parent as? DialogWindowProvider)?.window
+        SideEffect {
+            window?.let { current ->
+                WindowCompat.getInsetsController(current, current.decorView).apply {
+                    isAppearanceLightStatusBars = !dark
+                    isAppearanceLightNavigationBars = !dark
+                }
+            }
+        }
         CompositionLocalProvider(
             LocalContext provides context,
             LocalConfiguration provides configuration,
@@ -167,3 +205,14 @@ internal fun profileLabel(profile: org.json.JSONObject?): String {
         else -> context.getString(R.string.local_notes)
     }
 }
+
+/** 紧凑空间标识不显示完整服务器；账号归属在设置与复制确认中仍完整可见。 */
+@Composable
+internal fun shortProfileLabel(profile: org.json.JSONObject?): String = when (profile?.optString("kind")) {
+    "account" -> profile.optString("username")
+    "recovery" -> androidx.compose.ui.res.stringResource(R.string.recovery_short)
+    else -> androidx.compose.ui.res.stringResource(R.string.local_notes)
+}
+
+internal fun noteExcerpt(content: String): String = content.lineSequence().dropWhile { it.isBlank() }.drop(1)
+    .firstOrNull { it.isNotBlank() }.orEmpty()

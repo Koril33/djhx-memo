@@ -34,6 +34,20 @@ describe('restricted Markdown preview', () => {
     ]);
     expect(renderMarkdown(source, false)).not.toContain('data-task-line');
   });
+  it('uses bundled vector task marks and exposes read-only checked state without action glyphs', () => {
+    const source = '- [x] done\n\n<svg><text>untrusted</text></svg>';
+    const interactive = renderMarkdown(source, true, 'preview-1', 'en');
+    expect(interactive).toContain('role="checkbox" aria-checked="true"');
+    expect(interactive).toContain('aria-label="Mark incomplete"');
+    expect(interactive).toContain('stroke-width="2"');
+    expect(interactive.match(/<svg /g)).toHaveLength(1);
+    expect(interactive).toContain('&lt;svg&gt;');
+    for (const glyph of ['✓', '☑', '☐']) expect(interactive).not.toContain(glyph);
+    const readonly = renderMarkdown(source, false, 'preview-1', 'zh-CN');
+    expect(readonly).toContain('aria-readonly="true" aria-checked="true"');
+    expect(readonly).not.toContain('<button');
+    expect(readonly).not.toContain('data-task-line');
+  });
   it('preserves formatting and exposes no IPC attributes from source', () => {
     const html = renderMarkdown(
       '# 标题\n\n**粗体** `- [ ] code`\n\n<button data-task-line="0" onclick="alert(1)">bad</button>',

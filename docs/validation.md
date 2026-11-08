@@ -8,6 +8,8 @@
 
 文档结构检查入口为 `python3 scripts/check-docs.py`（Markdown 本地目标、OpenAPI JSON/元数据/内部引用/operationId），再执行 `git diff --check`；该脚本不冒充完整 OpenAPI 3.1 语义校验或业务接口测试。
 
+2026-11-08 的客户端 0.1.1 展示增量另见[桌面界面预览验证](desktop-ui-preview-validation.md)、[Android 界面预览验证](android-ui-preview-validation.md)及[独立复核](reviews/quiet-ui-review.md)。本轮服务端、core、协议和迁移没有变化，不以此前检查替代本轮界面验证，也不重复宣称完整三端发布清单已通过。
+
 ## 2. 必需的本地检查
 
 | 范围 | 格式/静态检查 | 行为验证 |

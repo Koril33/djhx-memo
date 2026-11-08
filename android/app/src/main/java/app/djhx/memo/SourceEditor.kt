@@ -20,6 +20,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 fun SourceEditor(
     text: String,
     enabled: Boolean,
+    visible: Boolean = true,
     modifier: Modifier = Modifier,
     onBlur: () -> Unit = {
     },
@@ -62,12 +63,14 @@ fun SourceEditor(
                 }
             }.apply {
                 gravity = Gravity.TOP or Gravity.START
-                textSize = 16f
-                typeface = Typeface.MONOSPACE
+                textSize = 17f
+                setLineSpacing(0f, 1.65f)
+                typeface = Typeface.DEFAULT
                 setTextColor(textColor)
                 setHintTextColor(hintColor)
                 setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                setPadding(16, 16, 16, 16)
+                val inset = (24 * resources.displayMetrics.density).toInt()
+                setPadding(inset, inset / 2, inset, inset)
                 setHorizontallyScrolling(false)
                 inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE or
                     android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
@@ -89,7 +92,28 @@ fun SourceEditor(
             }
         },
         update = { editor ->
-            editor.isEnabled = enabled
+            if (!visible && android.view.inputmethod.BaseInputConnection.getComposingSpanStart(editor.text) >= 0) {
+                android.view.inputmethod.BaseInputConnection.removeComposingSpans(editor.text)
+                compositionCallback.value(false)
+            }
+            if (!visible && editor.hasFocus()) {
+                // 预览只隐藏此 View；将组合文字作为当前正文提交，不清空原生撤销历史。
+                compositionCallback.value(false)
+                editor.clearFocus()
+                (
+                    editor.context.getSystemService(
+                        android.content.Context.INPUT_METHOD_SERVICE
+                    ) as android.view.inputmethod.InputMethodManager
+                    )
+                    .hideSoftInputFromWindow(editor.windowToken, 0)
+            }
+            editor.visibility = if (visible) android.view.View.VISIBLE else android.view.View.INVISIBLE
+            editor.importantForAccessibility = if (visible) {
+                android.view.View.IMPORTANT_FOR_ACCESSIBILITY_AUTO
+            } else {
+                android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+            }
+            editor.isEnabled = enabled && visible
             editor.hint = editorHint
             editor.contentDescription = editorDescription
             editor.setTextColor(textColor)

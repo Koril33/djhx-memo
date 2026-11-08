@@ -2,13 +2,7 @@
   import { createTranslator, type Language } from './lib/i18n';
   import { onMount } from 'svelte';
   import { EditorState, Transaction, Compartment } from '@codemirror/state';
-  import {
-    EditorView,
-    keymap,
-    lineNumbers,
-    highlightActiveLine,
-    placeholder,
-  } from '@codemirror/view';
+  import { EditorView, keymap, highlightActiveLine, placeholder } from '@codemirror/view';
   import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
   import { markdown } from '@codemirror/lang-markdown';
   import { defaultHighlightStyle, syntaxHighlighting, HighlightStyle } from '@codemirror/language';
@@ -34,19 +28,12 @@
   const theme = EditorView.theme({
     '&': { height: '100%', fontSize: '15px', backgroundColor: 'transparent' },
     '.cm-scroller': {
-      fontFamily: '"Cascadia Code", "Noto Sans Mono CJK SC", "Consolas", monospace',
-      lineHeight: '1.9',
+      fontFamily: 'inherit',
+      lineHeight: '1.85',
     },
-    '.cm-content': { padding: '30px 24px 120px', caretColor: 'var(--green)' },
+    '.cm-content': { padding: '32px 24px 96px', caretColor: 'var(--green)' },
     '.cm-line': { padding: '0 6px' },
-    '.cm-gutters': {
-      border: 'none',
-      backgroundColor: 'transparent',
-      color: 'var(--muted)',
-      paddingTop: '30px',
-    },
     '.cm-activeLine': { backgroundColor: 'var(--editor-active)' },
-    '.cm-activeLineGutter': { backgroundColor: 'transparent', color: 'var(--green)' },
     '.cm-selectionBackground': { backgroundColor: 'var(--editor-selection) !important' },
     '&.cm-focused': { outline: 'none' },
     '.cm-placeholder': { color: 'var(--muted)' },
@@ -58,7 +45,6 @@
       state: EditorState.create({
         doc: value,
         extensions: [
-          lineNumbers(),
           history(),
           highlightActiveLine(),
           markdown(),
