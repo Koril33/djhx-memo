@@ -1,3 +1,4 @@
+import { createTranslator, type Language } from './i18n';
 import { Marked, type Tokens, type Token } from 'marked';
 
 export function escapeHtml(value: string): string {
@@ -52,7 +53,13 @@ function locateTasks(parser: Marked, tokens: Token[], source: string): void {
 }
 
 /** Generated markup is the only HTML admitted to the preview. Raw Markdown HTML is escaped. */
-export function renderMarkdown(source: string, interactive = true, previewVersion = ''): string {
+export function renderMarkdown(
+  source: string,
+  interactive = true,
+  previewVersion = '',
+  language: Language = 'zh-CN',
+): string {
+  const t = createTranslator(language);
   const parser = new Marked({ gfm: true, breaks: false, async: false });
   parser.use({
     renderer: {
@@ -60,7 +67,7 @@ export function renderMarkdown(source: string, interactive = true, previewVersio
         return `<span class="raw-html">${escapeHtml(text)}</span>`;
       },
       image({ text }: Tokens.Image) {
-        return `<span class="blocked-image">[图片：${escapeHtml(text || '已禁止自动加载')}]</span>`;
+        return `<span class="blocked-image">[${t('imageLabel')}: ${escapeHtml(text || t('imageBlocked'))}]</span>`;
       },
       link({ href, tokens }: Tokens.Link) {
         const label = this.parser.parseInline(tokens);
@@ -72,7 +79,7 @@ export function renderMarkdown(source: string, interactive = true, previewVersio
       checkbox(token: LocatedCheckbox) {
         if (token.sourceLine === undefined || !interactive)
           return `<span class="task-static">${token.checked ? '☑' : '☐'}</span> `;
-        return `<button type="button" class="task-check ${token.checked ? 'checked' : ''}" data-task-line="${token.sourceLine}" data-preview-version="${escapeHtml(previewVersion)}" role="checkbox" aria-checked="${token.checked}" aria-label="${token.checked ? '取消完成' : '标记完成'}">${token.checked ? '✓' : ''}</button> `;
+        return `<button type="button" class="task-check ${token.checked ? 'checked' : ''}" data-task-line="${token.sourceLine}" data-preview-version="${escapeHtml(previewVersion)}" role="checkbox" aria-checked="${token.checked}" aria-label="${token.checked ? t('taskUncheck') : t('taskCheck')}">${token.checked ? '✓' : ''}</button> `;
       },
     },
   });

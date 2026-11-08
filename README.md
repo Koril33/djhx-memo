@@ -16,6 +16,7 @@
 - [本地验证与三端验收](docs/validation.md)
 - [核心验证](docs/core-validation.md) / [服务端验证](docs/server-validation.md) / [桌面验证](docs/desktop-validation.md) / [Android 验证](docs/android-validation.md)
 - [部署、备份与恢复](docs/operations.md)
+- [品牌母版、图标尺寸与统一替换](docs/brand-guidelines.md)
 - [已接受决策](docs/adr/0001-v1-baseline.md)
 - [协作规范](AGENTS.md) / [贡献流程](CONTRIBUTING.md)
 
@@ -41,7 +42,9 @@ djhx-memo/
 
 本机工具链加载：`. "$HOME/.config/djhx-dev/env.sh"`；新机器先阅读开发说明。各工程提交 Cargo/npm/Gradle 锁文件，构建步骤见 [server](server/README.md)、[core](core/README.md)、[desktop](desktop/README.md)、[android](android/README.md)。本地检查入口：`bash scripts/validate-local.sh core|server|integration|desktop|android`，每次选择一个模块。
 
-客户端首次打开即可离线记录，本机空间不会自动上传。候选服务已部署到 `https://memo.djhx.site`，在客户端填写此根地址并使用管理员生成的一次性邀请码注册；登录后可明确选择将本机笔记复制到账号空间。该地址提供同步 API；当前没有独立 Web 客户端。部署检查见 [云部署记录](docs/cloud-deployment.md)，备份恢复见 [operations](docs/operations.md)。
+客户端统一显示 **DJHX Memo**。语言支持简体中文、英文和跟随系统；外观支持浅色、深色和跟随系统；时间默认显示为上海（UTC+08:00）。入口与偏好说明见 [候选版使用说明](docs/quick-start.md#语言外观与显示时区)。
+
+客户端首次打开即可离线记录，本机空间不会自动上传。候选服务默认地址为 `https://memo.djhx.site`，使用管理员生成的一次性邀请码注册；登录后可明确选择将本机笔记复制到账号空间。该地址提供同步 API；当前没有独立 Web 客户端。部署检查见 [云部署记录](docs/cloud-deployment.md)，备份恢复见 [operations](docs/operations.md)。
 
 安装包和校验值输出到本机忽略目录 `dist/`，不会把二进制、运行数据或发布签名密钥提交 Git。
 

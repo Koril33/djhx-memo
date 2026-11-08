@@ -10,7 +10,7 @@ android {
     ndkVersion = "30.0.16248370"
     defaultConfig {
         applicationId = "app.djhx.memo"
-        manifestPlaceholders["appLabel"] = "djhx 备忘录"
+        manifestPlaceholders["appLabel"] = "DJHX Memo"
         minSdk = 29
         targetSdk = 36
         versionCode = 1
@@ -25,6 +25,7 @@ android {
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
     }
     buildFeatures { compose = true; buildConfig = true }
+    bundle { language { enableSplit = false } }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }
     signingConfigs {
@@ -42,7 +43,7 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
-            manifestPlaceholders["appLabel"] = "djhx 备忘录（调试）"
+            manifestPlaceholders["appLabel"] = "DJHX Memo Debug"
         }
         release {
             isMinifyEnabled = false

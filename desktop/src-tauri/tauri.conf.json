@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "简记",
+  "productName": "DJHX Memo",
   "mainBinaryName": "djhx-memo",
   "version": "0.1.0",
   "identifier": "app.djhx.memo",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "简记 · djhx memo",
+        "title": "DJHX Memo",
         "width": 1220,
         "height": 800,
         "minWidth": 800,
@@ -34,7 +34,8 @@
     "resources": {
       "../THIRD_PARTY_RUST_NOTICES.txt": "licenses/desktop-rust.txt",
       "../THIRD_PARTY_NPM_NOTICES.txt": "licenses/desktop-npm.txt",
-      "../../core/THIRD_PARTY_NOTICES.txt": "licenses/core-rust.txt"
+      "../../core/THIRD_PARTY_NOTICES.txt": "licenses/core-rust.txt",
+      "windows/LICENSE.tauri-template.txt": "licenses/tauri-installer-template.txt"
     },
     "targets": ["deb", "nsis"],
     "category": "Productivity",
@@ -42,16 +43,22 @@
     "longDescription": "支持离线编辑、回收站、Markdown 导出和自有服务器同步。关闭窗口保存后进入系统托盘。",
     "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico"],
     "linux": {
-      "deb": { "depends": ["libwebkit2gtk-4.1-0", "libayatana-appindicator3-1", "libglib2.0-bin"] }
+      "deb": {
+        "depends": ["libwebkit2gtk-4.1-0", "libayatana-appindicator3-1", "libglib2.0-bin"]
+      }
     },
     "windows": {
-      "webviewInstallMode": { "type": "embedBootstrapper", "silent": true },
+      "webviewInstallMode": {
+        "type": "embedBootstrapper",
+        "silent": true
+      },
       "nsis": {
         "languages": ["SimpChinese", "English"],
         "displayLanguageSelector": true,
         "installMode": "currentUser",
-        "startMenuFolder": "简记",
-        "installerIcon": "icons/icon.ico"
+        "startMenuFolder": "DJHX Memo",
+        "installerIcon": "icons/icon.ico",
+        "template": "windows/installer.nsi"
       }
     }
   }

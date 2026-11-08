@@ -1,5 +1,10 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="48dp" android:height="48dp" android:viewportWidth="48" android:viewportHeight="48">
-    <path android:fillColor="#32695B" android:pathData="M8,0h32a8,8 0,0 1,8 8v32a8,8 0,0 1,-8 8h-32a8,8 0,0 1,-8 -8v-32a8,8 0,0 1,8 -8" />
-    <path android:fillColor="#FFFFFF" android:pathData="M13,10h22v28h-22z" />
-    <path android:strokeColor="#32695B" android:strokeWidth="2" android:pathData="M18,18h12M18,24h12M18,30h8" />
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated from assets/brand/master.svg; do not edit. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="128dp" android:height="128dp" android:viewportWidth="128" android:viewportHeight="128">
+    <path android:fillColor="#3D7963" android:pathData="M28 0H100A28 28 0 0 1 128 28V100A28 28 0 0 1 100 128H28A28 28 0 0 1 0 100V28A28 28 0 0 1 28 0Z" />
+    <path android:fillColor="#F6F4E9" android:pathData="M38 22H90A9 9 0 0 1 99 31V97A9 9 0 0 1 90 106H38A9 9 0 0 1 29 97V31A9 9 0 0 1 38 22Z" />
+    <path android:fillColor="#BED5BB" android:pathData="M80 22V41H99Z" />
+    <path android:fillColor="#6B927A" android:pathData="M44 51H78A2 2 0 0 1 80 53V53A2 2 0 0 1 78 55H44A2 2 0 0 1 42 53V53A2 2 0 0 1 44 51Z" />
+    <path android:fillColor="#6B927A" android:pathData="M44 65H78A2 2 0 0 1 80 67V67A2 2 0 0 1 78 69H44A2 2 0 0 1 42 67V67A2 2 0 0 1 44 65Z" />
+    <path android:fillColor="#6B927A" android:pathData="M44 79H67A2 2 0 0 1 69 81V81A2 2 0 0 1 67 83H44A2 2 0 0 1 42 81V81A2 2 0 0 1 44 79Z" />
 </vector>

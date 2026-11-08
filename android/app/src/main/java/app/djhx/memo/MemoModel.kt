@@ -32,9 +32,9 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         private set
     var pending by mutableStateOf(false)
         private set
-    var localStatus by mutableStateOf("未开始编辑")
+    var localStatus by mutableStateOf(UiText(R.string.save_idle))
         private set
-    var message by mutableStateOf<String?>(null)
+    var message by mutableStateOf<UiText?>(null)
         private set
     var query by mutableStateOf("")
         private set
@@ -72,6 +72,10 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         }
     }
 
+    val saveFailed: Boolean get() = localStatus.resource == R.string.save_failed
+
+    fun reportText(resource: Int) { message = UiText(resource) }
+
     fun dismissMessage() { message = null }
 
     fun edit(text: String) {
@@ -81,7 +85,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         revision++
         if (!pending) firstUncommittedAt = SystemClock.elapsedRealtime()
         pending = true
-        localStatus = "保存中"
+        localStatus = UiText(R.string.save_pending)
         scheduleSave()
     }
 
@@ -102,7 +106,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
             while (pending) {
                 if (selected == null && creationContent == null && content.isBlank()) {
                     pending = false
-                    localStatus = "空白草稿"
+                    localStatus = UiText(R.string.save_blank)
                     return@withLock true
                 }
                 val text = content
@@ -130,9 +134,9 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
                 selected = result
                 if (revision == committingRevision && result.optString("content") == text) {
                     pending = false
-                    localStatus = "已保存到本机"
+                    localStatus = UiText(R.string.save_success)
                 } else {
-                    localStatus = "保存中"
+                    localStatus = UiText(R.string.save_pending)
                 }
             }
             runCatching { loadNotes() }.onFailure {
@@ -143,7 +147,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         } catch (error: kotlinx.coroutines.CancellationException) {
             throw error
         } catch (error: Exception) {
-            localStatus = "保存失败 · 内容仍保留在编辑器"
+            localStatus = UiText(R.string.save_failed)
             report(error)
             false
         }
@@ -231,7 +235,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         creationContent = null
         editorProfileId = currentProfileId()
         editorOpen = true
-        localStatus = "空白草稿"
+        localStatus = UiText(R.string.save_blank)
         revision++
     }
 
@@ -241,7 +245,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         selected = gateway.obj("get", "profile_id" to editorProfileId, "id" to note.getString("id"))
         content = selected!!.optString("content")
         editorOpen = true
-        localStatus = "已保存到本机"
+        localStatus = UiText(R.string.save_success)
         revision++
     }
 
@@ -259,7 +263,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         selected = saved
         editorProfileId = currentProfileId()
         pending = false
-        localStatus = "已保存为新笔记"
+        localStatus = UiText(R.string.save_new)
         loadNotes()
     }
 
@@ -292,7 +296,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         selected = next
         content = next.getString("content")
         revision++
-        localStatus = "已保存到本机"
+        localStatus = UiText(R.string.save_success)
         loadNotes()
     }
 
@@ -318,16 +322,16 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         clearSelection()
         refreshAll()
         message = if (result.optInt("import_count") > 0) {
-            "登录成功。本机笔记尚未上传，可在账号设置明确选择复制导入；默认暂不导入。"
+            UiText(R.string.login_import_available)
         } else {
-            "登录成功"
+            UiText(R.string.login_success)
         }
     }
 
     fun importLocal(sourceProfileId: String = "local") = action {
         if (!flush()) return@action
         val result = gateway.obj("import", "profile_id" to currentProfileId(), "source_profile_id" to sourceProfileId)
-        message = "已复制导入 ${result.optInt("imported")} 条；原空间内容保留。"
+        message = UiText(R.plurals.import_success, listOf(result.optInt("imported")), result.optInt("imported"))
         refreshAll()
     }
 
@@ -337,9 +341,9 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         clearSelection()
         refreshAll()
         message = if (result.optBoolean("remote_revoked")) {
-            "已注销，账号本地数据保留"
+            UiText(R.string.logout_success)
         } else {
-            "已清除本机凭据；远程吊销尚未完成，请从另一已登录设备吊销此设备。"
+            UiText(R.string.logout_remote_pending)
         }
     }
 
@@ -348,7 +352,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         gateway.call("revoke_device", "id" to id)
         refreshAll()
         devices = runCatching { gateway.array("devices").objects() }.getOrDefault(emptyList())
-        message = "设备凭据已吊销"
+        message = UiText(R.string.revoke_success)
     }
 
     suspend fun export(): JSONObject? {
@@ -417,6 +421,6 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
     }
 
     fun report(error: Throwable) {
-        message = if (error is CoreFailure) "${error.message}（${error.code}）" else "操作未完成，请重试；编辑内容仍保留。"
+        message = UiText(errorResource((error as? CoreFailure)?.code))
     }
 }

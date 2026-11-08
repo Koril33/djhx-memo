@@ -53,6 +53,11 @@ struct Backend {
     next_lifecycle: AtomicU64,
     pending_lifecycle: Mutex<Option<(u64, Lifecycle)>>,
     sync_item: MenuItem<tauri::Wry>,
+    open_item: MenuItem<tauri::Wry>,
+    create_item: MenuItem<tauri::Wry>,
+    quit_item: MenuItem<tauri::Wry>,
+    chinese: AtomicBool,
+    account_active: AtomicBool,
     frontend_ready: AtomicBool,
 }
 
@@ -70,16 +75,69 @@ async fn core_invoke(
     if let Ok(value) = serde_json::from_str::<Value>(&result)
         && let Some(kind) = value.pointer("/data/profile/kind").and_then(Value::as_str)
     {
-        let item = &app.state::<Backend>().sync_item;
+        let backend = app.state::<Backend>();
         let account = kind == "account";
-        let _ = item.set_enabled(account);
-        let _ = item.set_text(if account {
-            "立即同步"
-        } else {
-            "立即同步（仅本机）"
-        });
+        backend.account_active.store(account, Ordering::Release);
+        let _ = backend.sync_item.set_enabled(account);
+        update_sync_label(&backend);
     }
     Ok(result)
+}
+
+fn update_sync_label(state: &Backend) {
+    let chinese = state.chinese.load(Ordering::Acquire);
+    let account = state.account_active.load(Ordering::Acquire);
+    let _ = state.sync_item.set_text(match (chinese, account) {
+        (true, true) => "立即同步",
+        (true, false) => "立即同步（仅本机）",
+        (false, true) => "Sync now",
+        (false, false) => "Sync now (local only)",
+    });
+}
+
+/// Presentation preferences never enter core profiles, credentials or synchronized data.
+#[tauri::command]
+fn set_presentation(
+    app: tauri::AppHandle,
+    state: State<'_, Backend>,
+    language: String,
+    theme: String,
+    system_dark: Option<bool>,
+) -> Result<(), String> {
+    if !matches!(language.as_str(), "zh-CN" | "en")
+        || !matches!(theme.as_str(), "system" | "light" | "dark")
+    {
+        return Err("INVALID_REQUEST".into());
+    }
+    let chinese = language == "zh-CN";
+    state.chinese.store(chinese, Ordering::Release);
+    let _ = state.open_item.set_text(if chinese {
+        "打开主窗口"
+    } else {
+        "Open main window"
+    });
+    let _ = state
+        .create_item
+        .set_text(if chinese { "新建笔记" } else { "New note" });
+    let _ = state
+        .quit_item
+        .set_text(if chinese { "退出" } else { "Quit" });
+    update_sync_label(&state);
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.set_theme(match theme.as_str() {
+            "dark" => Some(tauri::Theme::Dark),
+            "light" => Some(tauri::Theme::Light),
+            _ if cfg!(target_os = "linux") => system_dark.map(|dark| {
+                if dark {
+                    tauri::Theme::Dark
+                } else {
+                    tauri::Theme::Light
+                }
+            }),
+            _ => None,
+        });
+    }
+    Ok(())
 }
 
 #[derive(Serialize)]
@@ -243,6 +301,11 @@ fn choose_and_save(
     let chosen = app
         .dialog()
         .file()
+        .set_title(if app.state::<Backend>().chinese.load(Ordering::Acquire) {
+            "导出 · DJHX Memo"
+        } else {
+            "Export · DJHX Memo"
+        })
         .set_file_name(name)
         .add_filter(extension, &[extension])
         .blocking_save_file();
@@ -279,6 +342,70 @@ async fn rescue_text(app: tauri::AppHandle, content: String) -> Result<Option<St
     })
     .await
     .map_err(|_| "救援导出未完成。".to_string())?
+}
+
+/// Read the desktop's preference, independently of our explicitly themed GTK/WebKit window.
+/// GTK3 matchMedia may stay light on GNOME even when the portal reports prefer-dark.
+#[cfg(target_os = "linux")]
+fn parse_portal_color_scheme(value: &str) -> Option<bool> {
+    let tokens: Vec<_> = value
+        .split(|c: char| !c.is_ascii_alphanumeric())
+        .filter(|token| !token.is_empty())
+        .collect();
+    let pair = tokens.windows(2).find(|pair| pair[0] == "uint32")?;
+    match pair[1] {
+        "1" => Some(true),
+        "2" => Some(false),
+        _ => None,
+    }
+}
+#[cfg(target_os = "linux")]
+fn read_system_appearance() -> Option<bool> {
+    let portal = std::process::Command::new("gdbus")
+        .args([
+            "call",
+            "--timeout",
+            "1",
+            "--session",
+            "--dest",
+            "org.freedesktop.portal.Desktop",
+            "--object-path",
+            "/org/freedesktop/portal/desktop",
+            "--method",
+            "org.freedesktop.portal.Settings.Read",
+            "org.freedesktop.appearance",
+            "color-scheme",
+        ])
+        .output()
+        .ok();
+    if let Some(output) = portal.filter(|output| output.status.success())
+        && let Some(dark) = parse_portal_color_scheme(&String::from_utf8_lossy(&output.stdout))
+    {
+        return Some(dark);
+    }
+    let output = std::process::Command::new("gsettings")
+        .args(["get", "org.gnome.desktop.interface", "color-scheme"])
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    match String::from_utf8_lossy(&output.stdout).trim() {
+        "'prefer-dark'" => Some(true),
+        "'default'" | "'prefer-light'" => Some(false),
+        _ => None,
+    }
+}
+#[cfg(not(target_os = "linux"))]
+fn read_system_appearance() -> Option<bool> {
+    None
+}
+#[tauri::command]
+async fn system_appearance() -> Option<bool> {
+    tauri::async_runtime::spawn_blocking(read_system_appearance)
+        .await
+        .ok()
+        .flatten()
 }
 
 #[cfg(target_os = "linux")]
@@ -330,14 +457,14 @@ fn main() {
                 Box::new(SystemCredentials),
                 cfg!(debug_assertions),
             )?;
-            let open = MenuItem::with_id(app, "open", "打开主窗口", true, None::<&str>)?;
-            let create = MenuItem::with_id(app, "new", "新建笔记", true, None::<&str>)?;
-            let sync = MenuItem::with_id(app, "sync", "立即同步（仅本机）", false, None::<&str>)?;
-            let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
+            let open = MenuItem::with_id(app, "open", "Open main window", true, None::<&str>)?;
+            let create = MenuItem::with_id(app, "new", "New note", true, None::<&str>)?;
+            let sync = MenuItem::with_id(app, "sync", "Sync now (local only)", false, None::<&str>)?;
+            let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&open, &create, &sync, &quit])?;
             let mut tray = TrayIconBuilder::with_id("memo")
                 .menu(&menu)
-                .tooltip("简记 · djhx memo")
+                .tooltip("DJHX Memo")
                 .show_menu_on_left_click(true)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "open" => show_window(app),
@@ -361,6 +488,11 @@ fn main() {
                 next_lifecycle: AtomicU64::new(1),
                 pending_lifecycle: Mutex::new(None),
                 sync_item: sync,
+                open_item: open,
+                create_item: create,
+                quit_item: quit,
+                chinese: AtomicBool::new(false),
+                account_active: AtomicBool::new(false),
                 frontend_ready: AtomicBool::new(false),
             });
             Ok(())
@@ -378,16 +510,30 @@ fn main() {
             open_external,
             export_notes,
             rescue_text,
-            frontend_ready
+            frontend_ready,
+            set_presentation,
+            system_appearance
         ])
         .run(tauri::generate_context!())
-        .expect("应用启动失败；请检查本地数据目录权限与系统 WebView 运行环境。");
+        .expect("DJHX Memo could not start. Check data-directory permissions and the system WebView. / 应用启动失败，请检查数据目录权限与 WebView。");
 }
 
 #[cfg(test)]
 mod tests {
+    #[cfg(target_os = "linux")]
+    use super::parse_portal_color_scheme;
     use super::publish_new_file;
     use std::fs;
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn portal_settings_parse_nested_variants_without_using_the_current_window_theme() {
+        assert_eq!(parse_portal_color_scheme("(<<uint32 1>>,)"), Some(true));
+        assert_eq!(parse_portal_color_scheme("(<uint32 2>,)"), Some(false));
+        assert_eq!(parse_portal_color_scheme("(<<uint32 0>>,)"), None);
+        assert_eq!(parse_portal_color_scheme("(<<uint32 10>>,)"), None);
+        assert_eq!(parse_portal_color_scheme("unavailable"), None);
+    }
 
     #[test]
     fn exports_preserve_existing_files_and_leave_no_partial_temporary_file() {

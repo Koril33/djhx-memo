@@ -81,7 +81,7 @@ class RedirectBufferTest {
             model.edit("尚未提交的内容")
             bridge.redirect = true
         }
-        waitFor { model.state.optString("event_seq") == "2" && model.localStatus.startsWith("保存失败") }
+        waitFor { model.state.optString("event_seq") == "2" && model.saveFailed }
         assertEquals("source", model.selected!!.getString("id"))
         assertEquals("1", model.selected!!.getString("generation"))
         main { model.edit("继续输入也必须使用原基准") }
@@ -104,7 +104,7 @@ class RedirectBufferTest {
             bridge.targetGeneration = "4"
             model.edit("组合输入的新内容")
         }
-        waitFor { model.localStatus.startsWith("保存失败") }
+        waitFor { model.saveFailed }
         main { model.composing(false) }
         waitFor { bridge.saveAttempts.size >= 2 }
         assertEquals("source", model.selected!!.getString("id"))

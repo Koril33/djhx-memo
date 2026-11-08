@@ -56,7 +56,7 @@ cd android
 
 - 发布候选：`dist/android/djhx-memo-0.1.0-android.apk`，application ID `app.djhx.memo`，versionCode 1。
 - 调试：`dist/android/debug/djhx-memo-0.1.0-android-debug.apk`，application ID `app.djhx.memo.debug`。
-- 两者旁均有 `SHA256SUMS`；release SHA-256：`429325866c0ed24941d339bcc702d6214d8ca4a2cca245489fdb4cd809ebd0bd`。
+- 两者旁均有 `SHA256SUMS`；当前 release SHA-256：`5f2d6ea4e785feb8af0abca22615bfa6f4ee19432efcd44efbe164be6e3c3369`。
 - APK 同时包含 arm64-v8a / x86_64 的 core、JNA、AndroidX graphics 原生库。
 - 本次为项目生成独立发布密钥：`.local/android-release.jks`，口令文件 `.local/android-signing-password`，均不入仓库。证书 SHA-256：`ec8a88aa7aad47d51fa07ffddb4a17bb69c4aad71ee3c0dd4b3ad0eb4f5cdcdb`。后续升级必须保留并备份这两个本机文件，不能改用 debug 签名覆盖真实数据安装。
 
@@ -67,3 +67,30 @@ cd android
 物理 arm64 手机、Android 10/API 29 实际运行、不同手机输入法/电池策略、后台 15 分钟周期与 Doze/休眠/断网恢复的长期行为、三端同账号 GUI 完整互通及前台端到端性能、真实磁盘满/迁移失败救援、1,000 笔记应用冷启动 30 次统计、连续 7 天日常使用均未完成。后台仅尽力执行，不承诺固定时刻或五秒同步。
 
 测试通过不能替代这些发布条件；本版本作为 0.1.0 自用候选交付。正式发布前继续按 [全局验收](validation.md) 补齐。
+
+## 2026-11-07 品牌、国际化与外观增量
+
+对应 [产品规范第 10 节](../spec/product-v1.md#10-品牌语言外观与时间显示)。本次未增加依赖、未修改 core、协议、数据库迁移、application ID 或 Keystore 身份。应用及启动器名称改为 DJHX Memo（debug 为 DJHX Memo Debug），使用统一母版派生的传统／自适应／单色图标；首次服务器默认 `https://memo.djhx.site`，用户另填地址单独保留。
+
+同一专用 API 36 x86_64 AVD 实际执行：
+
+| 检查 | 结果 |
+|---|---|
+| `bash scripts/validate-local.sh android` | 通过；包含 detekt、lintDebug、JVM、debug 和发布签名 release 构建；复用已验证 JNI 产物 |
+| JVM | 11 项通过；新增 5 项检查中英系统回退、显式主题优先级、上海跨日／UTC 格式化、两语资源键与位置参数一致性、安全错误码映射 |
+| `connectedDebugAndroidTest` | 14 项，13 通过、1 跳过；真实服务端联调因本轮未提供隔离服务参数而跳过，其余 JNI、保存、回包未知、冲突缓冲、Keystore、性能及新增展示测试均通过 |
+| 新增展示仪器测试 | 3 项通过；中英与两种主题切换中，EditText 实例、正文、组合 span 均保留，原生文本／语法颜色更新；Activity 重建后编辑缓冲与显示偏好仍在；另填服务器草稿与 UTC 偏好跨存储实例保留；实际点击语言与外观菜单，设置 Dialog、下拉选项和标题即时切换，避免独立窗口缓存旧语言 |
+| 截图增量复验 | 最初单独重跑组合与偏好 2 项通过，最终全量包含设置点击回归的 3 项均通过；等待 RenderThread 提交后采集中文浅色／深色、英文浅色／深色 4 张真实截图，逐张目视检查，未出现固定浅色编辑区；截图只含测试正文 |
+| Lint | 0 errors、26 warnings；包含固定依赖／target 更新、KTX 风格、中文不适用的 one 数量分支及保留兼容 ic_memo 资源建议，未屏蔽 NewApi；Kotlin 另有系统栏颜色 API 弃用提示 |
+| 发布签名／对齐 | apksigner v2 验证通过，证书 SHA-256 仍为 `ec8a88aa7aad47d51fa07ffddb4a17bb69c4aad71ee3c0dd4b3ad0eb4f5cdcdb`；`zipalign -c -P 16 4` 通过 |
+| 覆盖安装 | 对既有 release 执行 `adb install -r` 成功，无卸载，firstInstallTime 仍为 2026-11-04；`app.djhx.memo`、versionCode 1 与原签名不变 |
+
+上述样式增量初次 APK（用户名提示修正前）：`dist/android/djhx-memo-0.1.0-android.apk`，32,773,372 字节，SHA-256 `332be95b8edb35b67f4932d8c1b64f126c38c9e5b8695fe843729cab5f4fccde`。debug 与校验文件同步更新。日志位于被 Git 忽略的 `.local/android-presentation-*.log`；4 张展示截图位于 `.local/android-presentation/screenshots/DJHX-Memo-validation/`。Android 传统图标尺寸、自适应图标和单色图标的母版检查由[品牌设计](brand-guidelines.md)所述生成器另行覆盖。
+
+本轮仍未完成物理 arm64、API 29、各手机厂商系统外观与输入法矩阵、三端完整同账号 GUI 验收及 7 天试用；以上模拟器结果不替代这些项目。
+
+恢复审计已确认该初次 APK 与 Gradle release 输出逐字节一致，包含 `LocalizedDialog`、生产默认域名及完整偏好实现；最终构建前的所有生产源码／资源均未在之后被改写。上轮中断前的 release 设置实操实际已完成：中文深色、英文深色和英文浅色 3 张可见截图分别为 `.local/android-presentation/screenshots/release-settings-zh-dark.png`、`release-settings-en-dark.png`、`release-settings-en-light.png`，本次逐张复查确认设置、表单、显示时区与主题一致，无文本或关闭控件裁切。
+
+恢复审计另发现 `INVALID_REQUEST` 的用户名说明遗漏现有鉴权规范允许的连字符及首位约束，已同步修正两种资源，并在 `PresentationTest` 追加对应契约断言。仅修改展示提示，未改鉴权规则。实际执行受影响的 `testDebugUnitTest detekt lintDebug assembleDebug assembleRelease`：JVM 11 项通过、detekt 通过、Lint 0 errors／26 warnings，发布密钥重新签名；本次未重复 14 项设备测试，仍引用前述 13 通过／1 跳过的记录。日志为 `.local/android-presentation-username-hint-validation.log`。
+
+当前 release 为 **32,773,464 字节**，SHA-256 **`5f2d6ea4e785feb8af0abca22615bfa6f4ee19432efcd44efbe164be6e3c3369`**；当前 debug SHA-256 为 `817517a11311692f46dcb82bc14d03663697b375f3eacbff02b3d15ed755f96e`。两包及旁边校验文件已更新。重新执行 apksigner v2、zipalign 16KiB 校验和真实 release `adb install -r` 均通过；证书不变，firstInstallTime 仍为 2026-11-04，无卸载或数据清除。签名检查输出归档在 `.local/android-presentation/signature-username-hint.txt`。

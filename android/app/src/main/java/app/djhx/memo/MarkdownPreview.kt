@@ -12,6 +12,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
@@ -86,7 +89,9 @@ private fun MarkdownBlock(
                 val task = MarkdownSafety.taskLine(item, lines)
                 Row {
                     if (task != null) {
+                        val taskLabel = stringResource(R.string.task_accessibility, task.first + 1)
                         Checkbox(
+                            modifier = Modifier.semantics { contentDescription = taskLabel },
                             checked = task.second,
                             enabled = editable,
                             onCheckedChange = { onTask(task.first) }
@@ -129,14 +134,16 @@ private fun CodeBlock(code: String) {
 @Composable
 private fun MarkdownText(node: Node, onLink: (String) -> Unit, heading: Int? = null, dropTask: Boolean = false) {
     val colors = MaterialTheme.colorScheme
-    var annotated = remember(node, colors, onLink) {
+    val imageTemplate = stringResource(R.string.image_not_loaded)
+    var annotated = remember(node, colors, onLink, imageTemplate) {
         buildAnnotatedString {
             appendInline(
                 node,
                 colors.primary,
                 colors.surfaceVariant,
                 colors.onSurfaceVariant,
-                onLink
+                onLink,
+                imageTemplate
             )
         }
     }
@@ -159,7 +166,8 @@ private fun AnnotatedString.Builder.appendInline(
     linkColor: Color,
     codeBackground: Color,
     codeForeground: Color,
-    onLink: (String) -> Unit
+    onLink: (String) -> Unit,
+    imageTemplate: String
 ) {
     node.children().forEach { child ->
         when (child) {
@@ -175,12 +183,12 @@ private fun AnnotatedString.Builder.appendInline(
             }
             is Emphasis -> {
                 pushStyle(SpanStyle(fontStyle = FontStyle.Italic))
-                appendInline(child, linkColor, codeBackground, codeForeground, onLink)
+                appendInline(child, linkColor, codeBackground, codeForeground, onLink, imageTemplate)
                 pop()
             }
             is StrongEmphasis -> {
                 pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
-                appendInline(child, linkColor, codeBackground, codeForeground, onLink)
+                appendInline(child, linkColor, codeBackground, codeForeground, onLink, imageTemplate)
                 pop()
             }
             is Link -> {
@@ -195,18 +203,19 @@ private fun AnnotatedString.Builder.appendInline(
                         }
                     )
                 }
-                appendInline(child, linkColor, codeBackground, codeForeground, onLink)
+                appendInline(child, linkColor, codeBackground, codeForeground, onLink, imageTemplate)
                 if (allowed) {
                     pop()
                 }
             }
             is Image -> {
-                append("[图片：")
-                appendInline(child, linkColor, codeBackground, codeForeground, onLink)
-                append(" · 未加载]")
+                val alt = buildAnnotatedString {
+                    appendInline(child, linkColor, codeBackground, codeForeground, onLink, imageTemplate)
+                }
+                append(String.format(imageTemplate, alt.text))
             }
             is HtmlInline -> append(child.literal)
-            else -> appendInline(child, linkColor, codeBackground, codeForeground, onLink)
+            else -> appendInline(child, linkColor, codeBackground, codeForeground, onLink, imageTemplate)
         }
     }
 }

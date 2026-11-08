@@ -49,7 +49,7 @@ class EditorLifecycleTest {
             assertNotNull(model.selected)
             waitFor { !model.pending }
             val saved = model.content
-            assertEquals("已保存到本机", model.localStatus)
+            assertEquals(R.string.save_success, model.localStatus.resource)
             scenario.recreate()
             scenario.onActivity { activity -> model = ViewModelProvider(activity)[MemoModel::class.java] }
             assertEquals(saved, model.content)

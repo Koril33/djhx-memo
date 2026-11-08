@@ -39,6 +39,14 @@ cd android
 
 账号与设置包含邀请注册、登录、已保存空间切换、注销、本机笔记显式复制导入、恢复空间复制与设备吊销。本机内容默认暂不导入。预览只原生渲染 CommonMark AST，HTML 展示为文本，图片不加载，链接仅允许 http/https 并交系统浏览器。ZIP 由 core 生成，通过系统文件选择器创建新文档，失败不显示成功。
 
+应用名与界面品牌统一为 **DJHX Memo**；debug 启动器名称为 **DJHX Memo Debug**。包名、签名、私有数据路径和 Keystore 身份保持不变，可用同一发布签名覆盖升级。图标母版和衍生步骤见[品牌设计](../docs/brand-guidelines.md)，不能单独手改某个 Android 尺寸。
+
+账号与设置顶部提供语言（跟随系统／简体中文／English）、外观（跟随系统／浅色／深色）和显示时区（上海／UTC／跟随系统）。默认语言与外观跟随系统，中文系统使用简体中文，其余语言回退英文；默认时区为 `Asia/Shanghai`。偏好使用应用私有 SharedPreferences，只影响本机展示，重启有效。语言与明暗切换通过 Compose 重组更新现有原生编辑器，保留正文、选区和输入法组合 span；系统配置导致 Activity 重建时，ViewModel 保留编辑缓冲。日期均按独立选择的 locale 与 ZoneId 格式化，协议、存储、排序和导出仍保持原来的 UTC 语义。
+
+首次登录／注册默认服务器为 `https://memo.djhx.site`。用户填写的其他地址作为本设备表单草稿保留，现有账号优先使用其已保存服务器地址。此偏好不保存密码、邀请码或 token。
+
+英文资源位于 `app/src/main/res/values/strings.xml`，简体中文位于 `values-zh-rCN/strings.xml`。界面、可访问名称及错误消息使用资源 ID；错误按 core 稳定错误码映射固定提示，不显示服务端原始消息。新增可见文案须同时补齐两种资源及相同位置参数，并通过 `PresentationTest` 资源一致性检查；正文、账号名和设备名称不翻译。
+
 UI、网络恢复触发及 WorkManager 共享应用单例 core；后台仅尽力执行，不承诺固定时间同步。UI 不实现同步、outbox、冲突裁决或数据迁移。安全凭据使用每个账号独立的 Keystore AES-GCM key，加密失败由 core 保持进程内凭据并提示用户。
 
 独立评审及修复依据见 [Android 评审](../docs/reviews/android-review.md)。创建已提交但回包未知时，平台保留原创建请求内容，获取原 Note 后继续提交全部续写；只有返回正文与可见缓冲一致才显示保存成功。跨空间切换前先完成本地提交并清空旧空间的界面列表。

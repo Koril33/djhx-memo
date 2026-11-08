@@ -7,12 +7,12 @@ import android.text.TextWatcher
 import android.text.style.ForegroundColorSpan
 import android.view.Gravity
 import android.widget.EditText
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 
 /** 原生输入组件：只调整自有颜色 span，保留选区、撤销与输入法 composing span。 */
@@ -26,10 +26,13 @@ fun SourceEditor(
     onComposition: (Boolean) -> Unit = {},
     onEdit: (String) -> Unit
 ) {
-    val dark = isSystemInDarkTheme()
+    val dark = LocalDarkAppearance.current
+    val editorHint = stringResource(R.string.editor_hint)
+    val editorDescription = stringResource(R.string.editor_accessibility)
     val darkState = rememberUpdatedState(dark)
     val textColor = MaterialTheme.colorScheme.onSurface.toArgb()
     val hintColor = MaterialTheme.colorScheme.onSurfaceVariant.toArgb()
+    val accentColor = MaterialTheme.colorScheme.primary.toArgb()
     val callback = rememberUpdatedState(onEdit)
     val blurCallback = rememberUpdatedState(onBlur)
     val compositionCallback = rememberUpdatedState(onComposition)
@@ -68,8 +71,8 @@ fun SourceEditor(
                 setHorizontallyScrolling(false)
                 inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE or
                     android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
-                hint = "在这里写 Markdown…\n\n无需登录，自动保存到本机。"
-                contentDescription = "Markdown 源码编辑器"
+                hint = editorHint
+                contentDescription = editorDescription
                 onFocusChangeListener = android.view.View.OnFocusChangeListener { _, focused ->
                     if (!focused) {
                         compositionCallback.value(false)
@@ -87,8 +90,15 @@ fun SourceEditor(
         },
         update = { editor ->
             editor.isEnabled = enabled
+            editor.hint = editorHint
+            editor.contentDescription = editorDescription
             editor.setTextColor(textColor)
             editor.setHintTextColor(hintColor)
+            editor.highlightColor = (accentColor and 0x00FFFFFF) or 0x55000000
+            editor.textCursorDrawable?.setTint(accentColor)
+            editor.textSelectHandleLeft?.setTint(accentColor)
+            editor.textSelectHandleRight?.setTint(accentColor)
+            editor.textSelectHandle?.setTint(accentColor)
             if (editor.tag != dark) {
                 highlight(editor.text, dark)
                 editor.tag = dark

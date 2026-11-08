@@ -13,19 +13,22 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -34,19 +37,22 @@ import org.json.JSONObject
 /** 原生主界面；退出到后台前请求本地提交，云端失败不阻止离线编辑。 */
 class MainActivity : ComponentActivity() {
     private val model: MemoModel by viewModels()
+    internal val presentation by lazy { PresentationStore(applicationContext) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val colors = if (isSystemInDarkTheme()) {
-                darkColorScheme(primary = Color(0xFF91D5BE))
-            } else {
-                lightColorScheme(
-                    primary = Color(0xFF32695B),
-                    secondary = Color(0xFF52645D),
-                    background = Color(0xFFF8FAF7)
-                )
+            MemoPresentation(presentation) {
+                val dark = LocalDarkAppearance.current
+                SideEffect {
+                    WindowCompat.getInsetsController(window, window.decorView).apply {
+                        isAppearanceLightStatusBars = !dark
+                        isAppearanceLightNavigationBars = !dark
+                    }
+                    window.statusBarColor = android.graphics.Color.TRANSPARENT
+                    window.navigationBarColor = android.graphics.Color.TRANSPARENT
+                }
+                MemoScreen(model, ::openLink)
             }
-            MaterialTheme(colorScheme = colors) { MemoScreen(model, ::openLink) }
         }
     }
     override fun onStart() {
@@ -63,19 +69,20 @@ class MainActivity : ComponentActivity() {
             startActivity(
                 Intent(Intent.ACTION_VIEW, Uri.parse(url)).addCategory(Intent.CATEGORY_BROWSABLE)
             )
-        } catch (_: ActivityNotFoundException) { model.report(IllegalStateException("No browser available")) }
+        } catch (_: ActivityNotFoundException) { model.reportText(R.string.error_browser) }
     }
 }
 
 @Composable
 @Suppress("CyclomaticComplexMethod", "TooGenericExceptionCaught")
 private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
-    var settings by remember { mutableStateOf(false) }
-    var preview by remember { mutableStateOf(false) }
-    var deleteConfirm by remember { mutableStateOf(false) }
+    var settings by rememberSaveable { mutableStateOf(false) }
+    var preview by rememberSaveable { mutableStateOf(false) }
+    var deleteConfirm by rememberSaveable { mutableStateOf(false) }
     val clipboard = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
+    val currentContext = rememberUpdatedState(context)
     val exporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
         val payload = model.takeExportData()
         if (uri != null && payload != null) {
@@ -96,18 +103,18 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                 }.onSuccess {
                     android.widget.Toast.makeText(
                         context,
-                        "ZIP 已导出",
+                        currentContext.value.getString(R.string.export_success),
                         android.widget.Toast.LENGTH_LONG
                     ).show()
                 }
                     .onFailure { error ->
-                        val message = when (error) {
-                            is SecurityException -> "导出失败：目标位置没有写入权限。"
-                            is java.io.FileNotFoundException -> "导出失败：目标文档不可写或已移除。"
-                            is java.io.IOException -> "导出失败：目标存储无法完整写入，请检查空间和连接。"
-                            else -> "导出失败：目标文档未完整写入，请重试。"
+                        val resource = when (error) {
+                            is SecurityException -> R.string.export_permission
+                            is java.io.FileNotFoundException -> R.string.export_missing
+                            is java.io.IOException -> R.string.export_io
+                            else -> R.string.export_incomplete
                         }
-                        model.report(CoreFailure("EXPORT_WRITE_FAILED", message))
+                        model.reportText(resource)
                     }
             }
         }
@@ -124,12 +131,19 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                             TextButton(
                                 onClick = { model.backToList() },
                                 enabled = !model.busy
-                            ) { Text("返回") }
+                            ) { Text(stringResource(R.string.back)) }
                         }
-                        Text("djhx 备忘录", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                        TextButton(onClick = { settings = true }, enabled = !model.busy) { Text("账号 / 设置") }
+                        Text(
+                            stringResource(R.string.app_name),
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextButton(
+                            onClick = { settings = true },
+                            enabled = !model.busy
+                        ) { Text(stringResource(R.string.settings)) }
                     }
-                    Text(profile?.optString("label") ?: "本机笔记", style = MaterialTheme.typography.labelLarge)
+                    Text(profileLabel(profile), style = MaterialTheme.typography.labelLarge)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             cloudLabel(model.state.optJSONObject("sync")),
@@ -139,13 +153,13 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                         TextButton(
                             onClick = { model.sync() },
                             enabled = !model.busy && profile?.optString("kind") == "account"
-                        ) { Text("同步") }
+                        ) { Text(stringResource(R.string.sync)) }
                     }
                     if (
                         model.state.has("credential_persistent") && !model.state.optBoolean("credential_persistent") &&
                         profile?.optString("kind") == "account"
                     ) {
-                        Text("安全存储不可用：凭据仅在本次进程有效，下次需重新登录。", color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.credential_volatile), color = MaterialTheme.colorScheme.error)
                     }
                 }
             }
@@ -158,11 +172,15 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                 ) {
                     TextButton(onClick = {
                         model.showTrash(!model.trash)
-                    }, enabled = !model.busy) { Text(if (model.trash) "返回笔记" else "回收站") }
+                    }, enabled = !model.busy) {
+                        Text(
+                            if (model.trash) stringResource(R.string.back_notes) else stringResource(R.string.trash)
+                        )
+                    }
                     TextButton(onClick = {
                         scope.launch { model.export()?.let { exporter.launch(it.getString("filename")) } }
                     }, enabled = !model.busy) {
-                        Text("导出 ZIP")
+                        Text(stringResource(R.string.export_zip))
                     }
                     Spacer(Modifier.weight(1f))
                     TextButton(onClick = {
@@ -170,7 +188,7 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                         model.newNote()
                     }, enabled = !model.busy && !model.trash && profile?.optBoolean("read_only") != true) {
                         Text(
-                            "＋ 新笔记"
+                            stringResource(R.string.new_note)
                         )
                     }
                 }
@@ -185,13 +203,10 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        model.localStatus,
+                        model.localStatus.resolve(context),
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.weight(1f),
-                        color = if (model.localStatus.startsWith(
-                                "保存失败"
-                            )
-                        ) {
+                        color = if (model.saveFailed) {
                             MaterialTheme.colorScheme.error
                         } else {
                             MaterialTheme.colorScheme.onSurfaceVariant
@@ -200,7 +215,7 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                     TextButton(onClick = {
                         model.retrySave()
                         preview = !preview
-                    }) { Text(if (preview) "源码" else "预览") }
+                    }) { Text(if (preview) stringResource(R.string.source) else stringResource(R.string.preview)) }
                     if (model.selected != null) {
                         TextButton(onClick = {
                             if (model.selected!!.optBoolean(
@@ -212,16 +227,27 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                                 deleteConfirm = true
                             }
                         }, enabled = !model.busy) {
-                            Text(if (model.selected!!.optBoolean("deleted")) "恢复" else "删除")
+                            Text(
+                                if (model.selected!!.optBoolean(
+                                        "deleted"
+                                    )
+                                ) {
+                                    stringResource(R.string.restore)
+                                } else {
+                                    stringResource(R.string.delete)
+                                }
+                            )
                         }
                     }
                 }
                 ConflictInfo(model.selected)
-                if (model.localStatus.startsWith("保存失败")) {
+                if (model.saveFailed) {
                     Row {
-                        TextButton(onClick = { model.retrySave() }) { Text("重试保存") }
-                        TextButton(onClick = { clipboard.setText(AnnotatedString(model.content)) }) { Text("复制救援") }
-                        TextButton(onClick = { model.copyAsNewNote() }) { Text("另存新笔记") }
+                        TextButton(onClick = { model.retrySave() }) { Text(stringResource(R.string.retry_save)) }
+                        TextButton(
+                            onClick = { clipboard.setText(AnnotatedString(model.content)) }
+                        ) { Text(stringResource(R.string.copy_rescue)) }
+                        TextButton(onClick = { model.copyAsNewNote() }) { Text(stringResource(R.string.save_as_new)) }
                     }
                 }
                 if (preview || readOnly) {
@@ -244,12 +270,30 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                 }
             } else {
                 OutlinedTextField(value = model.query, onValueChange = model::search, label = {
-                    Text(if (model.trash) "搜索回收站" else "搜索笔记 · 支持一字中文")
+                    Text(
+                        if (model.trash) {
+                            stringResource(
+                                R.string.search_trash
+                            )
+                        } else {
+                            stringResource(R.string.search_notes)
+                        }
+                    )
                 }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(12.dp))
                 if (model.notes.isEmpty()) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
-                            if (model.query.isNotEmpty()) "未找到匹配笔记" else if (model.trash) "回收站为空" else "随时记下想法\n点击「＋ 新笔记」开始，无需登录。",
+                            if (model.query.isNotEmpty()) {
+                                stringResource(
+                                    R.string.no_results
+                                )
+                            } else if (model.trash) {
+                                stringResource(
+                                    R.string.empty_trash
+                                )
+                            } else {
+                                stringResource(R.string.empty_notes)
+                            },
                             style = MaterialTheme.typography.bodyLarge
                         )
                     }
@@ -259,7 +303,14 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                             ListItem(
                                 headlineContent = {
                                     Text(
-                                        note.optString("title", "无标题"),
+                                        if (note.optString(
+                                                "content"
+                                            ).isBlank()
+                                        ) {
+                                            stringResource(R.string.untitled)
+                                        } else {
+                                            note.optString("title")
+                                        },
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -270,14 +321,20 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                                                 "conflict"
                                             )
                                         ) {
-                                            Text("冲突副本 · 原笔记保留", color = MaterialTheme.colorScheme.error)
+                                            Text(
+                                                stringResource(R.string.conflict_preserved),
+                                                color = MaterialTheme.colorScheme.error
+                                            )
                                         }
                                         Text(
                                             note.optString("content").replace('\n', ' '),
                                             maxLines = 2,
                                             overflow = TextOverflow.Ellipsis
                                         )
-                                        Text(note.optString("updated_at"), style = MaterialTheme.typography.labelSmall)
+                                        Text(
+                                            formattedTime(note.optString("updated_at")),
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
                                     }
                                 },
                                 modifier = Modifier.clickable(enabled = !model.busy) {
@@ -296,48 +353,59 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
     if (deleteConfirm) {
         AlertDialog(
             onDismissRequest = { deleteConfirm = false },
-            title = { Text("移到回收站？") },
-            text = { Text("正文会保留，可以随时恢复。") },
+            title = { Text(stringResource(R.string.confirm_delete_title)) },
+            text = { Text(stringResource(R.string.confirm_delete_body)) },
             confirmButton = {
                 TextButton(onClick = {
                     deleteConfirm = false
                     model.setDeleted(true)
-                }) { Text("移到回收站") }
+                }) { Text(stringResource(R.string.move_trash)) }
             },
-            dismissButton = { TextButton(onClick = { deleteConfirm = false }) { Text("取消") } }
+            dismissButton = {
+                TextButton(
+                    onClick = { deleteConfirm = false }
+                ) { Text(stringResource(R.string.cancel)) }
+            }
         )
     }
     model.message?.let { message ->
         AlertDialog(onDismissRequest = model::dismissMessage, title = {
-            Text("提示")
-        }, text = { Text(message) }, confirmButton = { TextButton(onClick = model::dismissMessage) { Text("知道了") } })
+            Text(stringResource(R.string.notice))
+        }, text = {
+            Text(
+                message.resolve(context)
+            )
+        }, confirmButton = { TextButton(onClick = model::dismissMessage) { Text(stringResource(R.string.okay)) } })
     }
 }
 
 @Composable
 private fun ConflictInfo(note: JSONObject?) {
     val conflict = note?.optJSONObject("conflict") ?: return
-    val reason = if (conflict.optString("reason") == "stale_delete") "删除未执行，内容已保留为冲突副本" else "冲突副本"
+    val reason = stringResource(
+        if (conflict.optString("reason") == "stale_delete") R.string.stale_delete else R.string.conflict_copy
+    )
     val source = conflict.optString("source_note_id")
     val device = conflict.optString("source_device_name")
-    val detected = conflict.optString("detected_at")
+    val detected = formattedTime(conflict.optString("detected_at"))
     Surface(color = MaterialTheme.colorScheme.errorContainer) {
         Text(
-            "$reason · 原笔记 $source\n来源设备 $device\n$detected",
+            stringResource(R.string.conflict_details, reason, source, device, detected),
             Modifier.fillMaxWidth().padding(12.dp),
             style = MaterialTheme.typography.bodySmall
         )
     }
 }
 
+@Composable
 private fun cloudLabel(sync: JSONObject?): String = when (sync?.optString("state")) {
-    "local" -> "仅本机 · 不会自动上传"
-    "pending" -> "待同步 · ${sync.optInt("pending")} 项"
-    "syncing" -> "同步中"
-    "synced" -> "已同步 · ${sync.optString("last_success", "")}"
-    "offline" -> "离线 · 本地编辑可继续"
-    "auth_required" -> "需重新登录 · 本地内容保留"
-    "recovery_required" -> "需恢复处理 · 旧空间已保全，请到设置选择恢复来源"
-    "error" -> "同步失败 · 可以手动重试"
-    else -> "正在打开本机空间"
+    "local" -> stringResource(R.string.cloud_local)
+    "pending" -> pluralStringResource(R.plurals.cloud_pending, sync.optInt("pending"), sync.optInt("pending"))
+    "syncing" -> stringResource(R.string.cloud_syncing)
+    "synced" -> stringResource(R.string.cloud_synced, formattedTime(sync.optString("last_success")))
+    "offline" -> stringResource(R.string.cloud_offline)
+    "auth_required" -> stringResource(R.string.cloud_auth)
+    "recovery_required" -> stringResource(R.string.cloud_recovery)
+    "error" -> stringResource(R.string.cloud_error)
+    else -> stringResource(R.string.cloud_opening)
 }

@@ -64,7 +64,7 @@ class CreateReplayTest {
         try {
             waitFor { model.editorOpen && !model.busy }
             main { model.edit("首次内容") }
-            waitFor { model.localStatus.startsWith("保存失败") }
+            waitFor { model.saveFailed }
             assertTrue(model.pending)
             assertNull(model.selected)
             main {
@@ -73,7 +73,7 @@ class CreateReplayTest {
             }
             waitFor { !model.editorOpen && !model.busy }
             assertFalse(model.pending)
-            assertEquals("已保存到本机", model.localStatus)
+            assertEquals(R.string.save_success, model.localStatus.resource)
             assertEquals(latest, bridge.saved!!.getString("content"))
             assertEquals("2", bridge.saved!!.getString("generation"))
             assertEquals(2, bridge.requests.size)
