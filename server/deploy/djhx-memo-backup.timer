@@ -1,0 +1,12 @@
+[Unit]
+Description=Create djhx-memo encrypted snapshot every day
+
+[Timer]
+OnCalendar=*-*-* 03:20:00 UTC
+RandomizedDelaySec=5min
+AccuracySec=1min
+Persistent=true
+Unit=djhx-memo-backup.service
+
+[Install]
+WantedBy=timers.target

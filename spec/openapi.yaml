@@ -1,0 +1,992 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "djhx-memo v1 API",
+    "version": "0.1.0",
+    "description": "未发布的 0.1.0 自用候选实现契约。计数为十进制字符串。错误与字节限制详见同目录规范；实际验收见 docs/validation.md。"
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/healthz": {
+      "get": {
+        "operationId": "health",
+        "summary": "健康检查；数据库不可用时返回 503",
+        "responses": {
+          "200": {
+            "description": "可用",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "请求追踪 ID"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": []
+      }
+    },
+    "/v1/auth/register": {
+      "post": {
+        "operationId": "register",
+        "summary": "邀请码注册并登录首设备",
+        "responses": {
+          "201": {
+            "description": "注册成功",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "请求追踪 ID"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/login": {
+      "post": {
+        "operationId": "login",
+        "summary": "登录并替换当前设备凭据",
+        "responses": {
+          "200": {
+            "description": "登录成功",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "请求追踪 ID"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "operationId": "logout",
+        "summary": "吊销当前设备凭据",
+        "responses": {
+          "204": {
+            "description": "已吊销"
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        }
+      }
+    },
+    "/v1/devices": {
+      "get": {
+        "operationId": "listDevices",
+        "summary": "列出本账号设备",
+        "responses": {
+          "200": {
+            "description": "设备列表",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "请求追踪 ID"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceList"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        }
+      }
+    },
+    "/v1/devices/{id}": {
+      "delete": {
+        "operationId": "revokeDevice",
+        "summary": "吊销本账号设备",
+        "responses": {
+          "204": {
+            "description": "已吊销（重复调用成功）"
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        ]
+      }
+    },
+    "/v1/sync/status": {
+      "get": {
+        "operationId": "syncStatus",
+        "summary": "核对 epoch、协议版本与账号 head_seq",
+        "responses": {
+          "200": {
+            "description": "当前同步状态",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "请求追踪 ID"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncStatus"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        }
+      }
+    },
+    "/v1/sync/push": {
+      "post": {
+        "operationId": "push",
+        "summary": "逐项事务推送；允许前缀提交并按原 op_id 重试",
+        "responses": {
+          "200": {
+            "description": "每个输入项一条有序结果；冲突不是 HTTP 错误",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "请求追踪 ID"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "description": "编码后请求不超过 8MiB；epoch 外层失败不执行任何项。单项字段错误返回 error 结果。完整语义见 sync-protocol.md。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sync/pull": {
+      "get": {
+        "operationId": "pull",
+        "summary": "按固定 until 分页读取不可变变化日志",
+        "responses": {
+          "200": {
+            "description": "seq 升序快照；响应不超过 8MiB",
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "请求追踪 ID"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PullResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "epoch",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Counter"
+            }
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Counter"
+            },
+            "description": "第一页省略，由服务端确定本轮上界"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          }
+        ]
+      }
+    },
+    "/v1/events": {
+      "get": {
+        "operationId": "events",
+        "summary": "SSE 更新信号；连接需要 Bearer 请求头",
+        "responses": {
+          "200": {
+            "description": "event: sync；JSON data 符合 SyncSignal；15 秒注释心跳。信号不推进客户端 cursor。",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "event: sync\ndata: {\"epoch\":\"d47877fa-c504-4ac0-ae0e-a68a62281bc7\",\"head_seq\":\"42\"}\n\n"
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        }
+      }
+    },
+    "/v1/export": {
+      "get": {
+        "operationId": "export",
+        "summary": "导出服务端当前快照；不含客户端未上传内容",
+        "responses": {
+          "200": {
+            "description": "ZIP：<note-id>.md 与 manifest.json；一致快照",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "attachment; filename=\"djhx-memo-export.zip\""
+              }
+            },
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "parameters": [
+          {
+            "name": "include_deleted",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque"
+      }
+    },
+    "schemas": {
+      "Id": {
+        "type": "string",
+        "description": "小写 UUID v4",
+        "format": "uuid",
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+      },
+      "Counter": {
+        "type": "string",
+        "description": "非负 int64 的十进制字符串；应用另校验 <=9223372036854775807",
+        "pattern": "^(0|[1-9][0-9]{0,18})$"
+      },
+      "Time": {
+        "type": "string",
+        "description": "UTC RFC3339 毫秒时间",
+        "format": "date-time"
+      },
+      "Username": {
+        "type": "string",
+        "minLength": 3,
+        "maxLength": 32,
+        "pattern": "^[a-z0-9][a-z0-9_-]{2,31}$"
+      },
+      "Password": {
+        "type": "string",
+        "description": "不 trim，不持久化明文",
+        "minLength": 12,
+        "maxLength": 128,
+        "writeOnly": true
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "retryable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable"
+        ]
+      },
+      "ErrorEnvelope": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          },
+          "request_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "request_id"
+        ]
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "$ref": "#/components/schemas/Username"
+          },
+          "password": {
+            "$ref": "#/components/schemas/Password"
+          },
+          "device_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "device_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "required": [
+          "username",
+          "password",
+          "device_id",
+          "device_name"
+        ],
+        "additionalProperties": false
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "$ref": "#/components/schemas/Username"
+          },
+          "password": {
+            "$ref": "#/components/schemas/Password"
+          },
+          "device_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "device_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "invite_code": {
+            "type": "string",
+            "description": "一次性邀请码",
+            "minLength": 1,
+            "maxLength": 256,
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "username",
+          "password",
+          "device_id",
+          "device_name",
+          "invite_code"
+        ],
+        "additionalProperties": false
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "username": {
+            "$ref": "#/components/schemas/Username"
+          },
+          "device_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "token": {
+            "type": "string",
+            "description": "32 随机字节的 base64url token",
+            "minLength": 43,
+            "maxLength": 43
+          },
+          "expires_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "epoch": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "protocol_version": {
+            "type": "integer",
+            "const": 1
+          }
+        },
+        "required": [
+          "user_id",
+          "username",
+          "device_id",
+          "token",
+          "expires_at",
+          "epoch",
+          "protocol_version"
+        ]
+      },
+      "Device": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "last_seen_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expires_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "current": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "created_at",
+          "last_seen_at",
+          "expires_at",
+          "revoked_at",
+          "current"
+        ]
+      },
+      "DeviceList": {
+        "type": "object",
+        "properties": {
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Device"
+            }
+          }
+        },
+        "required": [
+          "devices"
+        ]
+      },
+      "SyncStatus": {
+        "type": "object",
+        "properties": {
+          "epoch": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "head_seq": {
+            "$ref": "#/components/schemas/Counter"
+          },
+          "protocol_version": {
+            "type": "integer",
+            "const": 1
+          }
+        },
+        "required": [
+          "epoch",
+          "head_seq",
+          "protocol_version"
+        ]
+      },
+      "Conflict": {
+        "type": "object",
+        "properties": {
+          "source_note_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "source_device_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "source_device_name": {
+            "type": "string"
+          },
+          "source_op_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "stale_edit",
+              "stale_delete",
+              "edit_after_delete"
+            ]
+          },
+          "detected_at": {
+            "$ref": "#/components/schemas/Time"
+          }
+        },
+        "required": [
+          "source_note_id",
+          "source_device_id",
+          "source_device_name",
+          "source_op_id",
+          "reason",
+          "detected_at"
+        ]
+      },
+      "Note": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "content": {
+            "type": "string",
+            "description": "UTF-8 字节数 <=1048576；Schema 字符数不能替代字节验证",
+            "maxLength": 1048576
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "rev": {
+            "$ref": "#/components/schemas/Counter"
+          },
+          "seq": {
+            "$ref": "#/components/schemas/Counter"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "conflict": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Conflict"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "content",
+          "deleted",
+          "rev",
+          "seq",
+          "created_at",
+          "updated_at",
+          "conflict"
+        ]
+      },
+      "Operation": {
+        "type": "object",
+        "properties": {
+          "op_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "note_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "base_rev": {
+            "$ref": "#/components/schemas/Counter"
+          },
+          "content": {
+            "type": "string",
+            "description": "最多 1048576 UTF-8 字节",
+            "maxLength": 1048576
+          },
+          "deleted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "op_id",
+          "note_id",
+          "base_rev",
+          "content",
+          "deleted"
+        ],
+        "additionalProperties": false
+      },
+      "PushRequest": {
+        "type": "object",
+        "properties": {
+          "epoch": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "ops": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Operation"
+            },
+            "minItems": 1,
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "epoch",
+          "ops"
+        ],
+        "additionalProperties": false
+      },
+      "AcceptedResult": {
+        "type": "object",
+        "properties": {
+          "op_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "already_deleted"
+            ]
+          },
+          "note_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "rev": {
+            "$ref": "#/components/schemas/Counter"
+          },
+          "seq": {
+            "$ref": "#/components/schemas/Counter"
+          }
+        },
+        "required": [
+          "op_id",
+          "status",
+          "note_id",
+          "rev",
+          "seq"
+        ]
+      },
+      "ConflictResult": {
+        "type": "object",
+        "properties": {
+          "op_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "status": {
+            "type": "string",
+            "const": "conflict"
+          },
+          "note_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "rev": {
+            "$ref": "#/components/schemas/Counter"
+          },
+          "conflict_note_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "conflict_rev": {
+            "$ref": "#/components/schemas/Counter"
+          },
+          "conflict_seq": {
+            "$ref": "#/components/schemas/Counter"
+          }
+        },
+        "required": [
+          "op_id",
+          "status",
+          "note_id",
+          "rev",
+          "conflict_note_id",
+          "conflict_rev",
+          "conflict_seq"
+        ]
+      },
+      "ErrorResult": {
+        "type": "object",
+        "properties": {
+          "op_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "const": "error"
+          },
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "op_id",
+          "status",
+          "error"
+        ]
+      },
+      "PushResult": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AcceptedResult"
+          },
+          {
+            "$ref": "#/components/schemas/ConflictResult"
+          },
+          {
+            "$ref": "#/components/schemas/ErrorResult"
+          }
+        ]
+      },
+      "PushResponse": {
+        "type": "object",
+        "properties": {
+          "epoch": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PushResult"
+            },
+            "minItems": 1,
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "epoch",
+          "results"
+        ]
+      },
+      "PullResponse": {
+        "type": "object",
+        "properties": {
+          "epoch": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Note"
+            },
+            "maxItems": 100
+          },
+          "next_cursor": {
+            "$ref": "#/components/schemas/Counter"
+          },
+          "until": {
+            "$ref": "#/components/schemas/Counter"
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "epoch",
+          "changes",
+          "next_cursor",
+          "until",
+          "has_more"
+        ]
+      },
+      "SyncSignal": {
+        "type": "object",
+        "properties": {
+          "epoch": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "head_seq": {
+            "$ref": "#/components/schemas/Counter"
+          }
+        },
+        "required": [
+          "epoch",
+          "head_seq"
+        ]
+      }
+    },
+    "responses": {
+      "ErrorResponse": {
+        "description": "非成功响应，状态码与恢复方式见 error-codes.md。限流返回 Retry-After。",
+        "headers": {
+          "Retry-After": {
+            "schema": {
+              "type": "string"
+            },
+            "description": "429 时必填，秒数"
+          },
+          "X-Request-ID": {
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            }
+          }
+        }
+      }
+    }
+  }
+}

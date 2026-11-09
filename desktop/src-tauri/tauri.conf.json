@@ -1,0 +1,68 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "DJHX Memo",
+  "mainBinaryName": "djhx-memo",
+  "version": "0.1.3",
+  "identifier": "app.djhx.memo",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://127.0.0.1:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "DJHX Memo",
+        "width": 1220,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 560,
+        "backgroundColor": "#F7F6F2",
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ipc: http://ipc.localhost; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'",
+      "devCsp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ipc: http://ipc.localhost http://127.0.0.1:1420 ws://127.0.0.1:1420; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'",
+      "capabilities": ["main"]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "resources": {
+      "../../LICENSE": "licenses/djhx-memo.txt",
+      "../THIRD_PARTY_RUST_NOTICES.txt": "licenses/desktop-rust.txt",
+      "../THIRD_PARTY_NPM_NOTICES.txt": "licenses/desktop-npm.txt",
+      "../../core/THIRD_PARTY_NOTICES.txt": "licenses/core-rust.txt",
+      "../../core/licenses/two-face-syntaxes.txt": "licenses/code-syntaxes.txt",
+      "windows/LICENSE.tauri-template.txt": "licenses/tauri-installer-template.txt",
+      "../../assets/ui-icons/LICENSE.txt": "licenses/lucide.txt"
+    },
+    "targets": ["deb", "nsis"],
+    "category": "Productivity",
+    "shortDescription": "本地优先、多设备同步的 Markdown 备忘录",
+    "longDescription": "支持离线编辑、回收站、Markdown 导出和自有服务器同步。关闭窗口保存后进入系统托盘。",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico"],
+    "linux": {
+      "deb": {
+        "depends": ["libwebkit2gtk-4.1-0", "libayatana-appindicator3-1", "libglib2.0-bin"]
+      }
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "languages": ["SimpChinese", "English"],
+        "displayLanguageSelector": true,
+        "installMode": "currentUser",
+        "startMenuFolder": "DJHX Memo",
+        "installerIcon": "icons/icon.ico",
+        "template": "windows/installer.nsi"
+      }
+    }
+  }
+}

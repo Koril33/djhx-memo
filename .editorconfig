@@ -8,7 +8,7 @@ trim_trailing_whitespace = true
 indent_style = space
 indent_size = 2
 
-[*.{rs,kt,kts}]
+[*.{rs,kt,kts,ps1}]
 indent_size = 4
 
 [*.go]

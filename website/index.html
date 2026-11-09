@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="DJHX Memo 是一款本地优先的 Markdown 笔记应用。离线写作，随时导出，登录后可在 Windows、Linux 和 Android 设备之间同步。" />
+    <meta name="theme-color" content="#f7f6f2" />
+    <meta property="og:title" content="DJHX Memo · 写下日常，留住想法" />
+    <meta property="og:description" content="本地优先的 Markdown 笔记。离线写作，按需同步，随时导出。" />
+    <title>DJHX Memo · 写下日常，留住想法</title>
+    <link rel="icon" href="./logo.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">跳到主要内容</a>
+    <svg class="symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+      <symbol id="download-icon" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M5 16v4h14v-4"/></symbol>
+      <symbol id="external" viewBox="0 0 24 24"><path d="M7 17 17 7M7 7h10v10"/></symbol>
+      <symbol id="window-icon" viewBox="0 0 24 24"><path d="M3 5h18v14H3zM3 9h18m-9 0v10"/></symbol>
+      <symbol id="linux-icon" viewBox="0 0 24 24"><path d="M3 5h18v14H3zM7 9l3 3-3 3m6 0h4"/></symbol>
+      <symbol id="phone-icon" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 17h2"/></symbol>
+      <symbol id="search-icon" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 4 4"/></symbol>
+      <symbol id="check-icon" viewBox="0 0 24 24"><path d="m6 12 4 4 8-8"/></symbol>
+    </svg>
+
+    <header class="header wrap">
+      <a class="brand" href="./" aria-label="DJHX Memo 首页">
+        <img src="./logo.svg" alt="" width="34" height="34" />
+        <span>DJHX Memo</span>
+      </a>
+      <nav aria-label="主导航">
+        <a class="nav-detail" href="#features">产品特点</a>
+        <a class="nav-detail" href="https://github.com/Koril33/djhx-memo">源码 <svg class="icon" aria-hidden="true"><use href="#external"/></svg></a>
+        <a class="nav-download" href="#download">下载</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero wrap" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow"><span></span> 本地优先的 Markdown 笔记</p>
+          <h1 id="hero-title">写下日常，<br /><em>留住想法。</em></h1>
+          <p class="intro">随时打开，随手记下。用 Markdown 整理笔记，在自己的设备上保存，想换一台设备继续写时再开启同步。</p>
+          <div class="actions">
+            <a class="button primary" href="#download">下载 DJHX Memo <svg class="icon" aria-hidden="true"><use href="#download-icon"/></svg></a>
+            <a class="button secondary" href="#features">了解功能 <svg class="icon" aria-hidden="true"><use href="#arrow"/></svg></a>
+          </div>
+          <p class="platforms">Windows <span></span> Linux <span></span> Android</p>
+        </div>
+
+        <figure class="preview">
+          <div class="mock" aria-hidden="true">
+            <div class="mock-top">
+              <div class="dots"><i></i><i></i><i></i></div>
+              <span>DJHX Memo</span>
+              <svg class="icon"><use href="#window-icon"/></svg>
+            </div>
+            <div class="mock-body">
+              <aside class="mock-sidebar">
+                <div class="mock-label">全部笔记 <span>3</span></div>
+                <div class="mock-search"><svg class="icon"><use href="#search-icon"/></svg> 搜索笔记</div>
+                <div class="mock-note active"><strong>周末小记</strong><small>窗外下过一场雨。</small></div>
+                <div class="mock-note"><strong>阅读清单</strong><small>把喜欢的段落留下来。</small></div>
+                <div class="mock-note"><strong>一些代码片段</strong><small>Python · JSON</small></div>
+              </aside>
+              <div class="mock-source">
+                <div class="pane-title">源码</div>
+                <p><span class="syntax-accent">#</span> 周末小记</p>
+                <p>窗外下过一场雨。</p>
+                <p>把这周的想法整理下来。</p>
+                <p><span class="syntax-accent">##</span> 今天想做的事</p>
+                <p><span class="syntax-accent">- [x]</span> 读几页书<br /><span class="syntax-accent">- [ ]</span> 整理旅行照片</p>
+                <div class="mock-code"><span class="syntax-accent">&#96;&#96;&#96;python</span><br />print(<span class="syntax-string">"Hello, Memo"</span>)<br /><span class="syntax-accent">&#96;&#96;&#96;</span></div>
+              </div>
+              <div class="mock-rendered">
+                <div class="pane-title">预览</div>
+                <div class="mock-heading">周末小记</div>
+                <p>窗外下过一场雨。<br />把这周的想法整理下来。</p>
+                <div class="mock-subheading">今天想做的事</div>
+                <div class="mock-task"><span class="checked"><svg class="icon"><use href="#check-icon"/></svg></span>读几页书</div>
+                <div class="mock-task"><span></span>整理旅行照片</div>
+                <div class="mock-code">print(<span class="syntax-string">"Hello, Memo"</span>)</div>
+              </div>
+            </div>
+            <div class="mock-status"><span></span> 已保存到本机</div>
+          </div>
+          <figcaption>界面示意 · 桌面端 Markdown 分屏</figcaption>
+        </figure>
+      </section>
+
+      <section class="features wrap" id="features" aria-labelledby="features-title">
+        <div class="feature-lead">
+          <p class="eyebrow">写作与整理</p>
+          <h2 id="features-title">从一行字开始。</h2>
+          <p>灵感、待办、代码片段，都可以写进同一本笔记。需要回看时，用搜索找到它。</p>
+        </div>
+        <div class="feature-list">
+          <article class="feature"><span class="feature-number">01</span><div><h3>专注写 Markdown</h3><p>随时切换源码与预览，桌面端也可以分屏。标题、任务列表和多语言代码高亮都在手边。</p></div></article>
+          <article class="feature"><span class="feature-number">02</span><div><h3>离线也能记</h3><p>打开应用即可开始，笔记先保存到本机。找回误删内容时，去回收站看看。</p></div></article>
+          <article class="feature"><span class="feature-number">03</span><div><h3>按需同步，随时带走</h3><p>登录后可通过配置的服务在设备间同步。需要备份或迁移时，可将笔记导出为 Markdown 文件。</p></div></article>
+        </div>
+      </section>
+
+      <section class="download-section" id="download" aria-labelledby="download-title">
+        <div class="wrap">
+          <div class="download-head">
+            <div><p class="eyebrow">开始使用</p><h2 id="download-title">下载 DJHX Memo</h2></div>
+            <a class="text-link" href="https://github.com/Koril33/djhx-memo/releases/tag/v0.1.3">v0.1.3 版本说明 <svg class="icon" aria-hidden="true"><use href="#external"/></svg></a>
+          </div>
+          <div class="download-grid">
+            <article class="download-card">
+              <svg class="icon platform-icon" aria-hidden="true"><use href="#window-icon"/></svg>
+              <h3>Windows</h3>
+              <p>Windows 10 22H2 · x64 · EXE</p>
+              <a class="button primary" href="https://github.com/Koril33/djhx-memo/releases/download/v0.1.3/djhx-memo-0.1.3-windows-x64-setup.exe">下载 Windows 安装包 <svg class="icon" aria-hidden="true"><use href="#download-icon"/></svg></a>
+            </article>
+            <article class="download-card">
+              <svg class="icon platform-icon" aria-hidden="true"><use href="#linux-icon"/></svg>
+              <h3>Linux</h3>
+              <p>Debian / Ubuntu · amd64 · DEB</p>
+              <span class="availability">安装包待补充</span>
+            </article>
+            <article class="download-card">
+              <svg class="icon platform-icon" aria-hidden="true"><use href="#phone-icon"/></svg>
+              <h3>Android</h3>
+              <p>Android 10 及以上 · APK</p>
+              <span class="availability">安装包待补充</span>
+            </article>
+          </div>
+          <p class="release-note">安装包由 GitHub Releases 提供，版本说明中附有 SHA-256 校验值。</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer wrap">
+      <a class="brand" href="./"><img src="./logo.svg" alt="" width="28" height="28" /> DJHX Memo</a>
+      <p>本地优先，开源笔记。</p>
+      <a class="text-link" href="https://github.com/Koril33/djhx-memo">GitHub <svg class="icon" aria-hidden="true"><use href="#external"/></svg></a>
+    </footer>
+  </body>
+</html>

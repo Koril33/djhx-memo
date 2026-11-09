@@ -1,0 +1,19 @@
+[package]
+name = "djhx-native-probe"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+bindgen = ["uniffi/cli"]
+
+[[bin]]
+name = "bindgen"
+required-features = ["bindgen"]
+
+[dependencies]
+rusqlite = { version = "=0.41.1", features = ["bundled"] }
+uniffi = "=0.32.2"

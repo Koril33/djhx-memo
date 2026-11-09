@@ -1,0 +1,4 @@
+[defaults.bindings.kotlin]
+android = true
+android_cleaner = true
+cdylib_name = "djhx_memo_core"

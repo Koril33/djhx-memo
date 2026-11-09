@@ -1,0 +1,30 @@
+[Unit]
+Description=djhx-memo synchronization service
+After=network.target
+
+[Service]
+Type=simple
+User=djhx-memo
+Group=djhx-memo
+StateDirectory=djhx-memo
+StateDirectoryMode=0700
+UMask=0077
+ExecStart=/usr/local/bin/memo-server serve --db /var/lib/djhx-memo/db/memo.db --epoch-file /var/lib/djhx-memo/runtime/epoch --listen 127.0.0.1:8080 --trusted-proxies 127.0.0.1/32,::1/128
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target
