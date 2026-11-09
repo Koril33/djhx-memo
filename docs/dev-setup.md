@@ -6,7 +6,7 @@
 |---|---|---|
 | Linux 桌面、core、服务端 | [Linux 公共开发说明](dev-setup-linux-portable.md) | Ubuntu 24.04 构建基线；实际 GUI 系统另见验证记录 |
 | Windows 原生桌面、core | [Windows 公共开发说明](dev-setup-windows.md) | 已有 Windows 10 x64 原生桌面构建与安装记录 |
-| Android | [Android README](../android/README.md) | 当前完整脚本面向 Linux；Windows 边界见上方说明 |
+| Android | [Android README](../android/README.md) | Linux Bash 或 Windows 原生 PowerShell，均从当前源码生成绑定和 JNI |
 | 服务端部署、备份与恢复 | [运维说明](operations.md) | Linux/systemd/Nginx；不由 Windows 桌面构建结果替代 |
 
 ## 工具与锁定来源

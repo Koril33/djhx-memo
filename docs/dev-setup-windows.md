@@ -1,6 +1,6 @@
 # Windows 原生开发
 
-本文面向新克隆仓库的 Windows x64 主机，以原生 MSVC 构建桌面客户端和 core。桌面已在 Windows 10 22H2 x64 虚拟机完成原生构建、安装及部分交互验收；Windows 11、完整中文 IME/WebView2 安装矩阵、Windows 上的完整 Android 构建和 Linux 服务部署不据此通过。证据见[桌面验证](desktop-validation.md)、[界面预览验证](desktop-ui-preview-validation.md)与[验收清单](validation.md)。
+本文面向 Windows x64 开发主机，介绍原生桌面、core 和 Android 构建。桌面已在 Windows 10 22H2 x64 虚拟机完成原生构建、安装及部分交互验收。设备覆盖范围见[桌面验证](desktop-validation.md)、[界面预览验证](desktop-ui-preview-validation.md)与[验收清单](validation.md)。
 
 以下 PowerShell 命令从仓库根目录执行，路径可自行选择，不需要维护者的 `.local/` 文件。已有工具可复用；只开发桌面时无需 JDK、Android Studio、SDK/NDK、Go 或 MinGW。
 
@@ -91,26 +91,22 @@ WSL 与 Windows 原生终端的工具链、PATH 和 target 缓存相互独立；
 
 ## 5. 可选：Android 工具与边界
 
-Android 客户端是 Kotlin/Compose + UniFFI，**不是 Tauri Android**。不要执行 `tauri android init` 生成另一套工程。安装 Android Studio（IDE 使用随附 JBR）和用于本工程 Gradle 的 JDK 21，在 Studio 的 Gradle JDK 与终端 `JAVA_HOME` 选择同一个兼容 JDK；二者作用见 [Android 官方 JDK 说明](https://developer.android.com/build/jdks)。
+Android 客户端使用 Kotlin/Compose 和 UniFFI。用支持 AGP 8.13 的 Android Studio 打开仓库下的 `android/` 工程目录，Gradle JDK 选择 JDK 21。IDE 可使用自己的随附 JBR。参见 [Android Studio 兼容表](https://developer.android.com/build/releases/about-agp#android_gradle_plugin_and_android_studio_compatibility)和 [Gradle JDK 说明](https://developer.android.com/build/jdks)。
 
-按当前 [Android 工程](../android/app/build.gradle.kts)准备 API 36、Platform Tools、NDK 30.0.16248370，Rust 的 `aarch64-linux-android` / `x86_64-linux-android` 目标；Gradle/AGP/Kotlin 使用仓库版本。最低运行 API 29 与编译 API 36 是不同概念。
+按当前 [Android 工程](../android/app/build.gradle.kts)准备 SDK Platform 36、Build Tools 36.1.0、Platform Tools、NDK 30.0.16248370 和 SDK CMake。构建脚本使用 NDK API 29 链接器，APK 编译目标为 API 36。
 
-仓库提供的 `scripts/enter-dev-env.ps1` 是**可选 Android 会话辅助**：它要求已安装完整 JDK、SDK、NDK 和 SDK CMake，只选路径并设置当前进程环境，不会安装工具。CMake 是该辅助脚本的前置要求，不是仅开发桌面的要求。配置方法：
+从仓库根目录执行。SDK、JDK 在非默认路径时，可传入 `-AndroidSdk` 和 `-JavaHome`，或按示例创建 Git 忽略的 `.local/dev-env.json`。脚本调用会话辅助来配置 Clang、SDK 和 JDK 路径。
 
 ```powershell
-New-Item -ItemType Directory -Force .local | Out-Null
-if (-not (Test-Path .local/dev-env.json)) {
-    Copy-Item scripts/dev-env.example.json .local/dev-env.json
-}
-# 用本机真实路径填写 javaHome/androidSdk，并显式选择 ndkVersion/cmakeVersion。
-& ./scripts/enter-dev-env.ps1 -NdkVersion '30.0.16248370' -AndroidApi 29
-java -version
-adb version
+rustup target add aarch64-linux-android x86_64-linux-android
+& .\android\scripts\build.ps1
 ```
 
-私有 JSON 留在 Git 忽略的 `.local/`，示例保留已有配置。若系统策略限制本地脚本，按本机组织策略处理，桌面构建无需运行它或更改策略。不要新开 `powershell -File` 子进程后期待它修改父终端环境。
+入口先从 Rust 源码生成 Kotlin 绑定与两个 ABI 的 JNI 库，再用 `gradlew.bat` 完成检查及打包。IDE 单独执行 Gradle 任务前，可先用 `-NativeOnly` 生成文件。debug APK 位于 `android/app/build/outputs/apk/debug/`。Gradle 任务与发布签名选项见 [Android README](../android/README.md)。
 
-**当前完整 Android 自动流程只在 Linux 实测。** `android/scripts/build-native.sh` 使用 Bash、Linux 宿主 `.so` 生成绑定，再构建两个 Android ABI；直接在 PowerShell/Git Bash 运行并不能把宿主库自动变成 Windows DLL。`gradlew.bat` 可用于 JVM/Gradle 部分，但新 clone 尚未有生成的 UniFFI/JNI 产物。此前另一台 Windows 主机仅完成过独立 Android/UniFFI 探针，不代表当前正式 app 的完整 Windows 构建路径已通过。需要完整 APK 时使用[Linux 开发入口](dev-setup-linux-portable.md)和 [Android README](../android/README.md)，再分别做模拟器和物理 arm64 验收；WSL 的 Android SDK/USB/模拟器桥接不在已验收范围。
+手工设置 `android/local.properties` 时，Windows 盘符分隔符需要转义，例如 `sdk.dir=C\:/Android/Sdk`。该文件和 Android Studio 的本机 Gradle JDK 设置留在 Git 忽略目录。
+
+2026-11-09 在 Windows 10 22H2 x64 上以 `91bd1b8` 的业务源码验证此入口。Rust 1.99.1、JDK 21、NDK r30 生成了 Kotlin 绑定和双 ABI JNI，`testDebugUnitTest detekt lintDebug assembleDebug assembleDebugAndroidTest` 通过。12 项 JVM 测试通过，Lint 为 0 错误和 47 条提示。调试包通过 APK v2 签名、ZIP 16 KiB 对齐及两套 core ELF 检查。API 35 x86_64 模拟器的 `CoreBindingTest` 3 项通过，覆盖 JNI、SQLite 和 Keystore。arm64 完成编译与打包，运行验收仍待真机。IDE 并行安装了 Rabbit 2 Patch 1，构建验证通过 Gradle 命令行完成。
 
 ## 6. 可选网络设置与排错
 

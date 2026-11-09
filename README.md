@@ -57,4 +57,4 @@ djhx-memo/
 
 原创代码与文档采用 [MIT](LICENSE)，便于学习、修改和复用，也允许第三方商用；分发时保留版权及许可声明。依赖、图标和安装器模板继续遵守各自许可，见[许可说明](docs/licensing.md)。贡献前阅读 CONTRIBUTING 与相应 AGENTS；AI 协作者遵守相同 spec、验证和隐私规则。
 
-服务端当前依赖 Unix 文件锁，Windows 开发者通过 WSL/Linux 开发服务端；Windows 桌面客户端使用原生 MSVC/WebView2。完整 Android JNI/绑定生成目前以 Linux 流程为准，不能把 Gradle 能在 Windows 启动当成正式应用全链路已验收。
+服务端当前依赖 Unix 文件锁，Windows 开发者通过 WSL/Linux 开发服务端。Windows 桌面客户端使用原生 MSVC/WebView2，Android 使用原生 PowerShell 或 Linux Bash 完成 JNI、绑定生成和 APK 打包。参见 [Windows 开发说明](docs/dev-setup-windows.md)与 [Android 构建入口](android/README.md#构建)。

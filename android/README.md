@@ -4,7 +4,7 @@
 
 ## 构建
 
-先按 [开发环境](../docs/dev-setup.md) 准备 Rust、cargo-ndk、JDK 21、Android SDK Platform 36、Build Tools 36.1.0、Platform Tools 与 NDK 30.0.16248370。当前 Linux 验证使用 Rust 1.99.1、cargo-ndk 4.1.2；项目没有固定 Rust 工具链文件，不能把其他主机的 stable 版本视作同一环境。项目自带 Gradle Wrapper 8.13（附 SHA256）、AGP 8.13.0、Kotlin 2.0.21 和依赖锁文件，无需安装全局 Gradle。本机私有 `env.sh` 只是路径快捷方式，新开发者不需要该文件。网络受限时可使用自己的代理；配置写在用户级 Gradle/Cargo 配置，不提交账号、代理凭据或本机绝对路径。
+先按 [开发环境](../docs/dev-setup.md) 准备 Rust、JDK 21、Android SDK Platform 36、Build Tools 36.1.0、Platform Tools 与 NDK 30.0.16248370。实测 Rust 为 1.99.1。Linux 脚本使用 cargo-ndk 4.1.2，Windows 脚本使用 NDK 自带的 Clang。项目自带 Gradle Wrapper 8.13（附 SHA256）、AGP 8.13.0、Kotlin 2.0.21 和依赖锁文件。SDK、JDK 路径和可选代理按主机配置。
 
 在仓库根目录执行 Linux/Bash 命令；以下 JDK/SDK 路径应按实际安装位置调整：
 
@@ -19,24 +19,16 @@ cargo install cargo-ndk --version 4.1.2 --locked
 
 该入口先编译真实 core，生成 Kotlin 绑定并打包两种 ABI，然后运行 JVM 测试、detekt（包含 Kotlin 格式）、Android Lint 和 debug/release APK 构建。直接运行 Gradle 前也必须先运行 `android/scripts/build-native.sh`，生成文件不入仓库。依赖锁文件与 Wrapper SHA256 随源码提交。`uniffi.toml` 使用 Android cleaner 配置：API 34+ 用系统 cleaner，低版本回退 JNA，不能把生成绑定当作普通 JVM 默认配置。APK assets 随包包含 core 与 Android 运行时依赖的许可证通知；更新依赖后运行 `python3 android/scripts/generate-notices.py` 重新生成 Android 通知。
 
-`build-native.sh` 当前是 Linux 主机入口：先生成供 UniFFI 读取的主机 `.so`，再输出 Android `arm64-v8a` / `x86_64` 的 `libdjhx_memo_core.so`。纯净检出没有 `app/build/generated/uniffi` 和 `app/src/main/jniLibs`，只执行 Gradle 不构成完整构建。绑定和 JNI 必须由同一 core 提交、同一 `uniffi.toml` 生成；不能下载不明预编译库或混用旧绑定。依赖图锁定不等于 APK 字节级可复现，JDK/Rust/NDK、生成物和签名密钥也影响最终文件。本轮 UI 修正复用已验证的 JNI，未重新声称完成全新机器的从零构建。
+Linux 原生入口 `build-native.sh` 使用宿主 `.so` 生成 UniFFI 绑定，并输出 `arm64-v8a` 和 `x86_64` 的 Android 动态库。两种主机的构建入口都从同一份 core 源码和 `uniffi.toml` 生成 `app/build/generated/uniffi` 与 `app/src/main/jniLibs`。依赖版本、工具链和签名密钥共同决定 APK 的内容。
 
-Windows 推荐在 WSL2/Linux 中按上述完整入口构建，并在该环境内安装 Linux 版 JDK/SDK/NDK，使用 Linux 文件系统中的检出目录；不要把 Windows SDK 的 `.exe` 工具目录当成 Linux SDK。Windows 原生的终端使用 PowerShell 和 `gradlew.bat`，例如在已经准备好同提交生成物的工作树中：
+Windows 原生 PowerShell 入口如下。准备 MSVC、两种 Rust Android 目标和 SDK CMake，路径可通过 `-AndroidSdk`、`-JavaHome` 或本机 `.local/dev-env.json` 选择。开发 IDE 使用兼容 AGP 8.13 的 Android Studio。配置步骤见 [Windows 开发说明](../docs/dev-setup-windows.md)。
 
 ```powershell
-# 在仓库根目录；替换为当前机器完整 JDK 和 SDK 路径。
-$env:JAVA_HOME = 'C:\Program Files\Java\jdk-21'
-$env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
-$env:ANDROID_NDK_HOME = "$env:ANDROID_HOME\ndk\30.0.16248370"
-Push-Location android
-try {
-    .\gradlew.bat --no-daemon testDebugUnitTest detekt lintDebug assembleDebug assembleRelease
-} finally {
-    Pop-Location
-}
+rustup target add aarch64-linux-android x86_64-linux-android
+& .\android\scripts\build.ps1
 ```
 
-该 PowerShell 示例仅是 Android Gradle 阶段，不会生成 JNI。正式 Android app 的 **Windows 原生 UniFFI/JNI 完整构建尚未实测，也没有对应的 PowerShell 构建入口**；当前 Bash 入口硬编码主机 `.so`，不能直接在原生 Windows 上照搬。需要从同提交 Linux 构建复制生成的 Kotlin 目录和两个 Android ABI 库，或全程使用 WSL2/Linux。此前 Windows 原生绑定探针验证不等同于本 app 完整构建通过。
+PowerShell 入口读取 Windows 宿主 DLL 的 UniFFI 元数据，交叉编译两种 Android ABI，然后执行 JVM 测试、detekt、Lint 和 debug APK 构建。使用 `-NativeOnly` 可为 Android Studio 预先生成绑定和 JNI。用 `-GradleTasks @('assembleDebug','assembleRelease')` 可选择打包任务。需要本机代理时用 `-UseProxy` 或 `-ProxyUrl`。
 
 - debug APK：`android/app/build/outputs/apk/debug/app-debug.apk`，使用 Android 调试签名，可对本机测试服务器使用 HTTP。
 - release APK：`android/app/build/outputs/apk/release/`，仅支持 HTTPS；签名环境变量缺失时生成 unsigned APK。
