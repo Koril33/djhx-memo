@@ -1,110 +1,72 @@
-# 开发环境
+# 开发环境入门
 
-本文件区分**可供所有开发主机参考的要求**与**此前 Windows 开发主机的实测记录**。本机路径、代理端口、SDK 位置和设备信息不属于项目配置，不得复制为所有主机的默认值。
+从新克隆的仓库开始，按需要开发的模块安装工具即可。以下入口不依赖维护者的用户名、SDK 路径、代理或私有环境脚本；命令默认从仓库根目录执行。当前没有 CI/Runner，本地执行检查并记录实际结果。
 
-当前 Linux 主机实际安装见 [dev-setup-linux](dev-setup-linux.md)。下文 Windows 记录来自另一台机器；本轮 QEMU/KVM VM 的新安装与客户端验收见 [桌面验证](desktop-validation.md)，不能混同两台机器。
-
-## 1. 通用要求
-
-| 范围 | 所需工具 | 跨主机约定 |
+| 开发主机或任务 | 入口 | 验证范围 |
 |---|---|---|
-| Go | Go、gofmt、go vet；Windows race 测试需可用的 C 编译器 | 项目初始化后由 go.mod 定义版本，依赖由 go.sum 锁定 |
-| Rust | Rust MSVC（Windows）、Cargo、rustfmt、clippy；Windows C++ 工具及 SDK | 初始化后以 rust-toolchain.toml/Cargo.lock 固定项目版本，本机 stable 版本不是所有项目的强制默认 |
-| Android | 兼容的 JDK、Android Studio、SDK Platform/Build Tools/Platform Tools | SDK、JDK 路径按主机配置；Gradle 使用项目 Wrapper，不要求全局安装 |
-| Rust → Android | NDK、aarch64-linux-android 与 x86_64-linux-android 标准库 | arm64 用于真机；x86_64 用于模拟器；项目初始化时明确 ndkVersion |
-| C/C++ 辅助 | SDK CMake/Ninja；Windows 的 MSVC；Go race 所需 MinGW GCC | 两种 Windows 编译器用途不同，分别验证 |
-| 桌面前端 | Node LTS、npm、WebView2 | 前端初始化后提交 package-lock.json，使用 npm ci |
-| Linux | 独立 Linux 环境及系统依赖 | Windows 构建不证明 Linux GUI/托盘/输入法可用，仍需独立验证 |
+| Linux 桌面、core、服务端 | [Linux 公共开发说明](dev-setup-linux-portable.md) | Ubuntu 24.04 构建基线；实际 GUI 系统另见验证记录 |
+| Windows 原生桌面、core | [Windows 公共开发说明](dev-setup-windows.md) | 已有 Windows 10 x64 原生桌面构建与安装记录 |
+| Android | [Android README](../android/README.md) | 当前完整脚本面向 Linux；Windows 边界见上方说明 |
+| 服务端部署、备份与恢复 | [运维说明](operations.md) | Linux/systemd/Nginx；不由 Windows 桌面构建结果替代 |
 
-SDK 编译 API 与 Android 最低运行 API 分开配置；v1 最低为 API 29。工具升级前核对 IDE/AGP/Gradle/JDK 矩阵，不将 SDK Manager 中的最高 API 自动当作 compileSdk。
+## 工具与锁定来源
 
-## 2. Windows 会话入口
+| 工具 | 当前工程要求与参考组合 | 哪些任务需要 |
+|---|---|---|
+| Git / Python | Git；Python 3.11+（标准库脚本，实测3.13.5） | 获取源码、文档/契约/安全检查；品牌再生成另需ADR-0010工具 |
+| Rust | core 与桌面 Cargo.toml 声明 `rust-version` 1.99；已实测 1.99.1，配套 rustfmt/Clippy | core、桌面、Android 原生库 |
+| Node / npm | 桌面要求 Node 22.12+；已实测 Node 22.23.2 / npm 10.9.8 | 桌面前端及 Tauri CLI |
+| Go | [go.mod](../server/go.mod) 声明 1.27.0；已实测 1.27.3 | 服务端及真实 Go/core 联调；纯客户端可不安装 |
+| JDK | Android 当前实测 JDK 21；Java/Kotlin 产物目标为 17 | Android；纯桌面不需要 |
+| Android 工具 | AGP 8.13.0 / Gradle Wrapper 8.13 / Kotlin 2.0.21，compile/target API 36、最低 API 29、NDK 30.0.16248370 | Android；以当前工程为准，不沿用历史探针版本 |
+| C/C++ 与系统 WebView | Linux 的 GTK3/WebKitGTK 4.1；Windows 的 MSVC、Windows SDK 与 WebView2 | 随包 SQLite、桌面原生层；细节见平台入口 |
 
-在当前 PowerShell 进程中执行：
+当前未提交 `rust-toolchain.toml`；`rust-version` 是最低版本约束，**`Cargo.lock` 锁定依赖，不锁定编译器**。可在开发终端选择上述已实测版本，升级后重新运行相关检查。工具组合来自当前工程和[模块验证](validation.md)，不是全局安装脚本。
 
-```powershell
-& .\scripts\enter-dev-env.ps1
+保留并使用以下文件：
+
+- Rust：`core/Cargo.lock`、`desktop/src-tauri/Cargo.lock`，构建和检查使用 `--locked`。
+- npm：`desktop/package-lock.json`，首次安装用 `npm ci`，Windows PowerShell 用 `npm.cmd ci`；使用仓库内 Tauri CLI，不要求全局安装。
+- Go：`server/go.mod`、`server/go.sum`。
+- Android：`gradlew` / `gradlew.bat`、Wrapper 配置与 SHA256、Gradle 依赖锁文件；不需要全局 Gradle 或 Kotlin。
+
+修改依赖前阅读 [ADR](adr/README.md)，更新连同锁文件、许可及实际验证一起提交。首次构建需要访问对应官方下载和包仓库；`--offline` 只适用于依赖已完整缓存的环境。
+
+## 从源码验证
+
+各模块的开发、运行和产物路径见 [core](../core/README.md)、[server](../server/README.md)、[desktop](../desktop/README.md)、[Android](../android/README.md)。Linux 可使用统一入口：
+
+```sh
+bash scripts/validate-local.sh core
+bash scripts/validate-local.sh server
+bash scripts/validate-local.sh integration
+bash scripts/validate-local.sh desktop
+# 首次需先按 Android README 生成 JNI/UniFFI 产物。
+bash scripts/validate-local.sh android
 ```
 
-脚本不安装工具、不写注册表、不修改用户或系统持久环境变量。它按显式参数 → 本机私有配置 → 已有环境变量/SDK 默认位置选择 JDK/SDK，配置当前进程的 PATH、NDK linker/CC/AR 和 Android API 29。SDK 中多个 NDK/CMake 未指定版本时取已安装的最高数字版本；正式工程初始化后应显式选择与项目一致的版本。
+每条选择并检查一个模块；桌面完整格式/lint 与原生 Clippy/测试另见平台说明。Windows 原生命令见 Windows 入口，该 Bash 脚本不是 PowerShell 脚本。自动测试不替代托盘、中文输入法、原生文件对话框及设备安装验收。
 
-SDK/JDK 在非默认目录时，可使用 -AndroidSdk、-JavaHome、-NdkVersion、-CMakeVersion 参数，或建立私有配置：
+文档与契约引用检查：
 
-```powershell
-New-Item -ItemType Directory -Path .local -Force
-Copy-Item scripts/dev-env.example.json .local/dev-env.json
+```sh
+python3 scripts/check-docs.py
+git diff --check
 ```
 
-编辑其中路径后再执行入口。`.local/` 整体被 Git 忽略，禁止强制提交。本机可选字段：
+## 本机配置与可选代理
 
-| 字段 | 含义 |
-|---|---|
-| androidSdk | 当前主机 SDK 根目录 |
-| javaHome | 当前主机完整 JDK 根目录（必须含 javac） |
-| ndkVersion / cmakeVersion | 当前主机选择的 SDK 组件版本 |
-| proxyUrl | 当前主机 HTTP 代理地址，可不配置 |
+SDK/JDK 绝对路径、`.local/`、`android/local.properties`、签名材料、密码和 token 留在本机。项目不要求某个个人目录，也不要求连接维护者的服务器即可开发离线功能；集成测试使用自己控制的隔离实例。
 
-代理必须主动启用：
+网络需要代理时才设置当前终端的代理。例如本机 HTTP 代理监听 `127.0.0.1:7890`，Linux 可设置 `HTTP_PROXY` / `HTTPS_PROXY`，Windows 可设置同名进程环境变量；Gradle/Android Studio 的代理另按平台说明配置。端口只是示例，代理不应成为仓库默认值，不关闭 HTTPS 校验或提交代理凭据。
 
-```powershell
-& .\scripts\enter-dev-env.ps1 -UseProxy
-```
+## 历史本机记录
 
-也可用 -ProxyUrl 显式传入当前主机的 HTTP 代理 URL。脚本只为当前进程及子进程设置 HTTP_PROXY/HTTPS_PROXY 和 Java 代理参数，不修改 Git、Cargo、Gradle 或操作系统的全局代理。关闭终端即可结束这些会话设置；不要通过新开的 `powershell -File` 子进程期待修改父终端环境。
+以下材料保留当时的安装路径、探针组合和处理过程，供追溯使用；不作为新主机配置步骤，也不表示当前设备矩阵已完成：
 
-此前 Windows 开发主机的代理为 127.0.0.1:7897，仅记录在被忽略的本机配置中；其他主机自行填写或不启用。不要在仓库内提交个人代理凭据、绝对路径或 local.properties。
+- [Linux 本机安装与环境探针（2026-11-03）](dev-setup-linux.md)。其中 `~/.config/djhx-dev/env.sh` 只存在于原主机。
+- [另一台 Windows 主机的环境探针（2026-11-03）](dev-setup-windows-history.md)。
+- [M0 UniFFI 绑定探针](../tools/native-probe/README.md)。
+- [桌面实现验证](desktop-validation.md)、[0.1.1 界面验证](desktop-ui-preview-validation.md)及[0.1.2 修正验证](client-fixes-0.1.2-validation.md)。
 
-## 3. 此前 Windows 开发主机实测记录（2026-11-03，仅本机）
-
-以下版本用于说明本次验证组合，不表示其他主机必须使用这些安装路径或全局版本。完整本机清单、缓存位置和日志在 `.local/environment-report.json` 与该文件指向的本机缓存中，不上传 Git。
-
-| 项目 | 处理与结果 |
-|---|---|
-| OS | Windows 10 专业版 22H2，19045，x86_64；开发进程非管理员 |
-| Go | 已有 1.27.3，官方发布索引核对后复用；go test -race 通过 |
-| Rust | 本机 stable 从 1.86.0 更新到 1.99.1；rustfmt、clippy 已更新 |
-| Android Rust 目标 | 补装 aarch64-linux-android、x86_64-linux-android，两个目标均构建 SQLite 动态库通过 |
-| Windows C/C++ | 已有 VS 2022 Community 17.13.6、MSVC 14.43、Windows SDK 10.0.22621.0；MinGW GCC 12.2.0 |
-| JDK | 全局原有 Oracle 21.0.4 保留；本项目会话选现有 Android Studio JBR 21.0.5 |
-| Android Studio | 现有 2024.3.1（AI-243），未替换 IDE；探针使用其兼容的 AGP 8.9.2/Gradle 8.11.1/API 35 |
-| Android SDK | 已有 Platform 35/36、Build Tools 35.0.0/35.0.1、Platform Tools 35.0.2，复用 |
-| Android 命令行 | 补装 Command-Line Tools 23.0，内含 Android CLI 1.1.16717390 |
-| NDK / CMake | 补装 NDK r29（29.0.14206865）、CMake 3.22.1（含 Ninja 1.10.2） |
-| Kotlin / Gradle | 探针用 Kotlin 2.1.20、AGP 8.9.2、Gradle 8.11.1、JDK 21 打包通过；不是正式 app 的已锁版本 |
-| Rust/SQLite | 仓库外探针用 rusqlite 0.41.1，关闭默认特性并选择 libsqlite3-sys + bundled，验证原生 SQLite/FTS5 |
-| Node / WebView2 | 已有 Node 22.22.1、npm 10.9.4、WebView2 156，未替换 |
-| 模拟器 | 已有 API 35 x86_64 AVD、AEHD 2.2 加速可用；只读运行探针，Kotlin → Rust JNI → SQLite 返回 42，通过后卸载探针并关闭模拟器 |
-| Linux | WSL 组件尚未启用；没有执行管理员提权、系统组件启用或重启，不宣称 Linux 构建/GUI 已验证 |
-
-本机持久变更仅包括：Rust stable 更新、Android SDK 组件补装、用户级 ANDROID_HOME 和用户 PATH 的 Android 工具入口。原用户 PATH 备份在 `.local/user-path-before.txt`。没有修改系统级 JAVA_HOME、系统 PATH 或系统代理；项目的 JDK/NDK/代理选择由会话脚本承担。
-
-外网故障处理：Go 发布索引直连超时，Rust 组件下载曾停滞，使用本机代理恢复；不关闭 HTTPS 校验、不全局切换镜像。保留原有 Go GOPROXY 设置，不将本机镜像固化到仓库。
-
-## 4. 已完成验证与未完成项
-
-- Go 独立标准库探针执行 go test -race 成功。
-- Windows Rust 探针执行 cargo test、cargo fmt --check、cargo clippy --all-targets -- -D warnings 成功，包含 bundled SQLite/FTS5 验证。
-- 同一探针以 NDK API 29 交叉构建 arm64/x86_64 Android 动态库成功。
-- Kotlin Android APK 打包成功；加入两种架构的 Rust/SQLite 库后，离线重新打包成功。
-- API 35 x86_64 模拟器启动和安装成功，实际调用 Rust JNI 并完成 SQLite/FTS5 操作返回 42；这不是 UniFFI 绑定验证，arm64 仅完成编译，尚未在真机运行。
-- 所有探针位于仓库外的本机缓存，不是本项目业务代码或 conformance 测试。
-
-尚未完成：正式 core/Go/Android/Tauri 工程、UniFFI 生成绑定、Android arm64 真机、Linux GUI、三端业务/同步测试、最终依赖版本锁定。现有 Studio 可继续使用已验证组合；采用超出其兼容范围的 AGP/compileSdk 前，应协调升级 IDE 和构建工具。
-
-## 5. Android 命令行注意事项
-
-本机安装的新版工具推荐 `android sdk`。其包名使用 `ndk/<版本>`、`cmake/<版本>`，通过 --sdk 指定当前主机路径，安装后检查 source.properties 和可执行文件真实存在。旧版 sdkmanager 的 `ndk;<版本>` 写法不能不加验证地交给新版兼容包装器；本次遇到过输出“Package not found”却退出码为 0 的情况。
-
-没有全局安装 Gradle。正式 Android 工程建立时提交 Wrapper 与校验信息，再按锁定版本运行；不要复制本机 `.gradle/wrapper/dists` 的绝对路径到工程。
-
-## 参考资料
-
-- [Go 安装](https://go.dev/doc/install) / [官方发布索引](https://go.dev/dl/?mode=json)
-- [Rust 安装](https://rust-lang.org/tools/install/)
-- [Android CLI](https://developer.android.com/tools/agents/android-cli)
-- [Android AGP 8.9 兼容信息](https://developer.android.com/build/releases/agp-8-9-0-release-notes)
-- [Android 构建 JDK](https://developer.android.com/build/jdks)
-
-## Linux 开发主机与原生探针
-
-本次 Linux 主机记录见 [Linux 开发环境](dev-setup-linux.md)。另一台 Windows 主机的 UniFFI 探针记录见 [M0 原生绑定验证](../tools/native-probe/README.md)。各机器的安装与验证结果不互相替代。
+完整三端矩阵、物理 arm64 Android 与连续 7 天试用仍以[验收清单](validation.md)的实际状态为准。

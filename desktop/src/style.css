@@ -944,6 +944,8 @@ svg {
   width: 100%;
 }
 .field select {
+  /* Native WebKitGTK already insets its label; vertical padding clips it at 40px. */
+  padding-block: 0;
   cursor: pointer;
 }
 .field small {

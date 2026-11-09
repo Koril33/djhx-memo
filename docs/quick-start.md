@@ -1,4 +1,4 @@
-# 0.1.1 界面预览使用说明
+# 0.1.2 客户端使用说明
 
 这是未正式发布的候选版本。实际验收范围见 [验证记录](validation.md)；物理 arm64 Android、完整系统/输入法矩阵与连续 7 天日常试用仍待完成。
 
@@ -8,17 +8,17 @@
 
 | 系统 | 文件 | 安装方式 |
 |---|---|---|
-| Windows x64 | `dist/windows/djhx-memo-0.1.1-windows-x64-setup.exe` | 运行安装程序，默认当前用户安装；依赖 WebView2，缺失时配置为运行随包引导程序下载 |
-| Linux amd64 | `dist/linux/djhx-memo-0.1.1-linux-amd64.deb` | 在仓库根目录运行下面的 apt 命令，安装 WebKit/AppIndicator 运行依赖 |
-| Android | `dist/android/djhx-memo-0.1.1-android.apk` | 将 APK 复制到设备并安装；包含 arm64-v8a 与 x86_64，Android 10+ |
+| Windows x64 | `dist/windows/djhx-memo-0.1.2-windows-x64-setup.exe` | 运行安装程序，默认当前用户安装；依赖 WebView2，缺失时配置为运行随包引导程序下载 |
+| Linux amd64 | `dist/linux/djhx-memo-0.1.2-linux-amd64.deb` | 在仓库根目录运行下面的 apt 命令，安装 WebKit/AppIndicator 运行依赖 |
+| Android | `dist/android/djhx-memo-0.1.2-android.apk` | 将 APK 复制到设备并安装；包含 arm64-v8a 与 x86_64，Android 10+ |
 
 ```sh
-sudo apt install --reinstall ./dist/linux/djhx-memo-0.1.1-linux-amd64.deb
+sudo apt install --reinstall ./dist/linux/djhx-memo-0.1.2-linux-amd64.deb
 ```
 
 Windows 包尚无代码签名证书；版本和文件来源以本机校验值为准。Linux GNOME 的托盘需要 AppIndicator 支持；无法确认托盘可用时，客户端采用普通窗口模式并说明关闭后退出。
 
-本次为 0.1.1 界面预览，服务端与核心仍使用既有 0.1.0 功能和协议。Linux 使用上述 `--reinstall` 也可覆盖同版本预览包。桌面安装完成后从托盘退出旧进程再重新打开；Android 沿用同一签名直接覆盖安装，保留既有数据。
+本次为 0.1.2 界面修正版，沿用 0.1.1 设计，服务端与核心仍使用既有 0.1.0 功能和协议。Linux 使用上述 `--reinstall` 也可覆盖同版本预览包。桌面安装完成后从托盘退出旧进程再重新打开；Android 沿用同一签名直接覆盖安装，保留既有数据。
 
 ## 新界面入口
 
@@ -59,3 +59,5 @@ Windows/Linux 在“账号与设置 → 偏好设置”（Account & settings →
 这些偏好仅保存在当前设备，重启后保留。切换语言或外观即时生效，不清空当前编辑内容；笔记正文和用户自定义名称保持原文。显示时区与语言独立，不调整操作系统时间，也不改变 UTC 存储、导出时间或同步顺序。
 
 三端应用名和图标统一为 **DJHX Memo**。后续替换图标时按 [品牌规范](brand-guidelines.md) 修改唯一 SVG 母版并重新生成所有平台资源，避免单端漂移。
+
+0.1.2 修正桌面下拉文字裁切和 Android 源码编辑滚动；实际复现与回归见[控件与滚动验证](client-fixes-0.1.2-validation.md)。

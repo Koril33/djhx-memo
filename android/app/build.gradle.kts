@@ -13,8 +13,8 @@ android {
         manifestPlaceholders["appLabel"] = "DJHX Memo"
         minSdk = 29
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.1.1"
+        versionCode = 3
+        versionName = "0.1.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         providers.environmentVariable("DJHX_ANDROID_TEST_SERVER_URL").orNull?.let {
             testInstrumentationRunnerArguments["serverUrl"] = it
@@ -77,6 +77,7 @@ detekt { autoCorrect = project.hasProperty("format"); buildUponDefaultConfig = t
 tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach { exclude("**/build/**") }
 
 val prepareNotices by tasks.registering(Copy::class) {
+    from("../../LICENSE") { rename { "DJHX_MEMO_LICENSE.txt" } }
     from("../../core/THIRD_PARTY_NOTICES.txt") { rename { "CORE_THIRD_PARTY_NOTICES.txt" } }
     from("../THIRD_PARTY_NOTICES.txt") { rename { "ANDROID_THIRD_PARTY_NOTICES.txt" } }
     into(layout.buildDirectory.dir("generated/notices"))

@@ -58,6 +58,7 @@ type APIError struct {
 	Retryable bool   `json:"retryable"`
 }
 
+// Error returns only the stable code, never a request body or credential.
 func (e *APIError) Error() string { return e.Code }
 func apiError(code string) *APIError {
 	return &APIError{Code: code, Message: code, Retryable: code == "SERVER_BUSY" || code == "INTERNAL_ERROR" || code == "RATE_LIMITED"}

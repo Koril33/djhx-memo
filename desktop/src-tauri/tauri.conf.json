@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "DJHX Memo",
   "mainBinaryName": "djhx-memo",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "identifier": "app.djhx.memo",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -32,6 +32,7 @@
   "bundle": {
     "active": true,
     "resources": {
+      "../../LICENSE": "licenses/djhx-memo.txt",
       "../THIRD_PARTY_RUST_NOTICES.txt": "licenses/desktop-rust.txt",
       "../THIRD_PARTY_NPM_NOTICES.txt": "licenses/desktop-npm.txt",
       "../../core/THIRD_PARTY_NOTICES.txt": "licenses/core-rust.txt",

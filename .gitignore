@@ -7,6 +7,12 @@
 *.local
 *.jks
 *.keystore
+*.pem
+*.key
+*.p12
+*.pfx
+*.agekey
+/secrets/
 
 # 运行数据与日志
 *.db

@@ -31,7 +31,7 @@
 
 ## 本轮实际执行与边界
 
-复用本机 Node `22.23.2`，路径 `/home/koril/.local/share/pi-node/node-v22.23.2-linux-x64/bin`；没有另装依赖版本。独立执行：
+复用本机 Node `22.23.2`，路径 `$HOME/.local/share/pi-node/node-v22.23.2-linux-x64/bin`；没有另装依赖版本。独立执行：
 
 ```sh
 cd desktop

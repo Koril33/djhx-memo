@@ -4,7 +4,7 @@
 
 ## 主机与安装
 
-- SSH：`koril@memo.djhx.site`，DNS 解析为 `47.97.126.19`；已有密钥登录成功，安装系统服务和 Nginx 配置使用远端 sudo。
+- SSH：使用部署者配置的账号连接 `memo.djhx.site`；当时已核域名解析与密钥登录，安装系统服务和 Nginx 配置使用远端 sudo。公开记录不复制具体登录账号与公网 IP。
 - 系统：Debian GNU/Linux 12，Linux 6.1.0-38-amd64，Nginx 1.22.1。
 - 二进制：`0.1.0-candidate`，构建提交 `40491ab908d7edfbb73b9e4d786931ea41ffeb10`；部署前在本机与云端核对 SHA-256 均为 `5f0a9a2319fe7aca7bfcccd0713fac2a9112e13d9f57fd30e2eac70ae4804c7b`。此次不修改业务、鉴权、迁移或同步实现，也不新增 Go/Rust 依赖。
 - `/usr/local/bin/memo-server`；许可证安装在 `/usr/local/share/djhx-memo/`；原样安装 [systemd 单元](../server/deploy/djhx-memo.service)，启用开机启动。
@@ -13,7 +13,7 @@
 
 ## HTTPS 与既有站点
 
-[Nginx 配置](../server/deploy/nginx.conf) 安装到 `/etc/nginx/conf.d/zz-djhx-memo.conf`，保留原 443 默认站点。域名为 `memo.djhx.site`，共享另一个项目与云端既有 `portdata` 站点的证书路径：
+[Nginx 配置](../server/deploy/nginx.conf) 安装到 `/etc/nginx/conf.d/zz-djhx-memo.conf`，保留原 443 默认站点。域名为 `memo.djhx.site`，共享云端其他站点既有的通配符证书路径：
 
 ```text
 /etc/letsencrypt/live/djhx-wildcard/fullchain.pem
@@ -42,7 +42,7 @@
 按项目负责人选择，已安装 [本机异地加密备份](backup-local.md)：
 
 - 云端 `djhx-memo-backup.timer` 已启用并 active，每日 UTC 03:20（北京时间 11:20）加随机延迟运行；首次 `djhx-memo-backup.service` 的 `Result=success`、`ExecMainStatus=0`。云端实际 OpenSSL 3.0.18 完成一致快照、SQLite 检查及 AES-256-GCM/RSA-OAEP 加密。
-- `/var/lib/djhx-memo-export/` 为 `djhx-memo:koril`、2750，已生成当日日快照与本周首份快照，均为 0640。云端按名称保留最近 7 个日备份和 4 个周备份；明文临时目录检查无遗留。
+- `/var/lib/djhx-memo-export/` 为 `djhx-memo:<备份读取组>`、2750，已生成当日日快照与本周首份快照，均为 0640。云端按名称保留最近 7 个日备份和 4 个周备份；明文临时目录检查无遗留。
 - 本机 `djhx-memo-backup-pull.timer` 已启用，每小时运行。真实 systemd user service 通过 SSH/rsync 拉取、GCM 认证解密及新鲜度检查，连续两次手动运行均 `Result=success`、`ExecMainStatus=0`；`pull.status` 为 `ok`。密文目录 0700、文件 0600，云端与本机 SHA-256 一致。本机保留独立历史，不跟随云端删除，需后续管理容量。
 - 私钥仅保存在本机 `~/.local/state/djhx-memo-backup/keys/`，未上传服务器。云端与本机公钥证书指纹一致；私钥和目录的创建时间确认为本次新建，没有覆盖既有密钥。操作者仍须另存受保护的离线私钥副本。
 - 用实际拉取的加密快照在本机新建隔离目录解密并运行 `memo-server check`，验证幂等记录、设备吊销、墓碑和同步序号。为隔离副本生成新的 epoch 后启动临时服务，登录与 Pull 正常，原云端 epoch 的 Push 返回 `SYNC_EPOCH_MISMATCH`，完成后移除隔离明文。这次数据量下从解密到接口核对为 0.121 秒，仅是本机演练耗时，不代表真实云主机故障 RTO。

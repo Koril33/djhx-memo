@@ -31,3 +31,12 @@
 - 三端均属于 v1，不以 Windows 单端通过代替 Android/Linux 验收。
 - 不开展暂缓范围：独立 Web、Apple、全局快捷键、系统分享、CI/Runner。
 - 文档规范的建立不代表已交叉评审；提交说明注明实际检查与未验证项。
+
+## 新开发者、AI 与公开发布
+
+- 公共工具链入口是 [docs/dev-setup.md](docs/dev-setup.md)，按任务选择 Linux/Windows；历史本机记录不是安装前提。AI 另读 [docs/ai-development.md](docs/ai-development.md)，仍以本文件和 spec 为约束。
+- 当前客户端 0.1.2 修正展示控件与源码滚动，core/server/协议仍是0.1.0基线；具体检查与未验收项见文档，不能把版本号当成v1发布。
+- 原创内容按根 [LICENSE](LICENSE) 的 MIT 授权；保留第三方许可与来源，见 [docs/licensing.md](docs/licensing.md)。提交者对代码来源和AI辅助内容的可贡献性负责。
+- 公共API注释说明行为、边界及错误；平台/并发修正解释原因，不堆砌逐行翻译。不得通过删除或弱化测试、宽泛屏蔽告警/密钥规则获得绿色结果。
+- 按 [SECURITY](SECURITY.md)检查待公开源码、可达历史与提交元信息，不扫描后就宣称绝对无漏洞。维护者明确选择保留既有作者身份与完整历史；不擅自重写/强推或改变仓库可见性。
+- 外部贡献者无原仓库写权限时使用fork/PR；具备授权的协作者按独立分支提交推送。无CI/Runner要求仍有效，不能以开源准备为由添加工作流。

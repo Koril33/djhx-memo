@@ -1,6 +1,8 @@
 # 云端加密备份与本机副本
 
-本文描述 `memo.djhx.site` 到本机 `koril` 用户的备份方案。部署实际结果另见 [运维记录](operations.md)；脚本存在不表示定时任务已经安装或 RPO/RTO 已经通过。运维工具选择、确切版本和许可证见 [ADR-0009](adr/0009-backup-tools.md)。
+本文描述 `memo.djhx.site` 到本机备份接收用户的备份方案。部署实际结果另见 [运维记录](operations.md)；脚本存在不表示定时任务已经安装或 RPO/RTO 已经通过。运维工具选择、确切版本和许可证见 [ADR-0009](adr/0009-backup-tools.md)。
+
+文中账号、读取组及目标主机均需按自己的部署填写；公共脚本不再默认使用维护者登录账号。既有部署升级脚本前先补显式 `DJHX_BACKUP_HOST` 配置。
 
 ## 数据与密钥
 
@@ -8,7 +10,7 @@
 
 快照通过 OpenSSL CMS、AES-256-GCM 加密，RSA-3072 接收者公钥使用 OAEP/SHA-256 封装随机内容密钥。云端只保存 `/etc/djhx-memo-backup/recipient.pem` 公钥证书（root 所有，服务账号可读）；私钥只保存在本机 `~/.local/state/djhx-memo-backup/keys/private.pem`，权限 0600，父目录 0700。该证书用于备份加密，与 Nginx HTTPS 证书分别管理。CMS GCM 认证校验可以检出密文损坏；任何持有公钥者均可生成可解密密文，因此不证明来源。主机及 SSH 身份仍须可信。实现依据 [OpenSSL 3.0 CMS 文档](https://docs.openssl.org/3.0/man1/openssl-cms/)。
 
-加密产物放 `/var/lib/djhx-memo-export/`，目录为 `djhx-memo:koril`、2750，文件为 0640。`koril` 通过 SSH 可读取密文，无该目录写权限。日备份命名 `memo-daily-YYYY-MM-DD.cms`（UTC）；同日成功重跑原子替换。周备份命名 `memo-weekly-YYYY-MM-DD.cms`，日期为该 ISO 周的星期一，保存该周第一份成功快照。云端按有效日期名称保留最近 **7 份日备份和 4 份周备份**；失败或长时间中断不会按日历年龄清空最后几份历史备份。保留清理只处理本目录中符合完整命名规则的常规文件。
+加密产物放 `/var/lib/djhx-memo-export/`，目录为 `djhx-memo:<备份读取组>`、2750，文件为 0640。备份接收账号通过 SSH 可读取密文，无该目录写权限。日备份命名 `memo-daily-YYYY-MM-DD.cms`（UTC）；同日成功重跑原子替换。周备份命名 `memo-weekly-YYYY-MM-DD.cms`，日期为该 ISO 周的星期一，保存该周第一份成功快照。云端按有效日期名称保留最近 **7 份日备份和 4 份周备份**；失败或长时间中断不会按日历年龄清空最后几份历史备份。保留清理只处理本目录中符合完整命名规则的常规文件。
 
 本机 [拉取脚本](../scripts/backup-pull.sh) 默认将密文放 `~/.local/share/djhx-memo-backups/`（0700）。rsync 只接收符合日/周命名规则的根目录文件，先放在同一文件系统的私有 `.incoming.*` 暂存目录。`--checksum --link-dest` 复用没有变化的本机文件；不使用 `--inplace`。所有暂存快照都通过本机私钥完成 GCM 认证解密到 `/dev/null`，且最新日快照 mtime 不超过 26 小时，才逐文件原子晋升。失败保留之前成功副本及成功时间；`.partial` 和暂存文件不计为成功，普通失败及 SIGINT/SIGTERM 时清理。
 
@@ -31,6 +33,7 @@
 ```bash
 (
   set -euo pipefail
+  : "${DJHX_BACKUP_HOST:?先设置实际 SSH 目标，如 backup-reader@example.org}"
   umask 077
   key_dir="$HOME/.local/state/djhx-memo-backup/keys"
   install -d -m 0700 "$key_dir"
@@ -49,7 +52,7 @@
   # 同一文件系统的硬链接不会覆盖已存在文件，先完成密钥对再逐文件安装。
   ln "$new_pair/private.pem" "$key_dir/private.pem"
   ln "$new_pair/recipient.pem" "$key_dir/recipient.pem"
-  scp "$key_dir/recipient.pem" koril@memo.djhx.site:recipient.pem
+  scp "$key_dir/recipient.pem" "$DJHX_BACKUP_HOST:recipient.pem"
 )
 ```
 
@@ -65,7 +68,8 @@ if sudo test -e /etc/djhx-memo-backup/recipient.pem; then
 fi
 sudo install -o root -g djhx-memo -m 0640 recipient.pem /etc/djhx-memo-backup/recipient.pem
 sudo install -d -o djhx-memo -g djhx-memo -m 0700 /var/lib/djhx-memo/backups
-sudo install -d -o djhx-memo -g koril -m 2750 /var/lib/djhx-memo-export
+: "${backup_read_group:?先设置已存在的备份读取组}"
+sudo install -d -o djhx-memo -g "$backup_read_group" -m 2750 /var/lib/djhx-memo-export
 sudo install -d -o root -g root -m 0755 /usr/local/libexec
 sudo install -o root -g root -m 0755 backup-cloud.sh /usr/local/libexec/djhx-memo-backup
 sudo install -m 0644 djhx-memo-backup.service djhx-memo-backup.timer /etc/systemd/system/
@@ -76,13 +80,19 @@ sudo systemctl status djhx-memo-backup.service --no-pager
 sudo systemctl list-timers djhx-memo-backup.timer --all
 ```
 
-初次执行后应核对产物权限及 `koril` 只读可访问性。在本机安装拉取任务，不需要 sudo：
+初次执行后应核对产物权限及备份接收账号只读可访问性。在本机安装拉取任务，不需要 sudo：
 
 ```bash
+: "${DJHX_BACKUP_HOST:?先设置实际 SSH 目标}"
+install -d -m 0700 "$HOME/.config/djhx-memo-backup"
+if [[ ! -e "$HOME/.config/djhx-memo-backup/config" ]]; then
+  (umask 077; printf 'DJHX_BACKUP_HOST=%s\n' "$DJHX_BACKUP_HOST" > "$HOME/.config/djhx-memo-backup/config")
+fi
 install -d -m 0755 "$HOME/.local/bin"
 install -m 0755 scripts/backup-pull.sh "$HOME/.local/bin/djhx-memo-backup-pull"
 install -d -m 0700 "$HOME/.config/systemd/user"
 install -m 0644 server/deploy/user/djhx-memo-backup-pull.{service,timer} "$HOME/.config/systemd/user/"
+# 已有配置须确认目标正确、权限0600；EnvironmentFile详细规则见下文。
 systemctl --user daemon-reload
 systemctl --user start djhx-memo-backup-pull.service
 systemctl --user enable --now djhx-memo-backup-pull.timer
@@ -90,14 +100,14 @@ systemctl --user status djhx-memo-backup-pull.service --no-pager
 cat "$HOME/.local/state/djhx-memo-backup/pull.status"
 ```
 
-默认无需配置文件；可在 0600 的 `~/.config/djhx-memo-backup/config` 中为 `EnvironmentFile` 设置 `DJHX_BACKUP_HOST=koril@memo.djhx.site`、`DJHX_BACKUP_REMOTE_DIR=/var/lib/djhx-memo-export/`。可选绝对路径变量为 `DJHX_BACKUP_DEST`、`DJHX_BACKUP_STATE`、`DJHX_BACKUP_PRIVATE_KEY`、`DJHX_BACKUP_RECIPIENT`。systemd 的 EnvironmentFile 不展开 `$HOME`，自定义路径须写完整绝对路径。更换 SSH 主机前先人工核对并保存其 host key，不能关闭校验。重复部署只替换脚本和单元，复用现有私钥、公钥及历史副本。
+首次拉取前必须在 0600 的 `~/.config/djhx-memo-backup/config` 中为 `EnvironmentFile` 设置实际 SSH 目标，例如 `DJHX_BACKUP_HOST=backup-reader@example.org`、`DJHX_BACKUP_REMOTE_DIR=/var/lib/djhx-memo-export/`。可选绝对路径变量为 `DJHX_BACKUP_DEST`、`DJHX_BACKUP_STATE`、`DJHX_BACKUP_PRIVATE_KEY`、`DJHX_BACKUP_RECIPIENT`。systemd 的 EnvironmentFile 不展开 `$HOME`，自定义路径须写完整绝对路径。更换 SSH 主机前先人工核对并保存其 host key，不能关闭校验。重复部署只替换脚本和单元，复用现有私钥、公钥及历史副本。
 
 排查入口：
 
 ```bash
 journalctl --user -u djhx-memo-backup-pull.service -n 30 --no-pager
 systemctl --user list-timers djhx-memo-backup-pull.timer --all
-ssh koril@memo.djhx.site 'systemctl status djhx-memo-backup.service --no-pager'
+ssh "$DJHX_BACKUP_HOST" 'systemctl status djhx-memo-backup.service --no-pager'
 ```
 
 ## 隔离恢复演练

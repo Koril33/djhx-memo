@@ -4,7 +4,7 @@
 
 **v1 目标：Windows、Android、Linux 三端可日常使用。** 桌面端包含托盘；允许未登录记笔记，提供邀请码注册、登录、同步、搜索、回收站和 Markdown 导出。Web、Apple、全局快捷键、系统分享以及 CI/Runner 暂缓。
 
-当前客户端提供 **0.1.1 界面预览**，基于 0.1.0 自用候选的服务端与核心功能：Go 服务端、Rust 核心与 Windows/Linux/Android 客户端已实现，并产出可安装的软件包。已执行核心/服务端联调及目标系统的部分实际使用验证；完整设备矩阵与连续 7 天日常试用仍待完成，协议与 v1 尚未正式发布。实际结果和限制见各模块验证记录。
+当前客户端提供 **0.1.2 界面修正版**（沿用 0.1.1 设计），基于 0.1.0 自用候选的服务端与核心功能：Go 服务端、Rust 核心与 Windows/Linux/Android 客户端已实现，并产出可安装的软件包。已执行核心/服务端联调及目标系统的部分实际使用验证；完整设备矩阵与连续 7 天日常试用仍待完成，协议与 v1 尚未正式发布。实际结果和限制见各模块验证记录。
 
 ## 从这里开始
 
@@ -17,9 +17,11 @@
 - [核心验证](docs/core-validation.md) / [服务端验证](docs/server-validation.md) / [桌面验证](docs/desktop-validation.md) / [Android 验证](docs/android-validation.md)
 - [部署、备份与恢复](docs/operations.md)
 - [品牌母版、图标尺寸与统一替换](docs/brand-guidelines.md)
+- [0.1.2 控件与滚动修正验证](docs/client-fixes-0.1.2-validation.md)
 - [0.1.1 界面设计](docs/ui-design.md) / [桌面预览验证](docs/desktop-ui-preview-validation.md) / [Android 预览验证](docs/android-ui-preview-validation.md)
 - [已接受决策](docs/adr/0001-v1-baseline.md)
-- [协作规范](AGENTS.md) / [贡献流程](CONTRIBUTING.md)
+- [协作规范](AGENTS.md) / [贡献流程](CONTRIBUTING.md) / [AI 开发指南](docs/ai-development.md)
+- [MIT 许可与第三方边界](docs/licensing.md) / [安全与隐私](SECURITY.md) / [开源准备检查](docs/open-source-readiness.md)
 
 ## 仓库结构
 
@@ -41,7 +43,7 @@ djhx-memo/
 
 安装和首次使用见 [候选版使用说明](docs/quick-start.md)。
 
-本机工具链加载：`. "$HOME/.config/djhx-dev/env.sh"`；新机器先阅读开发说明。各工程提交 Cargo/npm/Gradle 锁文件，构建步骤见 [server](server/README.md)、[core](core/README.md)、[desktop](desktop/README.md)、[android](android/README.md)。本地检查入口：`bash scripts/validate-local.sh core|server|integration|desktop|android`，每次选择一个模块。
+新开发者先按[公共环境入口](docs/dev-setup.md)选择 [Linux](docs/dev-setup-linux-portable.md)或 [Windows](docs/dev-setup-windows.md)及所需模块。维护者的本机 env.sh、VM、已生成 JNI 和私有签名不是新 clone 的前提。各工程提交 Cargo/npm/Gradle 锁文件，构建步骤见 [server](server/README.md)、[core](core/README.md)、[desktop](desktop/README.md)、[android](android/README.md)。本地检查入口：`bash scripts/validate-local.sh core|server|integration|desktop|android`，每次选择一个模块。
 
 客户端统一显示 **DJHX Memo**。语言支持简体中文、英文和跟随系统；外观支持浅色、深色和跟随系统；时间默认显示为上海（UTC+08:00）。入口与偏好说明见 [候选版使用说明](docs/quick-start.md#语言外观与显示时区)。
 
@@ -50,3 +52,9 @@ djhx-memo/
 安装包和校验值输出到本机忽略目录 `dist/`，不会把二进制、运行数据或发布签名密钥提交 Git。
 
 服务端独立打包入口为 `bash scripts/package-server.sh`，输出静态 Linux amd64 二进制及部署资料压缩包；不会部署到云服务器。
+
+## 贡献与许可
+
+原创代码与文档采用 [MIT](LICENSE)，便于学习、修改和复用，也允许第三方商用；分发时保留版权及许可声明。依赖、图标和安装器模板继续遵守各自许可，见[许可说明](docs/licensing.md)。贡献前阅读 CONTRIBUTING 与相应 AGENTS；AI 协作者遵守相同 spec、验证和隐私规则。
+
+服务端当前依赖 Unix 文件锁，Windows 开发者通过 WSL/Linux 开发服务端；Windows 桌面客户端使用原生 MSVC/WebView2。完整 Android JNI/绑定生成目前以 Linux 流程为准，不能把 Gradle 能在 Windows 启动当成正式应用全链路已验收。

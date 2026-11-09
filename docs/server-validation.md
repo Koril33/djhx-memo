@@ -40,7 +40,7 @@ govulncheck ./...
 
 ## 2026-11-04 重启后复验与 Debian 13 VM
 
-开发机重启后重新确认 Go 1.27.3，模块缓存 `/home/koril/go/pkg/mod`、构建缓存 `/home/koril/.cache/go-build` 均可用；二进制改放持久目录 `.local/server/memo-server`。再次运行 vet、golangci-lint（0 issues）、`go test -race -cover ./...`（通过，库覆盖率 74.8%）、CLI smoke，全部通过。独立 core/服务端联调另见 [core-review](reviews/core-review.md)。
+开发机重启后重新确认 Go 1.27.3，模块缓存 `$HOME/go/pkg/mod`、构建缓存 `$HOME/.cache/go-build` 均可用；二进制改放持久目录 `.local/server/memo-server`。再次运行 vet、golangci-lint（0 issues）、`go test -race -cover ./...`（通过，库覆盖率 74.8%）、CLI smoke，全部通过。独立 core/服务端联调另见 [core-review](reviews/core-review.md)。
 
 独立交叉评审发现原设备吊销路径在 handler 认证与实际更新之间允许同设备重新登录，旧 actor 可误吊销替换后的新 token。现 `Store.revoke` 在单个事务中重新校验 actor 的 user/device/token_hash、有效期与吊销状态后更新；新回归验证旧 identity 无法吊销自己新会话或另一个设备，当前 identity 正常及重复吊销仍成功。Push 原有同事务复验、login 的密码哈希重读、register 邀请消费事务也复核。
 

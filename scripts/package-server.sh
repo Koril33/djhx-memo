@@ -13,7 +13,7 @@ mkdir -p "$memo_package/deploy"
 )
 cp -R server/deploy/. "$memo_package/deploy/"
 cp scripts/backup-pull.sh "$memo_package/deploy/"
-cp server/THIRD_PARTY_NOTICES.txt "$memo_package/"
+cp server/THIRD_PARTY_NOTICES.txt LICENSE "$memo_package/"
 cp docs/operations.md docs/server-validation.md docs/cloud-deployment.md \
   docs/backup-local.md server/README.md "$memo_package/"
 printf '%s\n' "version=0.1.0-candidate" "source_commit=$memo_revision" > "$memo_package/BUILD.txt"

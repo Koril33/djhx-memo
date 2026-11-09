@@ -4,7 +4,7 @@ set -euo pipefail
 umask 0077
 export LC_ALL=C TZ=UTC
 
-backup_host=${DJHX_BACKUP_HOST:-koril@memo.djhx.site}
+backup_host=${DJHX_BACKUP_HOST:?Set DJHX_BACKUP_HOST to your SSH account and host}
 remote_dir=${DJHX_BACKUP_REMOTE_DIR:-/var/lib/djhx-memo-export/}
 destination=${DJHX_BACKUP_DEST:-${XDG_DATA_HOME:-$HOME/.local/share}/djhx-memo-backups}
 state_dir=${DJHX_BACKUP_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/djhx-memo-backup}

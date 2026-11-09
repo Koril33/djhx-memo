@@ -4,6 +4,8 @@
 
 ## 构建与本地运行
 
+服务端当前以 Linux 为目标：`epoch.go` 使用 Unix `syscall.Flock`，不能直接在原生 Windows Go 环境编译。Windows 开发者使用 WSL2/Linux 虚拟机并按[Linux 公共入口](../docs/dev-setup-linux-portable.md)操作；不要将 Windows 桌面客户端能原生编译等同于服务端也已移植。
+
 在 `server/` 中使用 Go 1.27.3：
 
 ```sh

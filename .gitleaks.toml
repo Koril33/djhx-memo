@@ -1,0 +1,22 @@
+title = "DJHX Memo source and history scan"
+
+[extend]
+useDefault = true
+
+# A localStorage namespace is public UI metadata, not an authentication key.
+[[allowlists]]
+description = "Exact public preference storage key declaration"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''(^|[/\\])desktop[/\\]src[/\\]lib[/\\]preferences\.ts$''']
+regexTarget = "match"
+regexes = ['''^PREFERENCES_KEY = 'djhx-memo\.presentation\.v1'$''']
+
+# The scanner mistakes the words "OpenAPI: missing/duplicate" for a credential.
+[[allowlists]]
+description = "Exact non-sensitive OpenAPI validation error"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''(^|[/\\])scripts[/\\]check-docs\.py$''']
+regexTarget = "line"
+regexes = ['''^\s*errors\.append\(f"OpenAPI: missing/duplicate operation or responses: \{method\} \{path\}"\)$''']

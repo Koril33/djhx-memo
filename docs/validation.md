@@ -10,6 +10,8 @@
 
 2026-11-08 的客户端 0.1.1 展示增量另见[桌面界面预览验证](desktop-ui-preview-validation.md)、[Android 界面预览验证](android-ui-preview-validation.md)及[独立复核](reviews/quiet-ui-review.md)。本轮服务端、core、协议和迁移没有变化，不以此前检查替代本轮界面验证，也不重复宣称完整三端发布清单已通过。
 
+2026-11-08 的 0.1.2 下拉框文字与 Android 编辑滚动修正见[增量验证](client-fixes-0.1.2-validation.md)；既有验证按原日期保留，不将其当作本轮全部重新执行。
+
 ## 2. 必需的本地检查
 
 | 范围 | 格式/静态检查 | 行为验证 |

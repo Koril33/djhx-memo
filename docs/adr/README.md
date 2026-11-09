@@ -13,3 +13,5 @@
 - [ADR-0011：客户端统一使用离线 Lucide 图标子集](0011-offline-interface-icons.md)
 
 新增依赖前记录确切版本、理由、许可证与维护来源；工具探针的通过不能代替业务验收。
+
+- [ADR-0012：MIT 授权与开源前本地审计](0012-open-source-license-and-audit.md)。

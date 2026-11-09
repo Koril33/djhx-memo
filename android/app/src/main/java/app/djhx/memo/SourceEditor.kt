@@ -6,7 +6,9 @@ import android.text.Spannable
 import android.text.TextWatcher
 import android.text.style.ForegroundColorSpan
 import android.view.Gravity
+import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.ScrollView
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberUpdatedState
@@ -15,7 +17,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 
-/** 原生输入组件：只调整自有颜色 span，保留选区、撤销与输入法 composing span。 */
+/** 平台 ScrollView 承载同一 EditText，提供原生惯性与边界，并保留选区、撤销和输入法 composing span。 */
 @Composable
 fun SourceEditor(
     text: String,
@@ -40,7 +42,7 @@ fun SourceEditor(
     AndroidView(
         modifier = modifier,
         factory = { context ->
-            object : EditText(context) {
+            val editor = object : EditText(context) {
                 override fun onCreateInputConnection(
                     info: android.view.inputmethod.EditorInfo
                 ): android.view.inputmethod.InputConnection? {
@@ -90,8 +92,34 @@ fun SourceEditor(
                     override fun afterTextChanged(s: Editable?) { s?.let { highlight(it, darkState.value) } }
                 })
             }
+            // 由平台容器统一处理拖动、惯性和边界；EditText 按正文高度布局，保留原生编辑/选区/IME。
+            ScrollView(context).apply {
+                isFillViewport = true
+                // AndroidView 不自动裁切互操作 View；长正文只能绘制在此原生视口内。
+                clipChildren = true
+                clipToPadding = true
+                outlineProvider = android.view.ViewOutlineProvider.BOUNDS
+                clipToOutline = true
+                isVerticalScrollBarEnabled = true
+                addView(
+                    editor,
+                    android.widget.FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    )
+                )
+            }
         },
-        update = { editor ->
+        update = { viewport ->
+            val editor = viewport.getChildAt(0) as EditText
+            if (!visible || !enabled) viewport.fling(0)
+            viewport.visibility = if (visible) android.view.View.VISIBLE else android.view.View.INVISIBLE
+            viewport.isEnabled = enabled && visible
+            viewport.importantForAccessibility = if (visible) {
+                android.view.View.IMPORTANT_FOR_ACCESSIBILITY_AUTO
+            } else {
+                android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+            }
             if (!visible && android.view.inputmethod.BaseInputConnection.getComposingSpanStart(editor.text) >= 0) {
                 android.view.inputmethod.BaseInputConnection.removeComposingSpans(editor.text)
                 compositionCallback.value(false)
@@ -129,6 +157,7 @@ fun SourceEditor(
             }
             // 用户编辑后的 Compose 重组不重设文本；远端更新只在 model 无未提交输入时到达。
             if (editor.text.toString() != text) {
+                viewport.fling(0)
                 val position = editor.selectionStart.coerceAtLeast(0).coerceAtMost(text.length)
                 editor.setText(text)
                 editor.setSelection(position)
