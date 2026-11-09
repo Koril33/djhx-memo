@@ -8,11 +8,11 @@
 - [ADR-0006：Go 服务端依赖](0006-server-dependencies.md)
 - [ADR-0007：桌面依赖](0007-desktop-dependencies.md)
 - [ADR-0008：Android 依赖](0008-android-dependencies.md)
-- [ADR-0009：离线代码着色](0009-offline-code-highlighting.md)
 - [ADR-0009：云端公钥加密备份与本机拉取工具](0009-backup-tools.md)
 - [ADR-0010：统一品牌母版与开发期图标生成工具](0010-brand-assets.md)
 - [ADR-0011：客户端统一使用离线 Lucide 图标子集](0011-offline-interface-icons.md)
+- [ADR-0012：MIT 授权与开源前本地审计](0012-open-source-license-and-audit.md)
+- [ADR-0013：离线代码着色](0013-offline-code-highlighting.md)
+- [ADR-0014：静态官网构建](0014-static-website.md)
 
 新增依赖前记录确切版本、理由、许可证与维护来源；工具探针的通过不能代替业务验收。
-
-- [ADR-0012：MIT 授权与开源前本地审计](0012-open-source-license-and-audit.md)。

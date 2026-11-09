@@ -4,7 +4,7 @@
 
 **v1 目标：Windows、Android、Linux 三端可日常使用。** 桌面端包含托盘；允许未登录记笔记，提供邀请码注册、登录、同步、搜索、回收站和 Markdown 导出。Web、Apple、全局快捷键、系统分享以及 CI/Runner 暂缓。
 
-当前客户端提供 **0.1.2 界面修正版**（沿用 0.1.1 设计），基于 0.1.0 自用候选的服务端与核心功能：Go 服务端、Rust 核心与 Windows/Linux/Android 客户端已实现，并产出可安装的软件包。已执行核心/服务端联调及目标系统的部分实际使用验证；完整设备矩阵与连续 7 天日常试用仍待完成，协议与 v1 尚未正式发布。实际结果和限制见各模块验证记录。
+客户端代码版本为 **0.1.3**，基于 0.1.0 自用候选的服务端与核心功能。Windows/Linux/Android 客户端已实现，公开安装包以 Release 列出的平台为准。已执行核心/服务端联调及目标系统的部分实际使用验证；完整设备矩阵与连续 7 天日常试用仍待完成，协议与 v1 尚未正式发布。实际结果和限制见各模块验证记录。
 
 ## 从这里开始
 
@@ -33,6 +33,7 @@ djhx-memo/
 ├── server/        # Go + SQLite：账号、权威版本、同步和 SSE 通知
 ├── android/       # Kotlin + Compose，经 UniFFI 调用 core
 ├── desktop/       # Tauri 2 + Svelte + TypeScript，Windows / Linux
+├── website/       # 产品介绍与下载的静态官网
 ├── web/           # 暂缓，仅保留说明；桌面前端归 desktop
 └── apple/         # 暂缓，仅保留说明
 ```
@@ -41,7 +42,7 @@ djhx-memo/
 
 ## 构建与使用
 
-安装和首次使用见 [候选版使用说明](docs/quick-start.md)。
+安装和首次使用见 [候选版使用说明](docs/quick-start.md)。面向访客的产品介绍与下载页源码位于 [website/](website/README.md)。公开版本及安装包通过 [GitHub Releases](https://github.com/Koril33/djhx-memo/releases) 分发。
 
 新开发者先按[公共环境入口](docs/dev-setup.md)选择 [Linux](docs/dev-setup-linux-portable.md)或 [Windows](docs/dev-setup-windows.md)及所需模块。维护者的本机 env.sh、VM、已生成 JNI 和私有签名不是新 clone 的前提。各工程提交 Cargo/npm/Gradle 锁文件，构建步骤见 [server](server/README.md)、[core](core/README.md)、[desktop](desktop/README.md)、[android](android/README.md)。本地检查入口：`bash scripts/validate-local.sh core|server|integration|desktop|android`，每次选择一个模块。
 
@@ -49,7 +50,7 @@ djhx-memo/
 
 客户端首次打开即可离线记录，本机空间不会自动上传。候选服务默认地址为 `https://memo.djhx.site`，使用管理员生成的一次性邀请码注册；登录后可明确选择将本机笔记复制到账号空间。该地址提供同步 API；当前没有独立 Web 客户端。部署检查见 [云部署记录](docs/cloud-deployment.md)，备份恢复见 [operations](docs/operations.md)。
 
-安装包和校验值输出到本机忽略目录 `dist/`，不会把二进制、运行数据或发布签名密钥提交 Git。
+安装包和校验值输出到本机忽略目录 `dist/`。发布时将安装包与校验值上传为 GitHub Release 附件，详见[客户端发布流程](docs/client-release.md)。
 
 服务端独立打包入口为 `bash scripts/package-server.sh`，输出静态 Linux amd64 二进制及部署资料压缩包；不会部署到云服务器。
 
