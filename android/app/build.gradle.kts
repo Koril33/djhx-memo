@@ -79,6 +79,7 @@ tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach { exclude("**
 val prepareNotices by tasks.registering(Copy::class) {
     from("../../LICENSE") { rename { "DJHX_MEMO_LICENSE.txt" } }
     from("../../core/THIRD_PARTY_NOTICES.txt") { rename { "CORE_THIRD_PARTY_NOTICES.txt" } }
+    from("../../core/licenses/two-face-syntaxes.txt") { rename { "CODE_SYNTAX_NOTICES.txt" } }
     from("../THIRD_PARTY_NOTICES.txt") { rename { "ANDROID_THIRD_PARTY_NOTICES.txt" } }
     into(layout.buildDirectory.dir("generated/notices"))
 }

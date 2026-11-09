@@ -530,6 +530,22 @@ svg {
   padding: 0;
   background: none;
 }
+
+.code-token-keyword {
+  color: var(--syntax-708);
+}
+.code-token-string {
+  color: var(--syntax-a11);
+}
+.code-token-comment {
+  color: var(--syntax-404740);
+}
+.code-token-number {
+  color: var(--syntax-164);
+}
+.code-token-name {
+  color: var(--syntax-256);
+}
 .markdown ul,
 .markdown ol {
   padding-left: 24px;

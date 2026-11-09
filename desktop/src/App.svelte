@@ -6,6 +6,7 @@
   import { call, native, errorText, coreErrorText } from './lib/bridge';
   import { EditorSession } from './lib/editor-session';
   import { renderMarkdown } from './lib/markdown';
+  import type { CodeHighlights } from './lib/code-highlights';
   import { PreviewState, taskSnapshotMatches } from './lib/preview-state';
   import {
     createTranslator,
@@ -127,7 +128,33 @@
     documentKey,
     noteId: editor.note?.id ?? null,
   });
-  $: preview = renderMarkdown(previewSnapshot.source, !readOnly, previewSnapshot.version, language);
+  let highlightTimer: ReturnType<typeof setTimeout> | undefined;
+  let highlightRequest = 0;
+  let highlighted: { source: string; result: CodeHighlights } | undefined;
+  $: highlightSource = previewSnapshot.source.replace(/\r\n?/g, '\n');
+  $: scheduleHighlight(highlightSource);
+  $: codeHighlights = highlighted?.source === highlightSource ? highlighted.result : undefined;
+  $: preview = renderMarkdown(
+    previewSnapshot.source,
+    !readOnly,
+    previewSnapshot.version,
+    language,
+    codeHighlights,
+  );
+
+  function scheduleHighlight(source: string): void {
+    clearTimeout(highlightTimer);
+    const request = ++highlightRequest;
+    if (!source.includes('```') && !source.includes('~~~')) return;
+    highlightTimer = setTimeout(async () => {
+      try {
+        const result = await call<CodeHighlights>({ action: 'highlight_code', source });
+        if (request === highlightRequest) highlighted = { source, result };
+      } catch {
+        // Markdown remains available if optional coloring fails.
+      }
+    }, 120);
+  }
   $: syncLabel = state
     ? {
         local: t('localOnly'),
@@ -656,6 +683,8 @@
     return cleanup;
   });
   onDestroy(() => {
+    ++highlightRequest;
+    clearTimeout(highlightTimer);
     clearInterval(poll);
     clearTimeout(searchTimer);
     unlisteners.forEach((stop) => stop());
@@ -967,6 +996,8 @@
         >
           {#key documentKey}<Editor
               value={editor.content}
+              highlights={codeHighlights}
+              composing={editor.composing}
               {language}
               readonly={readOnly}
               onEdit={(text) => editor.edit(text)}

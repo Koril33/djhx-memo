@@ -1,14 +1,30 @@
 <script lang="ts">
   import { createTranslator, type Language } from './lib/i18n';
+  import type { CodeHighlights } from './lib/code-highlights';
   import { onMount } from 'svelte';
-  import { EditorState, Transaction, Compartment } from '@codemirror/state';
-  import { EditorView, keymap, highlightActiveLine, placeholder } from '@codemirror/view';
+  import {
+    EditorState,
+    Transaction,
+    Compartment,
+    StateEffect,
+    StateField,
+  } from '@codemirror/state';
+  import {
+    Decoration,
+    EditorView,
+    keymap,
+    highlightActiveLine,
+    placeholder,
+    type DecorationSet,
+  } from '@codemirror/view';
   import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
   import { markdown } from '@codemirror/lang-markdown';
   import { defaultHighlightStyle, syntaxHighlighting, HighlightStyle } from '@codemirror/language';
 
   export let language: Language = 'en';
   export let value = '';
+  export let highlights: CodeHighlights | undefined = undefined;
+  export let composing = false;
   export let readonly = false;
   export let onEdit: (content: string) => void;
   export let onBlur: () => void;
@@ -17,6 +33,17 @@
   let view: EditorView | undefined;
   const writable = new Compartment();
   const localized = new Compartment();
+  const setCodeColors = StateEffect.define<DecorationSet>();
+  const codeColors = StateField.define<DecorationSet>({
+    create: () => Decoration.none,
+    update(current, transaction) {
+      return (
+        transaction.effects.find((effect) => effect.is(setCodeColors))?.value ??
+        (transaction.docChanged ? Decoration.none : current)
+      );
+    },
+    provide: (field) => EditorView.decorations.from(field),
+  });
   function languageExtensions(locale: Language) {
     const t = createTranslator(locale);
     return [
@@ -48,6 +75,7 @@
           history(),
           highlightActiveLine(),
           markdown(),
+          codeColors,
           syntaxHighlighting(
             HighlightStyle.define(
               defaultHighlightStyle.specs.map((spec) =>
@@ -87,14 +115,21 @@
     return () => view?.destroy();
   });
 
-  $: if (view && view.state.doc.toString() !== value) {
+  $: normalizedValue = value.replace(/\r\n?/g, '\n');
+  $: if (view && view.state.doc.toString() !== normalizedValue) {
     // CodeMirror owns composition. A state/event refresh must not interrupt the IME.
     if (!view.composing) {
       view.dispatch({
-        changes: { from: 0, to: view.state.doc.length, insert: value },
+        changes: { from: 0, to: view.state.doc.length, insert: normalizedValue },
         annotations: Transaction.remote.of(true),
       });
     }
+  }
+  $: if (view && !composing && view.state.doc.toString() === normalizedValue) {
+    const marks = highlights?.source_spans.map(({ start, end, kind }) =>
+      Decoration.mark({ class: `code-token-${kind}` }).range(start, end),
+    );
+    view.dispatch({ effects: setCodeColors.of(marks ? Decoration.set(marks) : Decoration.none) });
   }
   $: if (view) view.dispatch({ effects: writable.reconfigure(EditorState.readOnly.of(readonly)) });
   // Reconfigure this compartment; the document, selection, undo history and IME view stay alive.

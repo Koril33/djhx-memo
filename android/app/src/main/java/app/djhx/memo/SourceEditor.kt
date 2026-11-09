@@ -19,9 +19,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 
 /** 平台 ScrollView 承载同一 EditText，提供原生惯性与边界，并保留选区、撤销和输入法 composing span。 */
 @Composable
-fun SourceEditor(
+internal fun SourceEditor(
     text: String,
     enabled: Boolean,
+    codeSpans: List<CodeSpan> = emptyList(),
     visible: Boolean = true,
     modifier: Modifier = Modifier,
     onBlur: () -> Unit = {
@@ -89,7 +90,13 @@ fun SourceEditor(
                     override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                         callback.value(s?.toString().orEmpty())
                     }
-                    override fun afterTextChanged(s: Editable?) { s?.let { highlight(it, darkState.value) } }
+                    override fun afterTextChanged(s: Editable?) {
+                        s?.let {
+                            highlight(it, darkState.value)
+                            it.clearCodeColors()
+                        }
+                        tag = darkState.value to emptyList<CodeSpan>()
+                    }
                 })
             }
             // 由平台容器统一处理拖动、惯性和边界；EditText 按正文高度布局，保留原生编辑/选区/IME。
@@ -151,10 +158,6 @@ fun SourceEditor(
             editor.textSelectHandleLeft?.setTint(accentColor)
             editor.textSelectHandleRight?.setTint(accentColor)
             editor.textSelectHandle?.setTint(accentColor)
-            if (editor.tag != dark) {
-                highlight(editor.text, dark)
-                editor.tag = dark
-            }
             // 用户编辑后的 Compose 重组不重设文本；远端更新只在 model 无未提交输入时到达。
             if (editor.text.toString() != text) {
                 viewport.fling(0)
@@ -162,11 +165,34 @@ fun SourceEditor(
                 editor.setText(text)
                 editor.setSelection(position)
             }
+            val appearance = dark to codeSpans
+            if (editor.tag != appearance) {
+                highlight(editor.text, dark)
+                editor.text.applyCodeColors(codeSpans, dark)
+                editor.tag = appearance
+            }
         },
     )
 }
 
 private class SyntaxColor(color: Int) : ForegroundColorSpan(color)
+private class CodeSyntaxColor(color: Int) : ForegroundColorSpan(color)
+
+private fun Editable.clearCodeColors() {
+    getSpans(0, length, CodeSyntaxColor::class.java).forEach(::removeSpan)
+}
+
+private fun Editable.applyCodeColors(spans: List<CodeSpan>, dark: Boolean) {
+    clearCodeColors()
+    spans.forEach { span ->
+        setSpan(
+            CodeSyntaxColor(span.kind.color(dark).toArgb()),
+            span.start,
+            span.end,
+            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+        )
+    }
+}
 
 private fun highlight(editable: Editable, dark: Boolean) {
     editable.getSpans(0, editable.length, SyntaxColor::class.java).forEach { editable.removeSpan(it) }

@@ -56,4 +56,27 @@ describe('restricted Markdown preview', () => {
     expect(html).toContain('<strong>粗体</strong>');
     expect(html).not.toContain('<button');
   });
+
+  it('colors a matching fenced block and escapes highlighted and unhighlighted code', () => {
+    const code = 'const value = "<script>"; // <img>';
+    const source = `~~~TypeScript extra\n${code}\n~~~\n\n~~~text\n${code}\n~~~`;
+    const html = renderMarkdown(source, true, '', 'en', {
+      source_spans: [],
+      blocks: [
+        {
+          language: 'typescript',
+          code: code + '\n',
+          spans: [
+            { start: 0, end: 5, kind: 'keyword' },
+            { start: 14, end: 24, kind: 'string' },
+          ],
+        },
+      ],
+    });
+    expect(html).toContain('<span class="code-token-keyword">const</span>');
+    expect(html).toContain('<span class="code-token-string">&quot;&lt;script&gt;&quot;</span>');
+    expect(html).toContain('// &lt;img&gt;');
+    expect(html).not.toMatch(/<(script|img)\b/);
+    expect(html.match(/code-token-keyword/g)).toHaveLength(1);
+  });
 });

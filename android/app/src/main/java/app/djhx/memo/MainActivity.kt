@@ -262,6 +262,7 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
         Column(Modifier.padding(padding).fillMaxSize().navigationBarsPadding().imePadding()) {
             if (model.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             if (model.editorOpen) {
+                val codeHighlights = rememberCodeHighlights(model.content, model)
                 ConflictInfo(model.selected)
                 if (model.saveFailed) {
                     SaveRescue(model, onCopy = { clipboard.setText(AnnotatedString(model.content)) })
@@ -270,6 +271,7 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                     SourceEditor(
                         model.content,
                         enabled = !model.busy && !readOnly,
+                        codeSpans = codeHighlights?.sourceSpans.orEmpty(),
                         visible = !preview && !readOnly,
                         modifier = Modifier.fillMaxSize(),
                         onBlur = model::retrySave,
@@ -280,6 +282,7 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                         MarkdownPreview(
                             model.content,
                             editable = !readOnly && !model.busy,
+                            codeHighlights = codeHighlights,
                             modifier = Modifier.fillMaxSize(),
                             onTask = model::toggleTask,
                             onLink = onLink

@@ -26,6 +26,8 @@ rustls = { version = "0.23", default-features = false, features = ["ring", "std"
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json = "=1.0.154"
 sha2 = "=0.10.9"
+syntect = { version = "=5.3.0", default-features = false }
+two-face = { version = "=0.5.2", default-features = false, features = ["syntect-onig"] }
 uniffi = "=0.32.2"
 uuid = { version = "=1.29.0", features = ["v4", "serde"] }
 webpki-roots = "1"

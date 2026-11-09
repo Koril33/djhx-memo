@@ -7,11 +7,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.util.UUID
 
@@ -20,6 +22,12 @@ import java.util.UUID
 @Suppress("TooGenericExceptionCaught", "TooManyFunctions")
 class MemoModel(application: Application, private val gateway: CoreBridge) : AndroidViewModel(application) {
     constructor(application: Application) : this(application, (application as MemoApplication).gateway)
+
+    internal suspend fun highlightCode(source: String): CodeHighlights {
+        val result = gateway.obj("highlight_code", "source" to source)
+        return withContext(Dispatchers.Default) { CodeHighlights(result) }
+    }
+
     var state by mutableStateOf(JSONObject())
         private set
     var notes by mutableStateOf(emptyList<JSONObject>())

@@ -3,6 +3,7 @@
 #![warn(missing_docs)]
 
 mod db;
+mod highlight;
 mod model;
 mod sync;
 
@@ -293,6 +294,11 @@ impl Engine {
 
     fn dispatch(&self, request: &Value) -> Result<Value> {
         let action = text(request, "action")?;
+        if action == "highlight_code" {
+            return Ok(json!(highlight::highlight_markdown(&text(
+                request, "source"
+            )?)));
+        }
         if action == "login" || action == "register" {
             return self.authenticate(request, action == "register");
         }

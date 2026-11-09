@@ -1,6 +1,7 @@
 import { icons } from './icons';
 import { createTranslator, type Language } from './i18n';
 import { Marked, type Tokens, type Token } from 'marked';
+import type { CodeHighlights } from './code-highlights';
 
 export function escapeHtml(value: string): string {
   return value.replace(
@@ -73,11 +74,33 @@ export function renderMarkdown(
   interactive = true,
   previewVersion = '',
   language: Language = 'zh-CN',
+  highlights?: CodeHighlights,
 ): string {
   const t = createTranslator(language);
   const parser = new Marked({ gfm: true, breaks: false, async: false });
+  const codeBlocks = new Map(
+    highlights?.blocks.map((block) => [
+      `${block.language}\0${block.code.replace(/\n$/, '')}`,
+      block.spans,
+    ]),
+  );
   parser.use({
     renderer: {
+      code({ text, lang }: Tokens.Code) {
+        const label = lang?.match(/\S+/)?.[0];
+        if (!label) return false;
+        const spans = codeBlocks.get(`${label.toLowerCase()}\0${text}`);
+        if (!spans?.length) return false;
+        let cursor = 0;
+        let html = '';
+        for (const { start, end, kind } of spans) {
+          html += escapeHtml(text.slice(cursor, start));
+          html += `<span class="code-token-${kind}">${escapeHtml(text.slice(start, end))}</span>`;
+          cursor = end;
+        }
+        html += escapeHtml(text.slice(cursor).replace(/\n$/, ''));
+        return `<pre><code class="language-${escapeHtml(label)}">${html}\n</code></pre>\n`;
+      },
       html({ text }: Tokens.HTML | Tokens.Tag) {
         return `<span class="raw-html">${escapeHtml(text)}</span>`;
       },

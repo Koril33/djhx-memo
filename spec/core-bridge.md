@@ -23,6 +23,7 @@
 | save | id, expected_generation, content | NoteView |
 | set_deleted | id, expected_generation, deleted | NoteView |
 | toggle_task | id, expected_generation, line（从 0 开始的源码行） | NoteView；核心只修改 CommonMark 任务标记，排除代码块 |
+| highlight_code | source（当前 Markdown 缓冲） | `{source_spans,blocks}`，仅计算显示用的围栏代码着色 |
 | export | include_deleted=false, deleted_only=false | `{filename,bytes_base64}`，ZIP 由核心生成；deleted_only=true 仅导出回收站，优先于 include_deleted |
 | login | server_url, username, password, device_name | `{profile,import_count,credential_persistent}` |
 | register | 同 login，加 invite_code | 同 login |
@@ -41,6 +42,12 @@ NoteView：`id,content,title,generation,deleted,created_at,updated_at,conflict,s
 SyncInfo：`state,pending,last_success,error`。state 为 local/pending/syncing/synced/offline/auth_required/recovery_required/error；error 为可空的稳定错误对象。时间为 RFC3339 字符串或 null。
 
 sync 的 wait=true 仍返回成功桥接结果与 SyncInfo；认证、网络和协议失败记录于 SyncInfo.error，本地存储不可读等无法构造状态的错误才返回桥接错误。后台任务据此区分需要重试和需要重新登录。
+
+## 代码着色
+
+`source_spans` 为正文中的着色区间。`blocks` 为 `{language,code,spans}` 数组，`language` 是围栏信息字符串的首个词转为 ASCII 小写，`code` 为规范化换行后的解析器代码内容，`spans` 为相对该内容的着色区间。区间均为 `{start,end,kind}`，以 UTF-16 代码单元计数，包含起点、排除终点，按起点递增且不重叠。`kind` 为 `keyword`、`string`、`comment`、`number`、`name` 之一。
+
+调用独立于空间和保存，仅在本地后台计算。正文超过 128 KiB、代码块超过 32 KiB 或代码块中的任一行超过 4 KiB 时，对应范围退回普通显示。UI 只将结果用于对应的正文快照，预览按语言与代码文本匹配。结果缺失或不匹配时仍正常显示 Markdown。
 
 ## UI 责任
 

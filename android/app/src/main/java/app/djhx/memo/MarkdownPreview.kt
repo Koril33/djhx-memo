@@ -28,9 +28,10 @@ import androidx.compose.ui.unit.dp
 import org.commonmark.node.*
 
 @Composable
-fun MarkdownPreview(
+internal fun MarkdownPreview(
     source: String,
     editable: Boolean,
+    codeHighlights: CodeHighlights? = null,
     modifier: Modifier = Modifier,
     onTask: (Int) -> Unit,
     onLink: (String) -> Unit
@@ -41,7 +42,7 @@ fun MarkdownPreview(
         modifier.verticalScroll(rememberScrollState()).padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        MarkdownChildren(tree, lines, editable, onTask, onLink)
+        MarkdownChildren(tree, lines, editable, onTask, onLink, codeHighlights)
     }
 }
 
@@ -59,9 +60,10 @@ private fun MarkdownChildren(
     lines: List<String>,
     editable: Boolean,
     onTask: (Int) -> Unit,
-    onLink: (String) -> Unit
+    onLink: (String) -> Unit,
+    codeHighlights: CodeHighlights?
 ) {
-    node.children().forEach { block -> MarkdownBlock(block, lines, editable, onTask, onLink) }
+    node.children().forEach { block -> MarkdownBlock(block, lines, editable, onTask, onLink, codeHighlights) }
 }
 
 @Composable
@@ -70,19 +72,23 @@ private fun MarkdownBlock(
     lines: List<String>,
     editable: Boolean,
     onTask: (Int) -> Unit,
-    onLink: (String) -> Unit
+    onLink: (String) -> Unit,
+    codeHighlights: CodeHighlights?
 ) {
     when (block) {
         is Heading -> MarkdownText(block, onLink, heading = block.level)
         is Paragraph -> MarkdownText(block, onLink)
-        is FencedCodeBlock -> CodeBlock(block.literal)
-        is IndentedCodeBlock -> CodeBlock(block.literal)
+        is FencedCodeBlock -> {
+            val code = block.literal.removeSuffix("\n")
+            CodeBlock(code, codeHighlights?.previewSpans(block.info.orEmpty(), code).orEmpty())
+        }
+        is IndentedCodeBlock -> CodeBlock(block.literal.removeSuffix("\n"))
         is HtmlBlock -> Text(block.literal, fontFamily = FontFamily.Monospace)
         is ThematicBreak -> HorizontalDivider()
         is BlockQuote -> Column(
             Modifier.padding(start = 12.dp).background(MaterialTheme.colorScheme.surfaceVariant).padding(8.dp)
         ) {
-            MarkdownChildren(block, lines, editable, onTask, onLink)
+            MarkdownChildren(block, lines, editable, onTask, onLink, codeHighlights)
         }
         is BulletList, is OrderedList -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             block.children().filterIsInstance<ListItem>().forEachIndexed { index, item ->
@@ -111,21 +117,28 @@ private fun MarkdownBlock(
                                     dropTask = task != null && childIndex == 0
                                 )
                             } else {
-                                MarkdownBlock(child, lines, editable, onTask, onLink)
+                                MarkdownBlock(child, lines, editable, onTask, onLink, codeHighlights)
                             }
                         }
                     }
                 }
             }
         }
-        else -> MarkdownChildren(block, lines, editable, onTask, onLink)
+        else -> MarkdownChildren(block, lines, editable, onTask, onLink, codeHighlights)
     }
 }
 
 @Composable
-private fun CodeBlock(code: String) {
+private fun CodeBlock(code: String, spans: List<CodeSpan> = emptyList()) {
+    val dark = LocalDarkAppearance.current
+    val highlighted = remember(code, spans, dark) {
+        buildAnnotatedString {
+            append(code)
+            spans.forEach { span -> addStyle(SpanStyle(color = span.kind.color(dark)), span.start, span.end) }
+        }
+    }
     Text(
-        code.removeSuffix("\n"),
+        highlighted,
         Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant).padding(10.dp),
         fontFamily = FontFamily.Monospace
     )

@@ -28,6 +28,8 @@ for package in sorted(metadata["packages"], key=lambda p: (p["name"], p["version
     notices = set()
     for pattern in ("LICENSE*", "LICENCE*", "COPYING*", "NOTICE*", "license*", "licence*"):
         notices.update(path for path in directory.glob(pattern) if path.is_file())
+    if package["name"] == "onig_sys":
+        notices.add(directory / "oniguruma/COPYING")
     if package.get("license_file"):
         notices.add(directory / package["license_file"])
     parts.append("\n" + "=" * 72 + "\n" + package["name"] + " " + package["version"] +
