@@ -13,3 +13,5 @@ Gitea 保存开发分支和评审记录。审核通过后，以保留历史的�
 | Android | 按 [Android 构建与签名](../android/README.md#构建)生成并核验签名 release APK | `djhx-memo-0.1.3-android.apk` |
 
 Windows 核验安装、启动和版本，Linux 核验 DEB 架构、安装和启动，Android 核验 `app.djhx.memo`、`versionCode=4`、两种 ABI 与原发布证书。随 Release 提供 `SHA256SUMS`，每行由小写 SHA-256、两个空格和附件名组成。追加平台时一并更新校验文件与版本说明，再从公开链接核对下载。
+
+2026-11-09已补齐三个平台附件和统一校验清单，Windows保留原上传文件；实际来源、哈希及公开下载验证见[发布记录](website-deployment.md#github-release-附件)，本机构建验证见[Android](releases/0.1.3-android-validation.md)和[Linux](releases/0.1.3-linux-validation.md)。GitHub CLI/API登录与Git SSH推送是两种凭据能力，上传附件需要相应仓库的Contents写权限；令牌保存在系统keyring或仓库外私有配置，不写入命令示例、日志和源码。

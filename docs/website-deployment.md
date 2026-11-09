@@ -23,4 +23,27 @@ Nginx文件改名为 `/etc/nginx/conf.d/memo.djhx.site.conf`。旧 `zz-` 前缀�
 
 准备阶段已完成四语切换、明暗切换/刷新持久化、1280×720与390×844浏览器显示检查，无横向溢出或浏览器警告/错误；统一品牌生成器36文件检查通过，既有客户端图标字节不变。core格式/Clippy及22项单元测试通过；真实Go/core联调7项通过，30个SSE样本P95为593.524ms、最大886.185ms。原有测试中的7个ignored联调另显式运行，没有计为常规单测通过。
 
-安装包、公开附件/校验、服务器切换与双远程main最终结果在完成后追加于下方。当前准备记录不等同于线上验收通过；物理arm64/API29、完整输入法/平台矩阵及连续7天试用继续见[验证清单](validation.md)。
+安装包、公开附件/校验与服务器切换结果如下；物理arm64/API29、完整输入法/平台矩阵及连续7天试用继续见[验证清单](validation.md)。
+
+## GitHub Release 附件
+
+[v0.1.3](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.3) 保留原Windows附件，补齐Linux与Android；统一SHA256SUMS和版本说明一并更新。三个附件都从无需登录的公开链接重新下载，逐字节计数和SHA256与本机归档相符；未移动tag，也未替换Windows包。
+
+| 附件 | 字节 | SHA256 |
+| --- | ---: | --- |
+| djhx-memo-0.1.3-windows-x64-setup.exe | 7,510,080 | `f2af36b59d9618567b091677bbb090727b9a8a5923d906bd18a88a71b6f210ab` |
+| djhx-memo-0.1.3-linux-amd64.deb | 8,185,720 | `98030e44925eac08e388c8cbeae448693213b26dc51029659b49f12495cddda1` |
+| djhx-memo-0.1.3-android.apk | 36,228,262 | `57c56997659e9b74a09492edbc391bb231bfd7efbc6de531fe270caa844f794a` |
+
+Linux前端27项、原生2项及定向高亮3项通过，实际deb覆盖安装、高亮/中英浅深主题/正常关闭重开、原数据哈希通过，随包7份许可；见[Linux验证](releases/0.1.3-linux-validation.md)。Android重新生成绑定并重编双ABI，JVM12项、设备15通过/1联调跳过，额外高亮探针2项及真实IME滚动1项通过；原签名覆盖安装、16KiB对齐、5份通知和实际安装包哈希通过，见[Android验证](releases/0.1.3-android-validation.md)。没有把本轮未重编的Windows包当成本机重新验收。
+
+## 线上切换结果
+
+- 官网构建来源 `3a75bdb`，部署到 `/var/www/memo.djhx.site-releases/20261109T134050Z-3a75bdb`，`/var/www/memo.djhx.site` 为root管理的软链接。Nginx已改为 `memo.djhx.site.conf`，旧 `zz-` 文件移入备份，没有重复加载。
+- 备份位于 `/var/backups/djhx-memo-website-20261109T134050Z-3a75bdb`，权限0700。原默认443站点仅增加显式 `default_server`；原80默认站点不变。原主配置、默认HTTP配置及Go二进制哈希一致，原Go PID保持、服务active、NRestarts=0。既有站点和未知Host的TLS响应仍200，正文SHA256与切换前完全相同。
+- `nginx -t` 通过后reload。第一次立即探测仍收到旧worker的401，随后重试取得与构建首页完全相同的200，未触发回退；不把此异步窗口误报为服务故障，也不声称本轮实际注入了回退失败。
+- 公网正常验证证书的HTTPS请求核对首页及全部7个静态文件/许可的字节哈希；首页no-cache、哈希资源immutable、缺失资源/页面404、HTTP固定301到HTTPS、healthz200、无凭据API/SSE为401且no-store，均通过。
+- 正式域名下使用专用合成账号完成邀请注册、第二设备登录、Push/重复幂等、Pull、ZIP、SSE首信号/提交通知/15秒心跳与吊销EOF。实测首信号52.3ms、提交通知77.1ms、心跳15.05s，为单次烟测，不是P95。合成笔记经正常同步进入墓碑；两枚设备token已吊销，测试账号按规范保留，未读取操作者真实笔记。
+- 浏览器本机正式构建的桌面/手机、四语和主题回归通过；正式域名的HTTP资源校验通过。工具访问正式域名的浏览器预览两次超时，没有把它记成线上浏览器截图验收；构建截图保存在本机 `.local/release-013/`。
+
+本轮原始构建、公开下载/资源哈希、代理部署与公网烟测证据在被忽略的 `.local/release-013/`；部署者私有账号、邀请和口令不入仓库，临时测试凭据用后清除。root备份保留用于回退。Git/GitHub API权限已验证，最终main以正常快进推送到两个远程；不公开Gitea开发分支、不删除或改写历史。

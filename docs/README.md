@@ -1,6 +1,8 @@
 # 项目文档
 
 - [quick-start.md](quick-start.md)：候选版安装、离线使用与接入自有服务器。
+- [client-release.md](client-release.md)：GitHub/Gitea与0.1.3三端附件发布；实际构建：[Android](releases/0.1.3-android-validation.md)、[Linux](releases/0.1.3-linux-validation.md)。
+- [website-deployment.md](website-deployment.md)：官网、Nginx路由与双远程main的合并部署记录。
 - [brand-guidelines.md](brand-guidelines.md)：DJHX Memo 可编辑母版、设计板、多端尺寸与统一替换步骤。
 - [client-fixes-0.1.2-validation.md](client-fixes-0.1.2-validation.md)：0.1.2 下拉框文字与 Android 编辑滚动的复现、修正及实测。
 - [ui-design.md](ui-design.md)：0.1.1 界面预览的共同视觉与移动/桌面布局。

@@ -2,7 +2,7 @@
 
 ## 分支与提交
 
-使用 `docs/`、`feat/`、`fix/` 等分支，提交遵循 Conventional Commits。先提交规范变化，再实施受影响模块；可以在一个分支内完成。仓库托管于自建 Git，没有 CI/Runner。
+使用 `docs/`、`feat/`、`fix/` 等分支，提交遵循 Conventional Commits。先提交规范变化，再实施受影响模块；可以在一个分支内完成。Gitea保留私人开发分支与评审，GitHub公开主分支与Release；按[客户端发布流程](docs/client-release.md)同步审核后的main及指定tag，不批量公开私人开发分支。没有 CI/Runner。
 
 推送分支不代表通过评审或发布。平台支持 PR 时使用 PR；不支持时，提供分支、提交范围和检查记录供人工或另一位协作者评审，再由维护者合并。不得以自写自审代替同步、迁移和鉴权的交叉评审。
 
