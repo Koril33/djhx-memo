@@ -1,11 +1,11 @@
 // DJHX Memo 官网 · 交互层（i18n / 主题 / 下载跳转）
 
-const RELEASE_TAG_URL = "https://github.com/Koril33/djhx-memo/releases/tag/v0.1.3";
+const RELEASE_ASSET_BASE = "https://github.com/Koril33/djhx-memo/releases/download/v0.1.3/";
 
 const DOWNLOAD_URLS = {
-  windows: RELEASE_TAG_URL,
-  linux: RELEASE_TAG_URL,
-  android: RELEASE_TAG_URL,
+  windows: `${RELEASE_ASSET_BASE}djhx-memo-0.1.3-windows-x64-setup.exe`,
+  linux: `${RELEASE_ASSET_BASE}djhx-memo-0.1.3-linux-amd64.deb`,
+  android: `${RELEASE_ASSET_BASE}djhx-memo-0.1.3-android.apk`,
 };
 
 const I18N = {
@@ -71,7 +71,7 @@ function normalizeLang(value) {
 function detectLang() {
   try {
     const saved = localStorage.getItem(STORAGE.lang);
-    if (saved && I18N[saved]) return saved;
+    if (LANGS.includes(saved)) return saved;
   } catch (e) {
     /* ignore */
   }
@@ -146,6 +146,7 @@ function init() {
   downloadSelect?.addEventListener("change", () => {
     const url = DOWNLOAD_URLS[downloadSelect.value];
     if (url) window.open(url, "_blank", "noopener,noreferrer");
+    downloadSelect.value = "";
   });
 }
 

@@ -8,6 +8,8 @@
 
 除注册、登录、healthz 外均需 Authorization: Bearer token。响应使用 Cache-Control: no-store；请求 ID 置于 X-Request-ID，JSON 错误另带 request_id。HTTP 明文调试、TLS、限流和账号隔离见 [认证规范](auth.md)。
 
+默认域名可同时托管静态产品官网。反向代理仅将 `/v1`、`/v1/` 下的路径及精确 `/healthz` 原样转给 Go 服务；根页面及静态资源不参与 API 鉴权。官网不是浏览器笔记客户端，不存储或呈现账号笔记；缺失静态资源返回404，不回退为 API 或首页。部署官网不改变 API 路径、可信代理头、TLS、响应缓存或 SSE 不缓冲约束。
+
 ## 2. 接口清单
 
 | 方法与路径 | 成功结果 | 说明 |

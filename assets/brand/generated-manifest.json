@@ -43,6 +43,7 @@
     "desktop/src-tauri/icons/128x128.png": "01edde31cdf6aa2c32e059ebb0ed8c9392eff103c4fad2d566cdfdc50ba3a83e",
     "desktop/src-tauri/icons/128x128@2x.png": "200f81eb9ebaa297f3e9ebf8e2dfa0b87a637a43912c065d53b31370f9500cd5",
     "desktop/src-tauri/icons/32x32.png": "a56c5f3a6e034fa2d299b2b5260e8d88e2a5600bfcd7a6bc4e11be648ee0e90b",
-    "desktop/src-tauri/icons/icon.ico": "da7f46c829e2b2357b44613322daed008cf9508f46bfa8ab40b211a69720c871"
+    "desktop/src-tauri/icons/icon.ico": "da7f46c829e2b2357b44613322daed008cf9508f46bfa8ab40b211a69720c871",
+    "website/logo.svg": "4e43cede39252602b577cdd715d2971ce17915434b7593812f45f73e15d959af"
   }
 }

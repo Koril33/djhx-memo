@@ -9,6 +9,7 @@ MIT 只覆盖本项目有权授权的原创部分，不改写第三方许可、�
 | 材料 | 管理与分发 |
 | --- | --- |
 | 本项目原创内容 | 根 LICENSE；桌面 licenses/djhx-memo.txt，Android DJHX_MEMO_LICENSE.txt，服务端包 LICENSE |
+| 静态官网 | 构建输出 licenses/DJHX_MEMO_LICENSE.txt、lucide.txt 及 vite.txt；包含打包器注入的 Vite 运行时代码许可，不能因官网没有第三方业务运行依赖而漏掉通知 |
 | Rust / core / Tauri | [core 清单](../core/THIRD_PARTY_NOTICES.txt)、[桌面 Rust 清单](../desktop/THIRD_PARTY_RUST_NOTICES.txt)，含上游许可原文与来源 |
 | 实际前端包 | [npm 清单](../desktop/THIRD_PARTY_NPM_NOTICES.txt)，打包时按实际 bundle 生成，不能只列直接依赖 |
 | Android 与 Go | [Android 清单](../android/THIRD_PARTY_NOTICES.txt)、[Go 清单](../server/THIRD_PARTY_NOTICES.txt) |
