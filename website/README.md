@@ -4,9 +4,11 @@
 
 ## 页面与交互
 
-- 桌面端为单屏无滚动布局（`100dvh`），左栏为简介与下载，右栏为桌面 + 移动端界面示意；窄屏下自然堆叠并允许滚动。
-- 顶部导航提供语言切换（简体中文 / English / 日本語 / 한국어）、深浅模式切换与 GitHub 链接。语言与主题选择保存在本机 `localStorage`，主题默认跟随系统 `prefers-color-scheme`。
-- 下载入口为平台下拉（Windows / Linux / Android），选择后跳转 GitHub Releases 的版本页面。各平台跳转地址集中在 `app.js` 的 `DOWNLOAD_URLS`。
+- 视觉方向为日式极简（和纸纹理、圆相、朱印、竖排索引）与瑞士国际主义（十二栏网格、规则线、无衬线大标题）的结合，文字保持最少。
+- 桌面端为单屏无滚动布局（`100dvh`），左五栏为标题与下载，第六栏为竖排索引，右六栏为桌面 + 移动端界面示意；窄屏下自然堆叠并允许滚动。
+- 顶部导航提供语言分段控件（中 / EN / 日 / 한）、日食造型的深浅模式切换与 GitHub 链接。语言与主题选择保存在本机 `localStorage`，主题默认跟随系统 `prefers-color-scheme`；支持 View Transitions 的浏览器以按钮为圆心做圆形揭示。
+- 下载入口为三个平台磁贴（Windows / Linux / Android），点击在新标签页打开 GitHub Releases 的版本页面。各平台地址集中在 `app.js` 的 `DOWNLOAD_URLS`，HTML 中的 `href` 是无脚本时的回退。
+- 动效（圆相描绘、入场、指针视差、磁贴墨色晕开）只使用 CSS 与少量 `requestAnimationFrame`；系统开启“减少动态效果”时全部关闭，视差仅在精确指针设备上启用。
 
 在本目录使用 Node.js 22.12+ 和 npm：
 
