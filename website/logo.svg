@@ -1,6 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-  <rect width="128" height="128" rx="28" fill="#3D7963"/>
-  <rect x="29" y="22" width="70" height="84" rx="9" fill="#F6F4E9"/>
-  <path d="M80 22V41H99Z" fill="#BED5BB"/>
-  <path d="M44 53h34m-34 14h34M44 81h23" fill="none" stroke="#6B927A" stroke-width="4" stroke-linecap="round"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="DJHX Memo">
+<rect x="0" y="0" width="128" height="128" rx="28" fill="#3D7963" />
+  <g>
+    <rect x="29" y="22" width="70" height="84" rx="9" fill="#F6F4E9" />
+    <path d="M80 22V41H99Z" fill="#BED5BB" />
+    <rect x="42" y="51" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="65" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="79" width="27" height="4" rx="2" fill="#6B927A" />
+  </g>
+
 </svg>

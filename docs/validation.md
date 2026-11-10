@@ -12,6 +12,8 @@
 
 2026-11-08 的 0.1.2 下拉框文字与 Android 编辑滚动修正见[增量验证](client-fixes-0.1.2-validation.md)；既有验证按原日期保留，不将其当作本轮全部重新执行。
 
+2026-11-09的0.1.3发布、分支核对与官网上线见[整合记录](website-deployment.md)，新安装包的[Android](releases/0.1.3-android-validation.md)/[Linux](releases/0.1.3-linux-validation.md)验证独立记录；公开Release有附件不代表完整v1验收通过。
+
 ## 2. 必需的本地检查
 
 | 范围 | 格式/静态检查 | 行为验证 |

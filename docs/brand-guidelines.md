@@ -35,6 +35,7 @@
 | 使用位置 | 自动生成的资源 |
 | --- | --- |
 | 通用 PNG | `assets/brand/png/icon-{16,24,32,48,64,128,256,512,1024}.png`，RGBA8、透明圆角 |
+| 官网品牌与 favicon | `website/logo.svg`，由同一母版生成，随统一清单验证；不得手工维护另一份Logo |
 | Windows 窗口、任务栏、NSIS 安装器 | `desktop/src-tauri/icons/icon.ico`，内含 16、24、32、48、64、128、256 px 的 32 位图像；PNG 帧适用于本项目 Windows 10+ 基线 |
 | Linux / Tauri | `32x32.png`、`128x128.png`、`128x128@2x.png`；后者为 256 px。Linux 包装工具由这些输入生成安装到 hicolor 的大小 |
 | Android 传统图标 | `mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_launcher.png`，48/72/96/144/192 px |

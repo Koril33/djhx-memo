@@ -36,6 +36,7 @@ ALLOWED_PREFIXES = (
     "assets/brand/",
     "desktop/src-tauri/icons/",
     "android/app/src/main/res/",
+    "website/",
 )
 
 
@@ -264,6 +265,7 @@ def build() -> dict[str, bytes]:
     main_svg = svg(mark)
     mono_path = " ".join(path_data(s) for s in shapes)
     assets: dict[str, bytes] = {}
+    assets["website/logo.svg"] = main_svg
     pngs = {size: png(main_svg, size) for size in SIZES}
     for size, data in pngs.items():
         assets[f"assets/brand/png/icon-{size}.png"] = data

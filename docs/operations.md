@@ -58,7 +58,7 @@ sudo install -m 0644 djhx-memo.service /etc/systemd/system/djhx-memo.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now djhx-memo
 curl --fail http://127.0.0.1:8080/healthz
-sudo install -m 0644 nginx.conf /etc/nginx/conf.d/zz-djhx-memo.conf
+sudo install -m 0644 nginx.conf /etc/nginx/conf.d/memo.djhx.site.conf
 sudo nginx -t
 sudo systemctl reload nginx
 # reload 异步切换 worker；等待此地址返回 200 后再确认部署成功。
@@ -66,7 +66,9 @@ curl --fail https://memo.djhx.site/healthz
 sudo -u djhx-memo /usr/local/bin/memo-server invite-create --db /var/lib/djhx-memo/db/memo.db --epoch-file /var/lib/djhx-memo/runtime/epoch
 ```
 
-配置 HTTPS 后通过外网根 URL 验证 healthz、注册、Push/Pull 与 SSE。部署前保全原配置，验证既有站点仍可用；以 `zz-` 文件名安装是为了保留现有 443 默认主机。生产应用仅允许来自可信代理的 `X-Forwarded-Proto: https`；样例仅信任本机代理，并由 Nginx 覆盖 `X-Forwarded-For`，不转发不可信链。不要把服务端口开放到公网。客户端 URL 使用 HTTPS 根路径。邀请码只显示一次，妥善传给受邀者，不能写入日志或仓库。
+配置 HTTPS 后通过外网根 URL 验证 healthz、注册、Push/Pull 与 SSE。部署前保全原配置，验证既有站点仍可用。旧文件名 `zz-djhx-memo.conf` 通过排序保留现有443默认主机；改为域名命名时，先将原默认HTTPS站点的监听显式标为 `default_server`，再移走旧文件，不能同时加载两份 memo 配置。生产应用仅允许来自可信代理的 `X-Forwarded-Proto: https`；样例仅信任本机代理，并由 Nginx 覆盖 `X-Forwarded-For`，不转发不可信链。不要把服务端口开放到公网。客户端 URL 使用 HTTPS 根路径。邀请码只显示一次，妥善传给受邀者，不能写入日志或仓库。
+
+官网由 `website/` 构建，静态产物放在 `/var/www/memo.djhx.site/`，该路径可为指向版本目录的原子切换软链接；Nginx只需读取权限。部署时只上传构建目录，不上传源码、环境配置或密钥。首页使用 `no-cache`，带哈希的 `/assets/` 可长期缓存；`/v1` 与 `/healthz` 保持转发。先完成 `nginx -t`、静态首页/资源与缺失资源、API鉴权及健康检查，再确认reload成功。失败恢复原配置及静态目录链接，并验证旧站点与API；不为更新官网重启Go服务或替换数据库/epoch。实际部署见[官网发布记录](website-deployment.md)。
 
 密码重置不接收密码参数或环境变量，要求真实终端隐藏输入，二次确认后吊销所有设备：
 

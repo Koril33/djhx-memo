@@ -1,6 +1,6 @@
 # Android 客户端
 
-0.1.2 控件与滚动修正版，基于 0.1.0 core，v1 尚未发布。Kotlin + Jetpack Compose 原生客户端，通过 UniFFI 调用共享 Rust core。最低系统设为 Android 10（API 29），APK 同时包含 arm64-v8a 与 x86_64；实际验证设备见下方记录。发布应用 ID 为 `app.djhx.memo`，调试为 `app.djhx.memo.debug`，两者数据隔离。应用数据与加密凭据在 Android 私有目录；卸载或清除数据前请先导出。
+0.1.3 加入共享离线代码高亮，保留 0.1.2 控件与滚动修正，基于 0.1.0 core，v1 尚未发布。Kotlin + Jetpack Compose 原生客户端，通过 UniFFI 调用共享 Rust core。最低系统设为 Android 10（API 29），APK 同时包含 arm64-v8a 与 x86_64；实际验证设备见下方记录。发布应用 ID 为 `app.djhx.memo`，调试为 `app.djhx.memo.debug`，两者数据隔离。应用数据与加密凭据在 Android 私有目录；卸载或清除数据前请先导出。
 
 ## 构建
 
@@ -51,6 +51,8 @@ Windows 的 Gradle 命令相应改为 `.\gradlew.bat`。`connectedDebugAndroidTe
 仪器测试除独立验证桥接 UI 协调的故障注入案例外，实际调用 JNI 和 SQLite，验证中文/emoji、重开持久性、搜索、任务源码勾选、回收站、ZIP、Keystore、持续输入保存、旋转与组合输入 span。服务端联调测试默认跳过；通过环境变量 `DJHX_ANDROID_TEST_SERVER_URL` 和 `DJHX_ANDROID_TEST_INVITE_CODE` 注入隔离测试实例地址及单次邀请码才运行（Gradle 将其传为 `serverUrl` / `inviteCode` instrumentation 参数）。不得将变量内容提交到仓库或打印到日志。邀请码只用于临时 fixture，不使用真实账号。模拟器访问开发机使用 `http://10.0.2.2:<port>`，此功能仅在 debug 构建允许。
 
 0.1.2 的滚动复现、设备检查与安装包见 [客户端修正验证](../docs/client-fixes-0.1.2-validation.md)；0.1.1 的实际结果见 [Android 界面预览验证](../docs/android-ui-preview-validation.md)；0.1.0 的既有检查保留在 [Android 验证记录](../docs/android-validation.md)。
+
+0.1.3 的双ABI重编、围栏代码高亮、原签名覆盖升级与设备回归见[发布验证](../docs/releases/0.1.3-android-validation.md)，公开附件见[客户端发布](../docs/client-release.md)。
 
 ## 交互与边界
 

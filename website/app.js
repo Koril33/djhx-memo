@@ -1,12 +1,4 @@
-// DJHX Memo 官网 · 交互层（i18n / 主题 / 下载链接 / 指针视差）
-
-const RELEASE_TAG_URL = "https://github.com/Koril33/djhx-memo/releases/tag/v0.1.3";
-
-const DOWNLOAD_URLS = {
-  windows: RELEASE_TAG_URL,
-  linux: RELEASE_TAG_URL,
-  android: RELEASE_TAG_URL,
-};
+// DJHX Memo 官网 · 交互层（i18n / 主题 / 下载动效 / 指针视差）
 
 const I18N = {
   zh: {
@@ -72,7 +64,7 @@ function normalizeLang(value) {
 function detectLang() {
   try {
     const saved = localStorage.getItem(STORAGE.lang);
-    if (saved && I18N[saved]) return saved;
+    if (LANGS.includes(saved)) return saved;
   } catch (e) {
     /* ignore */
   }
@@ -192,8 +184,6 @@ function init() {
   });
 
   document.querySelectorAll("[data-platform]").forEach((link) => {
-    const url = DOWNLOAD_URLS[link.dataset.platform];
-    if (url) link.href = url;
     // 指针进入点作为墨色晕开的圆心，离开点作为收拢的圆心
     const track = (event) => {
       const rect = link.getBoundingClientRect();

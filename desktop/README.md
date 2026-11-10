@@ -2,7 +2,7 @@
 
 Windows / Linux Tauri 2 客户端。Rust 后端直接链接 core，本地前端在本目录内采用 Svelte + TypeScript + Vite，编辑器使用 CodeMirror 6；不依赖尚未开发的独立 Web 工程。
 
-当前 0.1.2 界面修正版沿用 0.1.1 设计，保留 0.1.0 核心功能，包含托盘、未登录笔记、账号、Markdown、搜索、回收站、导出与同步。全局快捷键、开机自启、自动升级暂缓。Windows 首先验收负责人当前的 Windows 10 22H2 x86_64，Windows 11 兼容性另行记录；Linux 默认 Ubuntu 24.04 x86_64，验证 Wayland/X11、输入法及 AppIndicator 环境。
+当前 0.1.3 加入共享离线代码高亮，保留 0.1.2 控件修正、0.1.1 设计及 0.1.0 核心功能，包含托盘、未登录笔记、账号、Markdown、搜索、回收站、导出与同步。全局快捷键、开机自启、自动升级暂缓。Windows 首先验收负责人当前的 Windows 10 22H2 x86_64，Windows 11 兼容性另行记录；Linux 默认 Ubuntu 24.04 x86_64，验证 Wayland/X11、输入法及 AppIndicator 环境。
 
 ## 开发与构建
 
@@ -48,3 +48,5 @@ Windows 安装器使用 `src-tauri/windows/installer.nsi`，来自已锁定 `@ta
 0.1.1 的紧凑导航、图标和菜单入口见[界面设计](../docs/ui-design.md)，本轮实际检查见[预览验证](../docs/desktop-ui-preview-validation.md)。
 
 0.1.2 修正原生下拉控件的垂直内边距；复现、安装包和实际验证见[控件与滚动修正验证](../docs/client-fixes-0.1.2-validation.md)。
+
+0.1.3 Linux最终构建、代码高亮与实际安装回归见[发布验证](../docs/releases/0.1.3-linux-validation.md)；公开附件和统一校验值见[客户端发布](../docs/client-release.md)。
