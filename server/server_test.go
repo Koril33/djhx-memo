@@ -169,7 +169,7 @@ func TestSharedConformance(t *testing.T) {
 			for _, n := range c.Initial {
 				id := resolve(n.Note)
 				now := stamp(env.store.now())
-				snapshot := Note{id, n.Content, n.Deleted, n.Rev, n.Seq, now, now, nil}
+				snapshot := Note{ID: id, Content: n.Content, Deleted: n.Deleted, Rev: n.Rev, Seq: n.Seq, CreatedAt: now, UpdatedAt: now}
 				raw, _ := json.Marshal(snapshot)
 				_, e := env.store.db.Exec("INSERT INTO notes(user_id,id,content,deleted,rev,seq,created_at,updated_at,conflict) VALUES(?,?,?,?,?,?,?,?,NULL)", a.UserID, id, n.Content, n.Deleted, n.Rev, n.Seq, now, now)
 				if e != nil {

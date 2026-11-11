@@ -200,7 +200,9 @@ func TestPermanentDeletionMigrationFromBaseline(t *testing.T) {
 	if _, e = db.Exec("INSERT INTO notes VALUES(?,?,?,?,?,?,?,?,NULL)", userID, noteID, "preserved trash", true, 7, 11, stamp(time.Now()), stamp(time.Now())); e != nil {
 		t.Fatal(e)
 	}
-	db.Close()
+	if e = db.Close(); e != nil {
+		t.Fatal(e)
+	}
 	s, e := Open(path)
 	if e != nil {
 		t.Fatal(e)
@@ -216,10 +218,53 @@ func TestPermanentDeletionMigrationFromBaseline(t *testing.T) {
 	if _, e = s.db.Exec("PRAGMA user_version=3"); e != nil {
 		t.Fatal(e)
 	}
-	s.Close()
+	if e = s.Close(); e != nil {
+		t.Fatal(e)
+	}
 	if s, e = Open(path); e == nil {
-		s.Close()
+		if e = s.Close(); e != nil {
+			t.Fatal(e)
+		}
 		t.Fatal("newer schema opened")
+	}
+}
+
+func TestPermanentDeletionBackupRestore(t *testing.T) {
+	s, a, epoch := purgeFixture(t)
+	ctx := context.Background()
+	noteID := uuid()
+	if r, _, e := s.push(ctx, a, Operation{uuid(), noteID, "0", "backup fixture", true}); e != nil || r.Status != "accepted" {
+		t.Fatal("create trash", r, e)
+	}
+	p := PurgeRequest{epoch, uuid(), noteID, "1"}
+	n, changed, e := s.purge(ctx, a, p)
+	if e != nil || !changed || !n.Purged {
+		t.Fatal("purge before backup", n, changed, e)
+	}
+	path := filepath.Join(t.TempDir(), "restored.db")
+	if e = s.Backup(ctx, path); e != nil {
+		t.Fatal(e)
+	}
+	restored, e := Open(path)
+	if e != nil {
+		t.Fatal(e)
+	}
+	t.Cleanup(func() { _ = restored.Close() })
+	marker, e := scanNote(restored.db.QueryRowContext(ctx, "SELECT "+noteColumns+" FROM notes WHERE user_id=? AND id=?", a.UserID, noteID))
+	if e != nil || !marker.Purged || !marker.Deleted || marker.Content != "" || marker.Rev != n.Rev || marker.Seq != n.Seq {
+		t.Fatal("backup lost permanent marker", marker, e)
+	}
+	replayed, changed, e := restored.purge(ctx, a, p)
+	if e != nil || changed || replayed.Rev != n.Rev || replayed.Seq != n.Seq || !replayed.Purged {
+		t.Fatal("backup lost idempotent result", replayed, changed, e)
+	}
+	r, changed, e := restored.push(ctx, a, Operation{uuid(), noteID, n.Rev, "stale restore", false})
+	if e != nil || changed || r.Error == nil || r.Error.Code != "NOTE_PURGED" {
+		t.Fatal("restored marker allowed resurrection", r, changed, e)
+	}
+	head, e := restored.head(ctx, a.UserID)
+	if e != nil || num(head) != n.Seq {
+		t.Fatal("restore retry advanced sequence", head, e)
 	}
 }
 

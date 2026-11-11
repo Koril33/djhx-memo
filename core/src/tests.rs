@@ -832,3 +832,109 @@ fn database_failure_rolls_back_visible_content_and_fts() {
     assert_eq!(db::get_state(&db, "cursor").unwrap().unwrap(), "1");
     assert_eq!(db::shadow(&db, &n).unwrap().unwrap().rev, "1");
 }
+
+// PURGE-04/05: a successful old conflict response is weaker than later deletion.
+#[test]
+fn lost_conflict_acknowledgement_preserves_target_deletion_state() {
+    for continued in [false, true] {
+        for state in ["pending", "purged"] {
+            let app = engine();
+            let p = account();
+            let mut db = db::open(&app.path(&p)).unwrap();
+            let source = id();
+            let target = id();
+            seed(&mut db, &source);
+            edit(&db, &source, "sent stale text");
+            let (op, generation) = db::freeze(&mut db).unwrap().unwrap();
+            if continued {
+                edit(&db, &source, "continued offline input");
+            }
+            let mut trash = wire(&target, "conflict copy now in trash", 2, 4);
+            trash.deleted = true;
+            db::apply_page(
+                &mut db,
+                &[wire(&source, "new remote source", 2, 2), trash],
+                "4",
+                "4",
+                false,
+            )
+            .unwrap();
+            let n = db::note(&db, &target).unwrap();
+            purge::request(&mut db, &target, n.generation, true).unwrap();
+            if state == "purged" {
+                let mut permanent = wire(&target, "", 3, 5);
+                permanent.deleted = true;
+                permanent.purged = true;
+                db::apply_page(&mut db, &[permanent], "5", "5", false).unwrap();
+            }
+            let before = db::note(&db, &target).unwrap().view(true, false);
+            let pending = purge::next(&db).unwrap();
+            let result = confirmation(
+                &op,
+                json!({"status":"conflict","rev":"2","conflict_note_id":target,"conflict_rev":"1","conflict_seq":"3"}),
+            );
+            db::acknowledge(&mut db, &op, generation, &result, &p).unwrap();
+            assert_eq!(db::note(&db, &target).unwrap().view(true, false), before);
+            assert_eq!(purge::next(&db).unwrap(), pending);
+            assert_eq!(db::note(&db, &source).unwrap().content, "new remote source");
+            if state == "purged" {
+                assert_eq!(db::list(&db, "", false).unwrap().len(), 1);
+                assert!(db::list(&db, "", true).unwrap().is_empty());
+                assert!(db::freeze(&mut db).unwrap().is_none());
+                assert_eq!(db::redirects(&db).unwrap()[&source], target);
+            }
+        }
+    }
+}
+
+#[test]
+fn redirects_cannot_bypass_target_deletion_barrier() {
+    for state in ["pending", "purged"] {
+        let app = engine();
+        let p = account();
+        {
+            let mut registry = app.registry.lock().unwrap();
+            registry.selected = p.id.clone();
+            registry.profiles.push(p.clone());
+        }
+        let mut db = db::open(&app.path(&p)).unwrap();
+        let source = id();
+        let target = id();
+        seed(&mut db, &source);
+        edit(&db, &source, "authoritative source after conflict");
+        let mut trash = wire(&target, "- [ ] old conflict copy", 2, 4);
+        trash.deleted = true;
+        db::apply_page(&mut db, &[trash], "4", "4", false).unwrap();
+        let n = db::note(&db, &target).unwrap();
+        purge::request(&mut db, &target, n.generation, true).unwrap();
+        if state == "purged" {
+            let mut permanent = wire(&target, "", 3, 5);
+            permanent.deleted = true;
+            permanent.purged = true;
+            db::apply_page(&mut db, &[permanent], "5", "5", false).unwrap();
+        }
+        let target_note = db::note(&db, &target).unwrap();
+        db.execute(
+            "INSERT INTO redirects VALUES(?1,?2,1,?3)",
+            params![source, target, target_note.generation],
+        )
+        .unwrap();
+        for action in ["save", "set_deleted", "toggle_task"] {
+            let error = app
+                .dispatch(&json!({"action":action,"profile_id":p.id,"id":source,"expected_generation":"1","content":"must not revive","deleted":false,"line":0}))
+                .unwrap_err();
+            assert_eq!(
+                error.code,
+                if state == "purged" {
+                    "NOTE_PURGED"
+                } else {
+                    "PURGE_PENDING"
+                }
+            );
+            assert_eq!(
+                db::note(&db, &target).unwrap().view(true, false),
+                target_note.view(true, false)
+            );
+        }
+    }
+}

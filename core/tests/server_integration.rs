@@ -525,7 +525,7 @@ fn proxy_request(mut stream: TcpStream, upstream: &str, control: &ProxyControl) 
         .build()
         .unwrap();
     let mut request = client.request(method.parse().unwrap(), format!("{upstream}{path}"));
-    for key in ["authorization", "content-type", "accept"] {
+    for key in ["authorization", "content-type", "accept", "x-memo-protocol"] {
         if let Some(value) = headers.get(key) {
             request = request.header(key, value);
         }
@@ -1048,4 +1048,59 @@ fn foreground_automatic_sse_converges_within_latency_target() {
         p95 <= Duration::from_secs(5),
         "core automatic SSE P95 exceeded 5000ms"
     );
+}
+
+/// PURGE-04/05: old processed_ops results cannot revive a deleted conflict target.
+#[test]
+#[ignore = "requires DJHX_SERVER_BIN; lost conflict result after permanent deletion"]
+fn lost_conflict_acknowledgement_keeps_permanently_deleted_copy() {
+    for continued in [false, true] {
+        let service = Service::new();
+        let a = Client::new();
+        a.register(&service, "purged_conflict", &service.url);
+        let note = a.create("original note");
+        let id = note["id"].as_str().unwrap();
+        a.sync();
+        let proxy = LossProxy::new(service.url.clone());
+        let mut b = Client::new();
+        b.login("purged_conflict", &proxy.url);
+        b.sync();
+        b.save(id, "stale sent input");
+        a.save(id, "authoritative source");
+        a.sync();
+        proxy.drop_next_push();
+        let lost = envelope(&b.app, json!({"action":"sync","wait":true}));
+        assert!(sync_error(&lost)["retryable"].as_bool().unwrap());
+        let captured = proxy.captured();
+        assert_eq!(captured["results"][0]["status"], "conflict");
+        let copy = captured["results"][0]["conflict_note_id"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        if continued {
+            b.save(id, "continued offline input");
+        }
+        a.sync();
+        let current = a.get(&copy);
+        let deleted = call(
+            &a.app,
+            json!({"action":"set_deleted","id":copy,"expected_generation":current["generation"],"deleted":true}),
+        );
+        call(
+            &a.app,
+            json!({"action":"purge","id":copy,"expected_generation":deleted["generation"]}),
+        );
+        a.sync();
+        assert_eq!(a.get(&copy)["purge_state"], "purged");
+        b = b.restart();
+        b.sync();
+        assert_eq!(b.get(&copy)["purge_state"], "purged");
+        assert_eq!(b.get(&copy)["content"], "");
+        assert_eq!(b.get(id)["content"], "authoritative source");
+        assert_eq!(b.list(false).len(), 1);
+        assert!(b.list(true).is_empty());
+        b.sync();
+        assert_eq!(b.state()["sync"]["state"], "synced");
+        assert_eq!(b.get(&copy)["purge_state"], "purged");
+    }
 }

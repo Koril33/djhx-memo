@@ -435,6 +435,17 @@ impl Engine {
                     let alias:Option<(String,i64)>=tx.query_row("SELECT target_id,target_generation FROM redirects WHERE source_id=?1 AND source_generation=?2",params![requested_id,expected],|r|Ok((r.get(0)?,r.get(1)?))).optional()?;
                     if let Some((target, generation)) = alias {
                         let candidate = db::note(&tx, &target)?;
+                        // The alias only redirects identity and generation; it
+                        // must not bypass the destination's deletion barrier.
+                        if candidate.purge_state == "purged" {
+                            return Err(AppError::new(
+                                "NOTE_PURGED",
+                                "笔记已被彻底删除，可将未保存文字另存新笔记",
+                            ));
+                        }
+                        if candidate.purge_state == "pending" {
+                            return Err(AppError::new("PURGE_PENDING", "笔记正在等待彻底删除"));
+                        }
                         if candidate.generation == generation {
                             n = candidate;
                             redirected = true;

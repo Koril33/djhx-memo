@@ -478,7 +478,8 @@ pub(crate) fn acknowledge(
                 Err(error) => return Err(error),
             };
             let existing_pending = if let Some(ref existing) = existing {
-                existing.generation > existing.acknowledged
+                existing.purge_state == "pending"
+                    || existing.generation > existing.acknowledged
                     || tx.query_row(
                         "SELECT EXISTS(SELECT 1 FROM outbox WHERE note_id=?)",
                         [&target],
@@ -490,7 +491,13 @@ pub(crate) fn acknowledge(
             let canonical = shadow(&tx, &target)?.unwrap_or(wire);
             let mut focus = target.clone();
             let target_generation;
-            if existing_pending {
+            if canonical.purged {
+                // A lost push response can arrive after this conflict copy was
+                // permanently deleted. Its old success must not revive the ID
+                // or turn continued input into an automatic replacement copy.
+                crate::purge::install(&tx, &canonical)?;
+                target_generation = note(&tx, &target)?.generation;
+            } else if existing_pending {
                 // The conflict copy was already visible and independently
                 // edited while the original result was unknown. Preserve both
                 // local branches rather than overwrite either pending edit.
