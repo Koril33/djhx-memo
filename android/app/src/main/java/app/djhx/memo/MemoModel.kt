@@ -210,10 +210,13 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
 
     private suspend fun refreshSelected() {
         val currentId = selected?.optString("id") ?: return
-        if (currentProfileId() != editorProfileId) return
+        val profileId = editorProfileId
+        if (currentProfileId() != profileId) return
         val currentRevision = revision
-        val fresh = gateway.obj("get", "profile_id" to editorProfileId, "id" to currentId)
-        if (selected?.optString("id") != currentId) return
+        val fresh = gateway.obj("get", "profile_id" to profileId, "id" to currentId)
+        // Equal note IDs in different profiles do not identify the same note.
+        // A permanent deletion bypasses the input revision barrier, but never this ownership check.
+        if (editorProfileId != profileId || currentProfileId() != profileId || selected?.optString("id") != currentId) return
         if (fresh.optString("purge_state") == "purged") {
             selected = fresh
             saveJob?.cancel()
