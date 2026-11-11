@@ -1,5 +1,7 @@
 # Go 服务端
 
+当前开发版本为 **0.1.4**（未发布），新增单条彻底删除、Windows 托盘左右键及桌面列表折叠。账号同步要求协议 2 服务端与相应客户端配套升级；既有 0.1.3 Release 不改变。本轮 Windows/Android 检查与 Linux 待验证项见[增量验证](../docs/client-updates-0.1.4-validation.md)。
+
 已实现 v1 HTTP API、SQLite 权威存储、邀请码注册登录、设备管理、幂等 Push、固定上界 Pull、SSE、完整 ZIP 导出和本机管理命令。行为以 [spec](../spec/README.md) 为准；已有 [独立交叉评审](../docs/reviews/server-review.md) 及 core 联调，完整三端验收仍待完成。候选实例 `https://memo.djhx.site` 的实际部署检查见 [云部署记录](../docs/cloud-deployment.md)。
 
 ## 构建与本地运行

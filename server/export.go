@@ -64,7 +64,7 @@ func (s *Server) exportHTTP(w http.ResponseWriter, r *http.Request, a identity) 
 		return
 	}
 	defer func() { _ = tx.Rollback() }()
-	rows, e := tx.QueryContext(r.Context(), "SELECT "+noteColumns+" FROM notes WHERE user_id=? AND (deleted=0 OR ?) ORDER BY id", a.UserID, include)
+	rows, e := tx.QueryContext(r.Context(), "SELECT "+noteColumns+" FROM notes WHERE user_id=? AND purged=0 AND (deleted=0 OR ?) ORDER BY id", a.UserID, include)
 	if e != nil {
 		writeError(w, r, e)
 		return

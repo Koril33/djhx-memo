@@ -1,5 +1,7 @@
 # HTTP 与 SSE 接口说明
 
+0.1.4 增量以[单条彻底删除与协议 2 契约](permanent-deletion.md)为准，替代下文旧基线中不提供永久删除及保留正文的对应范围。普通删除/恢复行为不变；永久删除不生成冲突副本。
+
 机器可读定义见 [openapi.yaml](openapi.yaml)，使用 OpenAPI 3.1；该文件采用 JSON 语法（兼容 YAML 1.2），可用标准 JSON 工具检查。
 
 ## 1. 通用约定

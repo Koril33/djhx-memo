@@ -46,6 +46,7 @@ impl Engine {
                 format!("{server}{path}"),
             )
             .bearer_auth(token)
+            .header("X-Memo-Protocol", "2")
             .header("Accept", "application/json");
         let response = if let Some(body) = body {
             response.json(body)
@@ -169,7 +170,7 @@ impl Engine {
         let token = text(&result, "token")?;
         if !valid_id(&user)
             || !valid_id(&epoch)
-            || result["protocol_version"] != 1
+            || result["protocol_version"] != 2
             || text(&result, "device_id")? != device_id
         {
             return Err(AppError::new(
@@ -458,7 +459,7 @@ impl Engine {
         }
         let token = self.token(profile)?;
         let status = self.api(profile, "GET", "/v1/sync/status", None)?;
-        if status["protocol_version"] != 1 {
+        if status["protocol_version"] != 2 {
             return Err(AppError::new(
                 "PROTOCOL_UNSUPPORTED",
                 "请升级客户端后再同步",
@@ -527,6 +528,26 @@ impl Engine {
                     return Err(error);
                 }
                 permanent = Some(error);
+            }
+            self.event.fetch_add(1, Ordering::SeqCst);
+        }
+        while let Some((note_id, op_id, base_rev)) = purge::next(&db)? {
+            match self.api(profile, "POST", "/v1/notes/purge", Some(&json!({"epoch":epoch,"op_id":op_id,"note_id":note_id,"base_rev":base_rev.to_string()}))) {
+                Ok(response) => {
+                    if text(&response, "epoch")? != epoch { return Err(AppError::new("SYNC_EPOCH_MISMATCH", "服务器恢复代次已变化")); }
+                    let wire: WireNote = serde_json::from_value(response["note"].clone())?;
+                    if wire.id != note_id || counter(&wire.rev)? < base_rev { return Err(AppError::new("INVALID_REQUEST", "永久删除确认不匹配")); }
+                    let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+                    purge::install(&tx, &wire)?;
+                    tx.commit()?;
+                }
+                Err(error) if matches!(error.code.as_str(), "PURGE_CONFLICT" | "NOTE_NOT_FOUND") => {
+                    let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+                    purge::reject(&tx, &note_id)?;
+                    tx.commit()?;
+                    permanent = Some(error);
+                }
+                Err(error) => return Err(error),
             }
             self.event.fetch_add(1, Ordering::SeqCst);
         }
@@ -654,6 +675,7 @@ impl Engine {
                     .http
                     .get(format!("{server}/v1/events"))
                     .bearer_auth(&token)
+                    .header("X-Memo-Protocol", "2")
                     .header("Accept", "text/event-stream")
                     .send();
                 let Ok(response) = stream else {

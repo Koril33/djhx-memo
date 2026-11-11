@@ -15,6 +15,73 @@ use std::time::{Duration, Instant};
 fn uid() -> String {
     uuid::Uuid::new_v4().to_string()
 }
+
+/// PURGE-02/03/05/06 through the actual Go HTTP handler, without a Unix CLI dependency.
+#[test]
+#[ignore = "requires isolated DJHX_PURGE_TEST_URL and DJHX_PURGE_TEST_INVITE"]
+fn permanent_delete_http_conformance() {
+    let service = if std::env::var("DJHX_PURGE_TEST_URL").is_err() {
+        Some(Service::new())
+    } else {
+        None
+    };
+    let url = std::env::var("DJHX_PURGE_TEST_URL")
+        .unwrap_or_else(|_| service.as_ref().unwrap().url.clone());
+    let invitation = std::env::var("DJHX_PURGE_TEST_INVITE")
+        .unwrap_or_else(|_| service.as_ref().unwrap().invitation());
+    let a = Client::new();
+    let b = Client::new();
+    call(
+        &a.app,
+        json!({"action":"register","server_url":url,"username":"purgeintegration","password":"integration fixture password","device_name":"A","invite_code":invitation}),
+    );
+    b.login("purgeintegration", &url);
+    let n = a.create("permanent deletion fixture");
+    let id = n["id"].as_str().unwrap();
+    a.sync();
+    b.sync();
+    let delete = |c: &Client| {
+        let n = c.get(id);
+        call(
+            &c.app,
+            json!({"action":"set_deleted","id":id,"expected_generation":n["generation"],"deleted":true}),
+        )
+    };
+    let purge = |c: &Client| {
+        let n = c.get(id);
+        call(
+            &c.app,
+            json!({"action":"purge","id":id,"expected_generation":n["generation"]}),
+        )
+    };
+    delete(&a);
+    a.sync();
+    b.sync();
+    assert_eq!(purge(&a)["purge_state"], "pending");
+    let a = a.restart();
+    assert_eq!(a.get(id)["purge_state"], "pending");
+    let bn = b.get(id);
+    call(
+        &b.app,
+        json!({"action":"set_deleted","id":id,"expected_generation":bn["generation"],"deleted":false}),
+    );
+    b.sync();
+    a.sync();
+    assert_eq!(a.get(id)["purge_state"], "rejected");
+    assert_eq!(a.get(id)["deleted"], false);
+    // Queue ordinary deletion and purge together while hidden/offline; resolve in order.
+    delete(&a);
+    assert_eq!(purge(&a)["purge_state"], "pending");
+    a.sync();
+    assert_eq!(a.get(id)["purge_state"], "purged");
+    // The other device submits an old edit after deletion; it must not become a conflict copy.
+    b.save(id, "offline input from old device");
+    b.sync();
+    assert_eq!(b.get(id)["purge_state"], "purged");
+    assert_eq!(b.get(id)["content"], "");
+    assert!(b.list(false).is_empty());
+    assert!(b.list(true).is_empty());
+}
 struct Temporary(PathBuf);
 impl Temporary {
     fn new() -> Self {
@@ -282,7 +349,8 @@ fn wire(server: &str, token: &str, method: &str, path: &str, body: Option<Value>
     let client = reqwest::blocking::Client::new();
     let request = client
         .request(method.parse().unwrap(), format!("{server}{path}"))
-        .bearer_auth(token);
+        .bearer_auth(token)
+        .header("X-Memo-Protocol", "2");
     let response = if let Some(body) = body {
         request.json(&body)
     } else {

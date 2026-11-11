@@ -172,4 +172,11 @@
     <string name="hide_account_form">收起账号表单</string>
     <string name="sign_in_for_devices">登录后管理设备</string>
     <string name="about_app">关于 DJHX Memo</string>
+    <string name="purge_note">彻底删除</string>
+    <string name="purge_confirm">彻底删除这条笔记？</string>
+    <string name="purge_help">应用内无法恢复。账号笔记将在其他设备联网后同步删除；既有历史、备份及已导出文件不会追溯清理。</string>
+    <string name="purge_pending">待彻底删除 · 联网同步后完成</string>
+    <string name="purge_rejected">彻底删除未执行，笔记已发生变化，请检查后重新确认。</string>
+    <string name="note_purged">笔记已被彻底删除。未保存文字可复制或另存新笔记。</string>
+    <string name="purge_done">笔记已彻底删除。</string>
 </resources>

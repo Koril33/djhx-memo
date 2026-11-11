@@ -2,6 +2,9 @@ package app.djhx.memo
 
 /** 仅按稳定错误码选择固定翻译，绝不显示服务器原始错误或用户凭据。 */
 internal fun errorResource(code: String?): Int = when (code) {
+    "NOTE_PURGED" -> R.string.note_purged
+    "PURGE_PENDING" -> R.string.purge_pending
+    "PURGE_CONFLICT" -> R.string.purge_rejected
     "AUTH_INVALID_CREDENTIALS" -> R.string.error_auth_invalid
     "AUTH_REQUIRED" -> R.string.error_auth_required
     "INVITE_INVALID" -> R.string.error_invite

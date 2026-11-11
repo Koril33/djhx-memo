@@ -35,6 +35,39 @@
       return { ...defaultPreferences };
     }
   })();
+  let listVisible = (() => {
+    try {
+      return localStorage.getItem('djhx-memo.note-list.v1') !== 'hidden';
+    } catch {
+      return true;
+    }
+  })();
+  let purgeConfirmation: { id: string; profile: string; generation: string } | null = null;
+  function setListVisible(visible: boolean): void {
+    listVisible = visible;
+    closeMenus();
+    try {
+      localStorage.setItem('djhx-memo.note-list.v1', visible ? 'visible' : 'hidden');
+    } catch {
+      /* Presentation stays usable without storage. */
+    }
+  }
+  async function confirmPurge(): Promise<void> {
+    const target = purgeConfirmation;
+    if (!target) return;
+    await editor.flush();
+    const result = await call<Note>({
+      action: 'purge',
+      profile_id: target.profile,
+      id: target.id,
+      expected_generation: target.generation,
+    });
+    purgeConfirmation = null;
+    await editor.open(result.purge_state === 'purged' ? null : result);
+    if (result.purge_state === 'purged') documentKey++;
+    await refreshState(true);
+    notify(result.purge_state === 'purged' ? 'purgeDone' : 'purgeRequested');
+  }
   let systemLanguage = navigator.language;
   const colorScheme = window.matchMedia('(prefers-color-scheme: dark)');
   let browserDark = colorScheme.matches;
@@ -205,13 +238,15 @@
       }
     });
   }
-  function menuAction(event: MouseEvent, work: () => Promise<void>): void {
+  function menuAction(event: MouseEvent, work: () => void | Promise<void>): void {
     const menu = (event.currentTarget as HTMLElement).closest('details');
     if (menu) {
       menu.open = false;
       menu.querySelector('summary')?.focus();
     }
-    void run(work);
+    void run(async () => {
+      await work();
+    });
   }
   $: saveLabel = t(
     editor.error
@@ -264,7 +299,7 @@
     if (editor.note) {
       const selected = notes.find((note) => note.id === editor.note?.id);
       if (selected) editor.acceptRemote(selected);
-      else if (!editor.unsaved && !editor.saving) {
+      else {
         const current = await call<Note>({
           action: 'get',
           profile_id: profileId,
@@ -347,6 +382,7 @@
     notice = null;
   }
   async function changeSection(deleted: boolean): Promise<void> {
+    setListVisible(true);
     await editor.flush();
     trash = deleted;
     query = '';
@@ -355,6 +391,7 @@
     await refreshNotes();
   }
   async function switchProfile(id: string): Promise<void> {
+    setListVisible(true);
     if (state?.profile.id === id) return;
     await editor.flush();
     stateRequestCounter++;
@@ -719,7 +756,7 @@
   }}
 />
 
-<main class="app-shell" aria-busy={booting}>
+<main class="app-shell" class:list-collapsed={!listVisible} aria-busy={booting}>
   <nav class="nav-rail" aria-label={t('navigation')}>
     <button
       class="rail-button primary-icon"
@@ -755,7 +792,12 @@
       >
     </div>
   </nav>
-  <section class="note-column" aria-label={t('noteList')}>
+  <section
+    id="note-list"
+    class="note-column"
+    class:concealed={!listVisible}
+    aria-label={t('noteList')}
+  >
     <header class="list-header">
       <div class="brand-row">
         <strong class="brand">DJHX Memo</strong>
@@ -810,6 +852,9 @@
           disabled={busy}
         >
           <div class="note-card-title">{note.content.trim() ? note.title : t('untitled')}</div>
+          {#if note.purge_state === 'pending'}<p>
+              {t('purgePending')}
+            </p>{:else if note.purge_state === 'rejected'}<p>{t('purgeRejected')}</p>{/if}
           {#if excerpt(note)}<p>{excerpt(note)}</p>{/if}
           <div class="note-meta">
             <time>{time(note.updated_at, language, preferences.timeZone)}</time>
@@ -848,6 +893,20 @@
   </section>
   <section class="workspace" aria-label={t('noteEditor')}>
     <header class="workspace-header">
+      <button
+        class="icon-button"
+        aria-label={t(listVisible ? 'hideNoteList' : 'showNoteList')}
+        title={t(listVisible ? 'hideNoteList' : 'showNoteList')}
+        aria-expanded={listVisible}
+        aria-controls="note-list"
+        on:click={() => setListVisible(!listVisible)}><Icon name="panel-left" /></button
+      >
+      {#if !listVisible && state}<button
+          class="space-chip"
+          title={profileLabel(state.profile, t, language, preferences.timeZone)}
+          on:click={() => run(() => openSettings('account'))}
+          >{profileLabel(state.profile, t, language, preferences.timeZone)}</button
+        >{/if}
       <strong class="document-title">{editor.note ? title : t('newDraft')}</strong>
       <div class="editor-actions">
         <div class="view-switch" aria-label={t('editorMode')}>
@@ -888,11 +947,24 @@
             title={t('noteActions')}><Icon name="ellipsis" /></summary
           >
           <div class="menu-panel">
-            {#if editor.note?.deleted}<button
-                disabled={busy || state?.profile.read_only}
+            {#if editor.note?.deleted && editor.note.purge_state !== 'purged'}<button
+                disabled={busy || state?.profile.read_only || editor.note.purge_state === 'pending'}
                 on:click={(event) => menuAction(event, () => setDeleted(false))}
                 ><Icon name="rotate-ccw" />{t('restoreNote')}</button
-              >{:else}<button
+              >
+              <button
+                class="danger"
+                disabled={busy || state?.profile.read_only || editor.note.purge_state === 'pending'}
+                on:click={(event) =>
+                  menuAction(event, () => {
+                    purgeConfirmation = {
+                      id: editor.note!.id,
+                      profile: state!.profile.id,
+                      generation: editor.note!.generation,
+                    };
+                  })}><Icon name="trash-2" />{t('purgeNote')}</button
+              >
+            {:else if !editor.note?.deleted}<button
                 class="danger"
                 disabled={busy || !editor.note || state?.profile.read_only}
                 on:click={(event) => menuAction(event, () => setDeleted(true))}
@@ -908,6 +980,11 @@
               on:click={(event) => menuAction(event, () => rescue())}
               ><Icon name="download" />{t('exportCurrent')}</button
             >
+            {#if !listVisible}<button
+                disabled={!state || busy}
+                on:click={(event) => menuAction(event, exportNotes)}
+                ><Icon name="download" />{t(trash ? 'exportTrash' : 'exportNotes')}</button
+              >{/if}
           </div>
         </details>
       </div>
@@ -977,7 +1054,19 @@
           })}</span
         ><small>{t('originalNote', { id: editor.note.conflict.source_note_id })}</small>
       </div>{/if}
-    {#if editor.note?.deleted}<div class="info-strip warning-strip">
+    {#if editor.note?.purge_state === 'purged'}<div class="info-strip warning-strip">
+        {t('notePurged')}
+      </div>
+    {:else if editor.note?.purge_state === 'pending'}<div class="info-strip warning-strip">
+        {t('purgePending')}
+      </div>
+    {:else if editor.note?.purge_state === 'rejected'}<div class="info-strip warning-strip">
+        {t('purgeRejected')}
+      </div>
+    {/if}
+    {#if editor.note?.deleted && !['pending', 'purged'].includes(editor.note.purge_state ?? '')}<div
+        class="info-strip warning-strip"
+      >
         {t('deletedHelp')}<button
           disabled={busy || state?.profile.read_only}
           on:click={() => run(() => setDeleted(false))}>{t('restoreNote')}</button
@@ -1412,6 +1501,37 @@
           }}>{t('importLater')}</button
         ><button class="primary-button" disabled={busy} on:click={() => run(() => importNotes())}
           >{t('importSubmit', { count: state.local_import_count })}</button
+        >
+      </div>
+      {#if failure}<p class="inline-error">{errorText(failure, language)}</p>{/if}
+    </div>
+  </div>
+{/if}
+
+{#if purgeConfirmation}
+  <div class="modal-backdrop" role="presentation">
+    <div
+      class="import-dialog"
+      use:modal={() => {
+        purgeConfirmation = null;
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="purge-heading"
+      tabindex="-1"
+    >
+      <h2 id="purge-heading">{t('purgeConfirm')}</h2>
+      <p>{t('purgeHelp')}</p>
+      <div class="dialog-actions">
+        <button
+          class="secondary-button"
+          disabled={busy}
+          on:click={() => {
+            purgeConfirmation = null;
+          }}>{t('cancel')}</button
+        >
+        <button class="danger" disabled={busy} on:click={() => run(confirmPurge)}
+          >{t('purgeNote')}</button
         >
       </div>
       {#if failure}<p class="inline-error">{errorText(failure, language)}</p>{/if}

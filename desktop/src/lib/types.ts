@@ -17,6 +17,7 @@ export interface Note {
   title: string;
   generation: string;
   deleted: boolean;
+  purge_state?: 'none' | 'pending' | 'rejected' | 'purged';
   created_at: string;
   updated_at: string;
   conflict: Conflict | null;

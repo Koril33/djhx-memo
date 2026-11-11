@@ -14,6 +14,9 @@ export async function call<T>(request: Request): Promise<T> {
   return result.data;
 }
 const errorKeys: Record<string, MessageKey> = {
+  NOTE_PURGED: 'notePurged',
+  PURGE_PENDING: 'purgePending',
+  PURGE_CONFLICT: 'purgeRejected',
   AUTH_INVALID_CREDENTIALS: 'errorAuth',
   AUTH_REQUIRED: 'errorAuthRequired',
   INVITE_INVALID: 'errorInvite',

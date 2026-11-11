@@ -1,8 +1,10 @@
 # desktop
 
+当前开发版本为 **0.1.4**（未发布），新增单条彻底删除、Windows 托盘左右键及桌面列表折叠。账号同步要求协议 2 服务端与相应客户端配套升级；既有 0.1.3 Release 不改变。本轮 Windows/Android 检查与 Linux 待验证项见[增量验证](../docs/client-updates-0.1.4-validation.md)。
+
 Windows / Linux Tauri 2 客户端。Rust 后端直接链接 core，本地前端在本目录内采用 Svelte + TypeScript + Vite，编辑器使用 CodeMirror 6；不依赖尚未开发的独立 Web 工程。
 
-当前 0.1.3 加入共享离线代码高亮，保留 0.1.2 控件修正、0.1.1 设计及 0.1.0 核心功能，包含托盘、未登录笔记、账号、Markdown、搜索、回收站、导出与同步。全局快捷键、开机自启、自动升级暂缓。Windows 首先验收负责人当前的 Windows 10 22H2 x86_64，Windows 11 兼容性另行记录；Linux 默认 Ubuntu 24.04 x86_64，验证 Wayland/X11、输入法及 AppIndicator 环境。
+此前 0.1.3 加入共享离线代码高亮，保留 0.1.2 控件修正、0.1.1 设计及 0.1.0 核心功能，包含托盘、未登录笔记、账号、Markdown、搜索、回收站、导出与同步。全局快捷键、开机自启、自动升级暂缓。Windows 首先验收负责人当前的 Windows 10 22H2 x86_64，Windows 11 兼容性另行记录；Linux 默认 Ubuntu 24.04 x86_64，验证 Wayland/X11、输入法及 AppIndicator 环境。
 
 ## 开发与构建
 
@@ -50,3 +52,11 @@ Windows 安装器使用 `src-tauri/windows/installer.nsi`，来自已锁定 `@ta
 0.1.2 修正原生下拉控件的垂直内边距；复现、安装包和实际验证见[控件与滚动修正验证](../docs/client-fixes-0.1.2-validation.md)。
 
 0.1.3 Linux最终构建、代码高亮与实际安装回归见[发布验证](../docs/releases/0.1.3-linux-validation.md)；公开附件和统一校验值见[客户端发布](../docs/client-release.md)。
+
+## 隔离 WebView 冒烟检查
+
+`node scripts/native-smoke.mjs` 使用 Node 22 自带的 WebSocket/CDP 连接显式开启调试端口的原生 WebView2，验证实际 Svelte、CodeMirror、Tauri 桥接和 SQLite。须使用独立 identifier 的 debug 配置及空本机空间；脚本只清理自己创建的合成笔记，不连接账号。
+
+在本机忽略的配置文件中设置独立 `identifier`、`productName`，以 `npm run tauri build -- --debug --no-bundle --config <绝对配置路径>` 构建隔离实例。仅在该进程设置 `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9223` 后启动，再运行脚本。脚本默认连接回环 9223，可通过当前进程 `DJHX_WEBVIEW_TEST_URL` 指定其他回环端口；截图写入忽略的 `.local/version014/`。完成后退出隔离实例并撤销环境变量。不要给正式实例启用调试端口。
+
+该检查不代替任务栏/托盘的真实鼠标点击和中文输入法验收。

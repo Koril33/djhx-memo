@@ -13,8 +13,8 @@ android {
         manifestPlaceholders["appLabel"] = "DJHX Memo"
         minSdk = 29
         targetSdk = 36
-        versionCode = 4
-        versionName = "0.1.3"
+        versionCode = 5
+        versionName = "0.1.4"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         providers.environmentVariable("DJHX_ANDROID_TEST_SERVER_URL").orNull?.let {
             testInstrumentationRunnerArguments["serverUrl"] = it
@@ -41,7 +41,8 @@ android {
     }
     buildTypes {
         debug {
-            applicationIdSuffix = ".debug"
+            // Optional isolated device validation never opens an existing debug/release data directory.
+            applicationIdSuffix = if (project.hasProperty("isolatedValidation")) ".validation014" else ".debug"
             versionNameSuffix = "-debug"
             manifestPlaceholders["appLabel"] = "DJHX Memo Debug"
         }

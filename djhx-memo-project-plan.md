@@ -7,6 +7,8 @@
 - 后续修正（2026-11-08）：0.1.2 验证并修正桌面原生下拉文字裁切及 Android 源码滚动，实际结果见[增量验证](docs/client-fixes-0.1.2-validation.md)。
 - 本文替代 v0.1 草案；行为只在 [spec](spec/README.md) 中定义，历史草案可通过 Git 查看。
 
+0.1.4 增量（2026-11-11）：维护者批准[单条彻底删除及桌面操作契约](spec/permanent-deletion.md)，先更新规范再实施；本轮只验证 Windows/Android，Linux 测试和打包交其他主机。独立同步/迁移评审另行完成。
+
 ## 1. 目标与范围
 
 让项目负责人在 Windows、Android、Linux 上日常记录 Markdown 笔记，本地断网可用，联网自动同步到自有服务器。面向个人与少数受邀朋友，不做公开社区服务。

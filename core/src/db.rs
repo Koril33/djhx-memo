@@ -7,6 +7,7 @@ use std::path::Path;
 const MIGRATIONS: &[&str] = &[
     include_str!("../migrations/0001_local.sql"),
     include_str!("../migrations/0002_search.sql"),
+    include_str!("../migrations/0003_permanent_deletion.sql"),
 ];
 
 pub(crate) fn open(path: &Path) -> Result<Connection> {
@@ -82,6 +83,7 @@ fn row_note(row: &rusqlite::Row<'_>) -> rusqlite::Result<LocalNote> {
         id: row.get(0)?,
         content: row.get(1)?,
         deleted: row.get(2)?,
+        purge_state: row.get(9)?,
         generation: row.get(3)?,
         acknowledged: row.get(4)?,
         base_rev: row.get(5)?,
@@ -91,7 +93,7 @@ fn row_note(row: &rusqlite::Row<'_>) -> rusqlite::Result<LocalNote> {
     })
 }
 pub(crate) fn note(db: &Connection, id: &str) -> Result<LocalNote> {
-    db.query_row("SELECT id,content,deleted,generation,acknowledged,base_rev,created_at,updated_at,conflict FROM notes WHERE id=?",[id],row_note).optional()?.ok_or_else(||AppError::new("NOT_FOUND","笔记不存在"))
+    db.query_row("SELECT id,content,deleted,generation,acknowledged,base_rev,created_at,updated_at,conflict,purge_state FROM notes WHERE id=?",[id],row_note).optional()?.ok_or_else(||AppError::new("NOT_FOUND","笔记不存在"))
 }
 pub(crate) fn list(db: &Connection, query: &str, deleted: bool) -> Result<Vec<LocalNote>> {
     // LIKE is parameterized and escaped; trigram LIKE optimization is only used
@@ -101,9 +103,9 @@ pub(crate) fn list(db: &Connection, query: &str, deleted: bool) -> Result<Vec<Lo
         .replace('%', "\\%")
         .replace('_', "\\_");
     let sql = if query.chars().count() >= 3 && !query.contains(['%', '_', '\\']) {
-        r"SELECT id,content,deleted,generation,acknowledged,base_rev,created_at,updated_at,conflict FROM notes WHERE deleted=?1 AND rowid IN (SELECT rowid FROM notes_fts WHERE content LIKE ?2) AND content LIKE ?2 ESCAPE '\' ORDER BY updated_at DESC,id ASC"
+        r"SELECT id,content,deleted,generation,acknowledged,base_rev,created_at,updated_at,conflict,purge_state FROM notes WHERE purge_state!='purged' AND deleted=?1 AND rowid IN (SELECT rowid FROM notes_fts WHERE content LIKE ?2) AND content LIKE ?2 ESCAPE '\' ORDER BY updated_at DESC,id ASC"
     } else {
-        r"SELECT id,content,deleted,generation,acknowledged,base_rev,created_at,updated_at,conflict FROM notes WHERE deleted=?1 AND content LIKE ?2 ESCAPE '\' ORDER BY updated_at DESC,id ASC"
+        r"SELECT id,content,deleted,generation,acknowledged,base_rev,created_at,updated_at,conflict,purge_state FROM notes WHERE purge_state!='purged' AND deleted=?1 AND content LIKE ?2 ESCAPE '\' ORDER BY updated_at DESC,id ASC"
     };
     let mut statement = db.prepare(sql)?;
     let values = statement
@@ -112,7 +114,7 @@ pub(crate) fn list(db: &Connection, query: &str, deleted: bool) -> Result<Vec<Lo
     Ok(values)
 }
 pub(crate) fn put(db: &Connection, n: &LocalNote) -> Result<()> {
-    db.execute("INSERT INTO notes(id,content,deleted,generation,acknowledged,base_rev,created_at,updated_at,conflict) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9) ON CONFLICT(id) DO UPDATE SET content=excluded.content,deleted=excluded.deleted,generation=excluded.generation,acknowledged=excluded.acknowledged,base_rev=excluded.base_rev,created_at=excluded.created_at,updated_at=excluded.updated_at,conflict=excluded.conflict",params![n.id,n.content,n.deleted,n.generation,n.acknowledged,n.base_rev,n.created_at,n.updated_at,n.conflict.as_ref().map(serde_json::to_string).transpose()?])?;
+    db.execute("INSERT INTO notes(id,content,deleted,generation,acknowledged,base_rev,created_at,updated_at,conflict,purge_state) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ON CONFLICT(id) DO UPDATE SET content=excluded.content,deleted=excluded.deleted,generation=excluded.generation,acknowledged=excluded.acknowledged,base_rev=excluded.base_rev,created_at=excluded.created_at,updated_at=excluded.updated_at,conflict=excluded.conflict,purge_state=excluded.purge_state",params![n.id,n.content,n.deleted,n.generation,n.acknowledged,n.base_rev,n.created_at,n.updated_at,n.conflict.as_ref().map(serde_json::to_string).transpose()?,n.purge_state])?;
     Ok(())
 }
 pub(crate) fn get_state(db: &Connection, key: &str) -> Result<Option<String>> {
@@ -157,7 +159,7 @@ pub(crate) fn blocked(db: &Connection, id: &str) -> bool {
     .unwrap_or(false)
 }
 pub(crate) fn pending(db: &Connection) -> Result<usize> {
-    Ok(db.query_row("SELECT count(*) FROM notes n WHERE generation>acknowledged AND NOT (deleted=1 AND base_rev=0 AND NOT EXISTS(SELECT 1 FROM outbox WHERE note_id=n.id))",[],|r|r.get::<_,i64>(0))? as usize)
+    Ok(db.query_row("SELECT count(*) FROM notes n WHERE purge_state!='purged' AND (EXISTS(SELECT 1 FROM purge_requests p WHERE p.note_id=n.id) OR (generation>acknowledged AND NOT (deleted=1 AND base_rev=0 AND NOT EXISTS(SELECT 1 FROM outbox WHERE note_id=n.id))))",[],|r|r.get::<_,i64>(0))? as usize)
 }
 pub(crate) fn freeze(db: &mut Connection) -> Result<Option<(Operation, i64)>> {
     let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
@@ -165,7 +167,7 @@ pub(crate) fn freeze(db: &mut Connection) -> Result<Option<(Operation, i64)>> {
     if let Some((json, generation)) = frozen {
         return Ok(Some((serde_json::from_str(&json)?, generation)));
     }
-    let candidate:Option<String>=tx.query_row("SELECT id FROM notes n WHERE generation>acknowledged AND NOT EXISTS(SELECT 1 FROM outbox WHERE note_id=n.id) AND NOT(deleted=1 AND base_rev=0) ORDER BY updated_at,id LIMIT 1",[],|r|r.get(0)).optional()?;
+    let candidate:Option<String>=tx.query_row("SELECT id FROM notes n WHERE purge_state!='purged' AND generation>acknowledged AND NOT EXISTS(SELECT 1 FROM outbox WHERE note_id=n.id) AND NOT(deleted=1 AND base_rev=0) ORDER BY updated_at,id LIMIT 1",[],|r|r.get(0)).optional()?;
     let Some(id) = candidate else {
         return Ok(None);
     };
@@ -208,14 +210,23 @@ pub(crate) fn apply_page(
             if known_revision > incoming_revision {
                 continue;
             }
+            if previous.purged && !wire.purged {
+                return Err(AppError::new("INVALID_REQUEST", "永久删除状态不可逆"));
+            }
             if known_revision == incoming_revision
-                && (previous.content != wire.content || previous.deleted != wire.deleted)
+                && (previous.content != wire.content
+                    || previous.deleted != wire.deleted
+                    || previous.purged != wire.purged)
             {
                 return Err(AppError::new(
                     "INVALID_REQUEST",
                     "同一权威版本出现不同内容，原状态已保留",
                 ));
             }
+        }
+        if wire.purged {
+            crate::purge::install(&tx, wire)?;
+            continue;
         }
         set_shadow(&tx, wire)?;
         match note(&tx, &wire.id) {
@@ -248,6 +259,20 @@ pub(crate) fn apply_page(
                     n.created_at = wire.created_at.clone();
                     n.updated_at = wire.updated_at.clone();
                     n.conflict = wire.conflict.clone();
+                    if n.purge_state == "pending" {
+                        let expected: Option<i64> = tx
+                            .query_row(
+                                "SELECT base_rev FROM purge_requests WHERE note_id=?",
+                                [&n.id],
+                                |r| r.get(0),
+                            )
+                            .optional()?
+                            .flatten();
+                        if expected.is_some_and(|v| v != revision) {
+                            crate::purge::reject(&tx, &n.id)?;
+                            n.purge_state = "rejected".into();
+                        }
+                    }
                     put(&tx, &n)?;
                 }
             }
@@ -255,6 +280,7 @@ pub(crate) fn apply_page(
                 put(
                     &tx,
                     &LocalNote {
+                        purge_state: "none".into(),
                         id: wire.id.clone(),
                         content: wire.content.clone(),
                         deleted: wire.deleted,
@@ -366,6 +392,7 @@ pub(crate) fn acknowledge(
     match status {
         "accepted" | "already_deleted" => {
             let wire = WireNote {
+                purged: false,
                 id: op.note_id.clone(),
                 content: op.content.clone(),
                 deleted: op.deleted,
@@ -389,8 +416,18 @@ pub(crate) fn acknowledge(
                 n.conflict = latest.conflict;
             }
             put(&tx, &n)?;
+            if n.purge_state == "pending" && op.deleted && n.generation == generation {
+                tx.execute(
+                    "UPDATE purge_requests SET base_rev=?1 WHERE note_id=?2 AND base_rev IS NULL",
+                    params![revision, n.id],
+                )?;
+            }
         }
         "conflict" => {
+            if n.purge_state == "pending" {
+                crate::purge::reject(&tx, &n.id)?;
+                n.purge_state = "rejected".into();
+            }
             let target = text(result, "conflict_note_id")?;
             if !valid_id(&target) || target == op.note_id {
                 return Err(AppError::new("INVALID_REQUEST", "冲突副本标识无效"));
@@ -423,6 +460,7 @@ pub(crate) fn acknowledge(
                 detected_at: now(),
             };
             let wire = WireNote {
+                purged: false,
                 id: target.clone(),
                 content: op.content.clone(),
                 deleted: false,
@@ -462,6 +500,7 @@ pub(crate) fn acknowledge(
                     put(
                         &tx,
                         &LocalNote {
+                            purge_state: "none".into(),
                             id: focus.clone(),
                             content: latest.content.clone(),
                             deleted: latest.deleted,
@@ -479,6 +518,7 @@ pub(crate) fn acknowledge(
                 put(
                     &tx,
                     &LocalNote {
+                        purge_state: "none".into(),
                         id: target.clone(),
                         content: latest.content.clone(),
                         deleted: latest.deleted,
@@ -495,6 +535,7 @@ pub(crate) fn acknowledge(
                 put(
                     &tx,
                     &LocalNote {
+                        purge_state: "none".into(),
                         id: target.clone(),
                         content: canonical.content,
                         deleted: canonical.deleted,
@@ -555,6 +596,7 @@ pub(crate) fn create(
     }
     let stamp = now();
     let n = LocalNote {
+        purge_state: "none".into(),
         id: id(),
         content,
         deleted: false,

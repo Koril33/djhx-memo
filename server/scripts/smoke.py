@@ -6,7 +6,7 @@ url=f'http://127.0.0.1:{port}'
 def cli(command,*args):return subprocess.run([bin,command,*common,*args],text=True,capture_output=True,check=True)
 def req(method,path,body=None,token=None):
  data=json.dumps(body,ensure_ascii=False).encode() if body is not None else None
- headers={'Content-Type':'application/json'}
+ headers={'Content-Type':'application/json','X-Memo-Protocol':'2'}
  if token:headers['Authorization']='Bearer '+token
  try:
   with urllib.request.urlopen(urllib.request.Request(url+path,data=data,headers=headers,method=method),timeout=5) as r:return r.status,r.read()

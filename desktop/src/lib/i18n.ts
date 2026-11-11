@@ -1,6 +1,27 @@
 // Local presentation only. Never translate note content or user-provided names.
 export type Language = 'zh-CN' | 'en';
 export const messages = {
+  cancel: { 'zh-CN': '取消', en: 'Cancel' },
+  showNoteList: { 'zh-CN': '显示笔记列表', en: 'Show note list' },
+  hideNoteList: { 'zh-CN': '隐藏笔记列表', en: 'Hide note list' },
+  purgeNote: { 'zh-CN': '彻底删除', en: 'Delete permanently' },
+  purgeConfirm: { 'zh-CN': '彻底删除这条笔记？', en: 'Permanently delete this note?' },
+  purgeHelp: {
+    'zh-CN':
+      '应用内无法恢复。账号笔记将在其他设备联网后同步删除；既有历史、备份及已导出文件不会追溯清理。',
+    en: 'This cannot be restored in the app. Account notes are removed on other devices when they sync. Existing history, backups and exported files are retained.',
+  },
+  purgePending: { 'zh-CN': '待彻底删除 · 联网同步后完成', en: 'Permanent deletion pending sync' },
+  purgeRejected: {
+    'zh-CN': '彻底删除未执行，笔记已发生变化，请检查后重新确认。',
+    en: 'Permanent deletion was not completed because the note changed. Review it before confirming again.',
+  },
+  notePurged: {
+    'zh-CN': '笔记已被彻底删除。未保存文字可复制或另存新笔记。',
+    en: 'This note was permanently deleted. Copy any unsaved text or save it as a new note.',
+  },
+  purgeRequested: { 'zh-CN': '已提交彻底删除请求。', en: 'Permanent deletion requested.' },
+  purgeDone: { 'zh-CN': '笔记已彻底删除。', en: 'Note permanently deleted.' },
   closeToQuitHelp: { 'zh-CN': '关闭窗口会保存并退出。', en: 'Closing saves and exits.' },
   navigation: { 'zh-CN': '导航', en: 'Navigation' },
   moreActions: { 'zh-CN': '更多操作', en: 'More actions' },

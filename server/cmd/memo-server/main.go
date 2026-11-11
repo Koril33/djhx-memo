@@ -21,7 +21,7 @@ import (
 	memo "git.djhx.site/koril/djhx-memo/server"
 )
 
-var version = "0.1.0-dev"
+var version = "0.1.4-dev"
 var commit = "unknown"
 
 func main() {

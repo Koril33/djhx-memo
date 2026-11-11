@@ -18,6 +18,8 @@ HTTP 错误结构为 `{"error":{"code":"...","message":"...","retryable":false},
 | OP_ID_REUSED | 409 | 否 | 操作标识与内容不符，保全诊断信息并阻止重试 |
 | CURSOR_INVALID | 409 | 否 | 保全旧库并进入重新同步恢复流程 |
 | SYNC_EPOCH_MISMATCH | 409 | 否 | 按协议保全旧库，禁止原操作自动重放 |
+| PURGE_CONFLICT | 409 | 否 | 彻底删除未执行，刷新已恢复/变化的笔记并重新确认 |
+| NOTE_PURGED | 409 | 否 | 原笔记不可恢复，不生成冲突副本；未提交输入可手动另存新 ID |
 | PROTOCOL_UNSUPPORTED | 426 | 否 | 提示升级，本地继续可用 |
 | RATE_LIMITED | 429 | 是 | 等待 Retry-After；登录不自动反复提交密码 |
 | SERVER_BUSY | 503 | 是 | 退避重试，操作 ID 不变 |
@@ -29,6 +31,7 @@ HTTP 错误结构为 `{"error":{"code":"...","message":"...","retryable":false},
 
 | code | 含义 | 行为 |
 |---|---|---|
+| PURGE_PENDING | 正在等待彻底删除 | 禁止编辑和恢复，联网后确认 |
 | LOCAL_STORAGE_FAILED | 数据库、磁盘或权限故障 | 不显示已保存；保留缓冲内容，重试或救援导出 |
 | LOCAL_SCHEMA_TOO_NEW | 数据库版本高于应用 | 不写入、不降级，提示升级 |
 | CREDENTIAL_STORE_UNAVAILABLE | 系统凭据服务不可用 | 本次 token 仅存进程内，说明重启需登录 |

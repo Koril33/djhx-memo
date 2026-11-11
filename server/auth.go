@@ -153,7 +153,7 @@ func (s *Store) register(ctx context.Context, a authRequest, epoch string) (Sess
 	if e = tx.Commit(); e != nil {
 		return session, e
 	}
-	return Session{userID, a.Username, a.DeviceID, token, expires, epoch, 1}, nil
+	return Session{userID, a.Username, a.DeviceID, token, expires, epoch, 2}, nil
 }
 func (s *Store) login(ctx context.Context, a authRequest, epoch, dummyHash string) (Session, error) {
 	var session Session
@@ -199,7 +199,7 @@ func (s *Store) login(ctx context.Context, a authRequest, epoch, dummyHash strin
 	if e = tx.Commit(); e != nil {
 		return session, e
 	}
-	return Session{userID, a.Username, a.DeviceID, token, expires, epoch, 1}, nil
+	return Session{userID, a.Username, a.DeviceID, token, expires, epoch, 2}, nil
 }
 
 // CreateInvitation returns an ID and a one-time random code; only its hash is stored.

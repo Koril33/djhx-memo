@@ -110,6 +110,11 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
     /** 只在事务成功后更新 saved 状态；调用期间的新输入留在缓冲中继续保存。 */
     suspend fun flush(): Boolean = saveMutex.withLock {
         if (!pending) return@withLock true
+        if (selected?.optString("purge_state") == "purged") {
+            localStatus = UiText(R.string.save_failed)
+            message = UiText(R.string.note_purged)
+            return@withLock false
+        }
         try {
             while (pending) {
                 if (selected == null && creationContent == null && content.isBlank()) {
@@ -139,6 +144,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
                         "content" to text
                     )
                 }
+                if (selected?.optString("purge_state") == "purged") throw CoreFailure("NOTE_PURGED", "")
                 selected = result
                 if (revision == committingRevision && result.optString("content") == text) {
                     pending = false
@@ -198,15 +204,29 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         if (event != lastEvent) {
             lastEvent = event
             loadNotes()
-            if (selected != null && canRefreshEditor() && currentProfileId() == editorProfileId) {
-                val currentRevision = revision
-                val currentId = selected!!.getString("id")
-                val fresh = gateway.obj("get", "profile_id" to editorProfileId, "id" to currentId)
-                if (canRefreshEditor() && revision == currentRevision && selected?.optString("id") == currentId) {
-                    selected = fresh
-                    content = fresh.optString("content")
-                }
+            refreshSelected()
+        }
+    }
+
+    private suspend fun refreshSelected() {
+        val currentId = selected?.optString("id") ?: return
+        if (currentProfileId() != editorProfileId) return
+        val currentRevision = revision
+        val fresh = gateway.obj("get", "profile_id" to editorProfileId, "id" to currentId)
+        if (selected?.optString("id") != currentId) return
+        if (fresh.optString("purge_state") == "purged") {
+            selected = fresh
+            saveJob?.cancel()
+            saveJob = null
+            if (pending || compositionActive) {
+                localStatus = UiText(R.string.save_failed)
+                message = UiText(R.string.note_purged)
+            } else {
+                content = ""
             }
+        } else if (canRefreshEditor() && revision == currentRevision) {
+            selected = fresh
+            content = fresh.optString("content")
         }
     }
 
@@ -288,6 +308,22 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         editorOpen = false
         selected = null
         content = ""
+        loadNotes()
+    }
+
+    /** Confirmation captures the original note/version; a later selection cannot retarget deletion. */
+    fun purge(target: JSONObject) = action {
+        if (!flush()) return@action
+        val result = gateway.obj(
+            "purge",
+            "profile_id" to target.getString("profile_id"),
+            "id" to target.getString("id"),
+            "expected_generation" to target.getString("generation")
+        )
+        editorOpen = false
+        selected = null
+        content = ""
+        message = UiText(if (result.optString("purge_state") == "purged") R.string.purge_done else R.string.purge_pending)
         loadNotes()
     }
 

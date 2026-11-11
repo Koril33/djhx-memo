@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "djhx-memo v1 API",
-    "version": "0.1.0",
-    "description": "未发布的 0.1.0 自用候选实现契约。计数为十进制字符串。错误与字节限制详见同目录规范；实际验收见 docs/validation.md。"
+    "version": "0.1.4",
+    "description": "0.1.4 未发布实现契约；同步协议 protocol_version=2。单条彻底删除及兼容门槛见 permanent-deletion.md。"
   },
   "security": [
     {
@@ -254,7 +254,18 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "X-Memo-Protocol",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "2"
+            }
+          }
+        ]
       }
     },
     "/v1/sync/pull": {
@@ -320,6 +331,15 @@
               "maximum": 100,
               "default": 50
             }
+          },
+          {
+            "name": "X-Memo-Protocol",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "2"
+            }
           }
         ]
       }
@@ -343,7 +363,18 @@
           "default": {
             "$ref": "#/components/responses/ErrorResponse"
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "X-Memo-Protocol",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "2"
+            }
+          }
+        ]
       }
     },
     "/v1/export": {
@@ -383,8 +414,59 @@
               "type": "boolean",
               "default": false
             }
+          },
+          {
+            "name": "X-Memo-Protocol",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "2"
+            }
           }
         ]
+      }
+    },
+    "/v1/notes/purge": {
+      "post": {
+        "operationId": "purgeNote",
+        "summary": "按已知回收站版本彻底删除单条笔记，保留最小永久标记",
+        "parameters": [
+          {
+            "name": "X-Memo-Protocol",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "2"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurgeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "不可恢复删除已确认，或原操作的幂等重试",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurgeResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        }
       }
     }
   },
@@ -558,7 +640,7 @@
           },
           "protocol_version": {
             "type": "integer",
-            "const": 1
+            "const": 2
           }
         },
         "required": [
@@ -645,7 +727,7 @@
           },
           "protocol_version": {
             "type": "integer",
-            "const": 1
+            "const": 2
           }
         },
         "required": [
@@ -725,6 +807,10 @@
                 "type": "null"
               }
             ]
+          },
+          "purged": {
+            "type": "boolean",
+            "description": "永久删除时为 true，正文为空且 deleted=true，不可恢复"
           }
         },
         "required": [
@@ -735,7 +821,32 @@
           "seq",
           "created_at",
           "updated_at",
-          "conflict"
+          "conflict",
+          "purged"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "purged": {
+                  "const": true
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "deleted": {
+                  "const": true
+                },
+                "content": {
+                  "const": ""
+                },
+                "conflict": {
+                  "type": "null"
+                }
+              }
+            }
+          }
         ]
       },
       "Operation": {
@@ -960,6 +1071,47 @@
         "required": [
           "epoch",
           "head_seq"
+        ]
+      },
+      "PurgeRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "epoch": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "op_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "note_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "base_rev": {
+            "$ref": "#/components/schemas/Counter",
+            "pattern": "^[1-9][0-9]{0,18}$",
+            "description": "申请时已知的回收站版本，必须大于零；不能自动提高到远端新版本"
+          }
+        },
+        "required": [
+          "epoch",
+          "op_id",
+          "note_id",
+          "base_rev"
+        ]
+      },
+      "PurgeResponse": {
+        "type": "object",
+        "properties": {
+          "epoch": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "note": {
+            "$ref": "#/components/schemas/Note"
+          }
+        },
+        "required": [
+          "epoch",
+          "note"
         ]
       }
     },

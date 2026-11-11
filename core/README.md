@@ -1,8 +1,10 @@
 # core
 
+当前开发版本为 **0.1.4**（未发布），新增单条彻底删除、Windows 托盘左右键及桌面列表折叠。账号同步要求协议 2 服务端与相应客户端配套升级；既有 0.1.3 Release 不改变。本轮 Windows/Android 检查与 Linux 待验证项见[增量验证](../docs/client-updates-0.1.4-validation.md)。
+
 Rust 本地优先核心，负责 SQLite 存储与迁移、持久 outbox、客户端同步状态机、搜索、回收站、导出和空间隔离。Android 经 UniFFI 调用，Tauri Rust 后端直接链接。
 
-已实现可构建的 `djhx-memo-core` 0.1.0；依赖锁定于 Cargo.lock，SQLite 随库构建。平台入口为 `MemoApp`，JSON 调用见 [桥接契约](../spec/core-bridge.md)，不向 UI 返回 token。
+已实现可构建的 `djhx-memo-core` 0.1.4；依赖锁定于 Cargo.lock，SQLite 随库构建。平台入口为 `MemoApp`，JSON 调用见 [桥接契约](../spec/core-bridge.md)，不向 UI 返回 token。
 
 ```sh
 cargo fmt --check
