@@ -18,3 +18,7 @@
 产品流程以 product-v1 为准，冲突与游标语义以 sync-protocol 为准，字段与 wire 类型以 data-model 及 OpenAPI 为准。发现文档冲突时先修正规范，不自行选择另一种实现。所有行为变化同步修改相关契约与场景。
 
 v0.1 规划中关于冲突策略、Web 范围、共享前端和 CI 的旧表述已由本基线替代。架构取舍见 [ADR-0001](../docs/adr/0001-v1-baseline.md)。
+
+## 尚未启用的提案
+
+- [automatic-updates.md](automatic-updates.md)：Windows、Linux、Android 自动更新的产品/安全要求提案。仅完成调研与设计，不属于 0.1.4 已实现行为，不修改上表的现行契约；后续实现与实际验收后另行启用。

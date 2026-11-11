@@ -2,6 +2,7 @@
 
 - [quick-start.md](quick-start.md)：候选版安装、离线使用与接入自有服务器。
 - [client-release.md](client-release.md)：GitHub/Gitea与0.1.3三端附件发布；实际构建：[Android](releases/0.1.3-android-validation.md)、[Linux](releases/0.1.3-linux-validation.md)。
+- 自动更新（尚未实现）：[17 个 Rust GUI 软件调研](research/rust-gui-auto-update-survey.md)、[三端方案](automatic-update-design.md)、[检查记录](automatic-update-research-validation.md)。
 - [website-deployment.md](website-deployment.md)：官网、Nginx路由与双远程main的合并部署记录。
 - [brand-guidelines.md](brand-guidelines.md)：DJHX Memo 可编辑母版、设计板、多端尺寸与统一替换步骤。
 - [client-fixes-0.1.2-validation.md](client-fixes-0.1.2-validation.md)：0.1.2 下拉框文字与 Android 编辑滚动的复现、修正及实测。
@@ -15,7 +16,7 @@
 - 展示增量交叉评审：[国际化、主题与品牌](reviews/presentation-review.md)。
 - 0.1.1 界面预览：[桌面验证](desktop-ui-preview-validation.md)、[Android 验证](android-ui-preview-validation.md)、[独立复核](reviews/quiet-ui-review.md)。
 - [operations.md](operations.md)：部署、备份、恢复与发布要求。
-- [adr/](adr/README.md)：已接受的技术和产品取舍。
+- [adr/](adr/README.md)：技术和产品取舍；以各条目标明的接受/提议状态为准。
 
 产品行为和接口只在 [spec](../spec/README.md) 定义；路线图见 [项目计划](../djhx-memo-project-plan.md)。
 

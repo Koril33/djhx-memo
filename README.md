@@ -54,6 +54,8 @@ djhx-memo/
 
 安装包和校验值输出到本机忽略目录 `dist/`。发布时将安装包与校验值上传为 GitHub Release 附件，详见[客户端发布流程](docs/client-release.md)。
 
+三端自动更新目前处于[调研与方案设计](docs/automatic-update-design.md)阶段，包含[17 个 Rust GUI 软件的更新方式](docs/research/rust-gui-auto-update-survey.md)，尚未加入客户端。
+
 服务端独立打包入口为 `bash scripts/package-server.sh`，输出静态 Linux amd64 二进制及部署资料压缩包；不会部署到云服务器。
 
 ## 贡献与许可

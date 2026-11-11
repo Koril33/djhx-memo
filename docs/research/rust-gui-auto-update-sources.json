@@ -1,0 +1,465 @@
+{
+  "researched_on": "2026-11-11",
+  "method": "official docs and pinned source review; no installed update execution",
+  "base_commit": "93b0f18",
+  "application_count": 17,
+  "applications": [
+    {
+      "name": "Zed",
+      "repo": "zed-industries/zed",
+      "commit": "82f2558e17f6459f2cc8cb4a9fbe05e36520cdd9",
+      "stars_snapshot": 94742,
+      "metadata_source": "https://api.github.com/repos/zed-industries/zed"
+    },
+    {
+      "name": "Lapce",
+      "repo": "lapce/lapce",
+      "commit": "f66ffaa95387794205c35864517de70958b9ea8d",
+      "stars_snapshot": 39006,
+      "metadata_source": "https://api.github.com/repos/lapce/lapce"
+    },
+    {
+      "name": "Alacritty",
+      "repo": "alacritty/alacritty",
+      "commit": "aa5d942f46c40184a3f214830ff5f7989f4733a1",
+      "stars_snapshot": 66167,
+      "metadata_source": "https://api.github.com/repos/alacritty/alacritty"
+    },
+    {
+      "name": "WezTerm",
+      "repo": "wezterm/wezterm",
+      "commit": "458a100c1bf4134d36cb5c42dd90e4c8266d9e1a",
+      "stars_snapshot": 29529,
+      "metadata_source": "https://api.github.com/repos/wezterm/wezterm"
+    },
+    {
+      "name": "Warp",
+      "repo": "warpdotdev/warp",
+      "commit": "2b2ed236f087b47b463f1cd55598485dd7965338",
+      "stars_snapshot": 65981,
+      "metadata_source": "https://api.github.com/repos/warpdotdev/warp"
+    },
+    {
+      "name": "RustDesk",
+      "repo": "rustdesk/rustdesk",
+      "commit": "0bfe22083df9c6319d917849ab72c1efb3920d7e",
+      "stars_snapshot": 129022,
+      "metadata_source": "https://api.github.com/repos/rustdesk/rustdesk"
+    },
+    {
+      "name": "GitButler",
+      "repo": "gitbutlerapp/gitbutler",
+      "commit": "cb400035d9558ed7a48f22f34a9fb05a0b927926",
+      "stars_snapshot": 21953,
+      "metadata_source": "https://api.github.com/repos/gitbutlerapp/gitbutler"
+    },
+    {
+      "name": "Spacedrive",
+      "repo": "spacedriveapp/spacedrive",
+      "commit": "11523b224d1422d98def9a1c0f99e89fafada00d",
+      "stars_snapshot": 39486,
+      "metadata_source": "https://api.github.com/repos/spacedriveapp/spacedrive"
+    },
+    {
+      "name": "Clash Verge Rev",
+      "repo": "clash-verge-rev/clash-verge-rev",
+      "commit": "2c60f55f45c51200fbfa0444779e46348fdd3365",
+      "stars_snapshot": 157776,
+      "metadata_source": "https://api.github.com/repos/clash-verge-rev/clash-verge-rev"
+    },
+    {
+      "name": "Pot",
+      "repo": "pot-app/pot-desktop",
+      "commit": "594d32ede96acd106b0256deaa8bb440ffcdff40",
+      "stars_snapshot": 19336,
+      "metadata_source": "https://api.github.com/repos/pot-app/pot-desktop"
+    },
+    {
+      "name": "Hoppscotch Desktop",
+      "repo": "hoppscotch/hoppscotch",
+      "commit": "55908a76a1d0555c9bbb5d74244c14173df95b06",
+      "stars_snapshot": 80782,
+      "metadata_source": "https://api.github.com/repos/hoppscotch/hoppscotch"
+    },
+    {
+      "name": "Yaak",
+      "repo": "mountain-loop/yaak",
+      "commit": "6e39955f1731b1315f18855343cc34b8de8ff26d",
+      "stars_snapshot": 19481,
+      "metadata_source": "https://api.github.com/repos/mountain-loop/yaak"
+    },
+    {
+      "name": "Jan",
+      "repo": "janhq/jan",
+      "commit": "171fdc77eba27909ff458d9822a4d902f1c023da",
+      "stars_snapshot": 45668,
+      "metadata_source": "https://api.github.com/repos/janhq/jan"
+    },
+    {
+      "name": "Rnote",
+      "repo": "flxzt/rnote",
+      "commit": "e507fcea95368d221cb68322b4c9bf97a8bf9205",
+      "stars_snapshot": 11854,
+      "metadata_source": "https://api.github.com/repos/flxzt/rnote"
+    },
+    {
+      "name": "Czkawka / Krokiet",
+      "repo": "qarmin/czkawka",
+      "commit": "969617bbb6504f9c7a1699b4a576ea2c494e2e46",
+      "stars_snapshot": 35073,
+      "metadata_source": "https://api.github.com/repos/qarmin/czkawka"
+    },
+    {
+      "name": "EasyTier GUI",
+      "repo": "EasyTier/EasyTier",
+      "commit": "2abb1676b475947e46c527b57acc5f296cb48482",
+      "stars_snapshot": 14677,
+      "metadata_source": "https://api.github.com/repos/EasyTier/EasyTier"
+    },
+    {
+      "name": "HuLa",
+      "repo": "HuLaSpark/HuLa",
+      "commit": "16871546d8f42252ed8b475540b0f74f1ea44fd6",
+      "stars_snapshot": 7836,
+      "metadata_source": "https://api.github.com/repos/HuLaSpark/HuLa"
+    }
+  ],
+  "files": [
+    {
+      "repo": "lapce/lapce",
+      "file": "docs/new-release.md",
+      "sha": "f66ffaa95387794205c35864517de70958b9ea8d",
+      "url": "https://github.com/lapce/lapce/blob/f66ffaa95387794205c35864517de70958b9ea8d/docs/new-release.md",
+      "sha256": "8e0d8ba65a035b624989215f7f9d72c76060c4290179594d6d0876186b112e13",
+      "bytes": 373
+    },
+    {
+      "repo": "alacritty/alacritty",
+      "file": "README.md",
+      "sha": "aa5d942f46c40184a3f214830ff5f7989f4733a1",
+      "url": "https://github.com/alacritty/alacritty/blob/aa5d942f46c40184a3f214830ff5f7989f4733a1/README.md",
+      "sha256": "0dd7c6ea42dc74f2d1949ec0217e15ecf348d6194757bf3d97af22834aeea1ae",
+      "bytes": 4365
+    },
+    {
+      "repo": "zed-industries/zed",
+      "file": "crates/auto_update/src/auto_update.rs",
+      "sha": "82f2558e17f6459f2cc8cb4a9fbe05e36520cdd9",
+      "url": "https://github.com/zed-industries/zed/blob/82f2558e17f6459f2cc8cb4a9fbe05e36520cdd9/crates/auto_update/src/auto_update.rs",
+      "sha256": "a5ced0ca270105e1da6cad4fc73c6c856a5027e6d4e5e6c2fdeee043a8d01e5e",
+      "bytes": 62617
+    },
+    {
+      "repo": "lapce/lapce",
+      "file": "lapce-app/src/update.rs",
+      "sha": "f66ffaa95387794205c35864517de70958b9ea8d",
+      "url": "https://github.com/lapce/lapce/blob/f66ffaa95387794205c35864517de70958b9ea8d/lapce-app/src/update.rs",
+      "sha256": "e0c91755dc589d4b1c1170ecd08b79f8959866cd9a33b0e395a198d5b3cfb960",
+      "bytes": 7670
+    },
+    {
+      "repo": "alacritty/alacritty",
+      "file": "alacritty/Cargo.toml",
+      "sha": "aa5d942f46c40184a3f214830ff5f7989f4733a1",
+      "url": "https://github.com/alacritty/alacritty/blob/aa5d942f46c40184a3f214830ff5f7989f4733a1/alacritty/Cargo.toml",
+      "sha256": "0ca308ce8bb5407206b4cd0c6f4ecd429755e9f433ea598afc4970684ec0d7e4",
+      "bytes": 2690
+    },
+    {
+      "repo": "wezterm/wezterm",
+      "file": "README-DISTRO-MAINTAINER.md",
+      "sha": "458a100c1bf4134d36cb5c42dd90e4c8266d9e1a",
+      "url": "https://github.com/wezterm/wezterm/blob/458a100c1bf4134d36cb5c42dd90e4c8266d9e1a/README-DISTRO-MAINTAINER.md",
+      "sha256": "8b8f5134fde29010d9582be1c843065e3187b0268e9bd5056a57006c0809bac4",
+      "bytes": 3840
+    },
+    {
+      "repo": "wezterm/wezterm",
+      "file": "docs/config/lua/config/check_for_updates.md",
+      "sha": "458a100c1bf4134d36cb5c42dd90e4c8266d9e1a",
+      "url": "https://github.com/wezterm/wezterm/blob/458a100c1bf4134d36cb5c42dd90e4c8266d9e1a/docs/config/lua/config/check_for_updates.md",
+      "sha256": "1d3bc86c4f747af2c380f7758d47838b2034c9ae4b24ae49bab1a9c34b937114",
+      "bytes": 697
+    },
+    {
+      "repo": "warpdotdev/warp",
+      "file": "app/src/autoupdate/linux.rs",
+      "sha": "2b2ed236f087b47b463f1cd55598485dd7965338",
+      "url": "https://github.com/warpdotdev/warp/blob/2b2ed236f087b47b463f1cd55598485dd7965338/app/src/autoupdate/linux.rs",
+      "sha256": "63ab21c4a34bca260ead63d93a69e131b5546ef6a81b35d75839847d51b7c674",
+      "bytes": 26205
+    },
+    {
+      "repo": "warpdotdev/warp",
+      "file": "app/src/autoupdate/windows.rs",
+      "sha": "2b2ed236f087b47b463f1cd55598485dd7965338",
+      "url": "https://github.com/warpdotdev/warp/blob/2b2ed236f087b47b463f1cd55598485dd7965338/app/src/autoupdate/windows.rs",
+      "sha256": "e3268b56e0e7c6a4675fef8b9801bd7b4283bca2a50b6cb613e80f48b261c7db",
+      "bytes": 11951
+    },
+    {
+      "repo": "gitbutlerapp/gitbutler",
+      "file": "apps/desktop/src/lib/updater/updater.ts",
+      "sha": "cb400035d9558ed7a48f22f34a9fb05a0b927926",
+      "url": "https://github.com/gitbutlerapp/gitbutler/blob/cb400035d9558ed7a48f22f34a9fb05a0b927926/apps/desktop/src/lib/updater/updater.ts",
+      "sha256": "8553620dc62ee28782dbd76f90accc4d0f9efe32b332dacf66fefb12e3925b91",
+      "bytes": 7982
+    },
+    {
+      "repo": "zed-industries/zed",
+      "file": "crates/auto_update_helper/src/updater.rs",
+      "sha": "82f2558e17f6459f2cc8cb4a9fbe05e36520cdd9",
+      "url": "https://github.com/zed-industries/zed/blob/82f2558e17f6459f2cc8cb4a9fbe05e36520cdd9/crates/auto_update_helper/src/updater.rs",
+      "sha256": "b7fbdab3fa435b280e96909fe25a91b374308b29c1ab4dca6af89c8a75e3800a",
+      "bytes": 17286
+    },
+    {
+      "repo": "rustdesk/rustdesk",
+      "file": "src/updater/artifact.rs",
+      "sha": "0bfe22083df9c6319d917849ab72c1efb3920d7e",
+      "url": "https://github.com/rustdesk/rustdesk/blob/0bfe22083df9c6319d917849ab72c1efb3920d7e/src/updater/artifact.rs",
+      "sha256": "5c54d0733509655e84d1c1af8a2bd37d73f5ed5eca0d17f763da9ac14f269058",
+      "bytes": 7904
+    },
+    {
+      "repo": "spacedriveapp/spacedrive",
+      "file": "apps/tauri/AUTOUPDATER.md",
+      "sha": "11523b224d1422d98def9a1c0f99e89fafada00d",
+      "url": "https://github.com/spacedriveapp/spacedrive/blob/11523b224d1422d98def9a1c0f99e89fafada00d/apps/tauri/AUTOUPDATER.md",
+      "sha256": "19dc1fdae3d92d160d4d6ff3732ff07c10fb7b66e2099cdbf09fd8cd0a743503",
+      "bytes": 7153
+    },
+    {
+      "repo": "spacedriveapp/spacedrive",
+      "file": "apps/tauri/src-tauri/tauri.conf.json",
+      "sha": "11523b224d1422d98def9a1c0f99e89fafada00d",
+      "url": "https://github.com/spacedriveapp/spacedrive/blob/11523b224d1422d98def9a1c0f99e89fafada00d/apps/tauri/src-tauri/tauri.conf.json",
+      "sha256": "fd97a9a37fe17b469c70c799f3410a16507eec73396a416e120a144d7e83a75c",
+      "bytes": 3241
+    },
+    {
+      "repo": "rustdesk/rustdesk",
+      "file": "src/updater.rs",
+      "sha": "0bfe22083df9c6319d917849ab72c1efb3920d7e",
+      "url": "https://github.com/rustdesk/rustdesk/blob/0bfe22083df9c6319d917849ab72c1efb3920d7e/src/updater.rs",
+      "sha256": "7b84887c3ff379c243175ece0aeeb6e51fbc0d49e535c22499613b0b4ce1dded",
+      "bytes": 25037
+    },
+    {
+      "repo": "clash-verge-rev/clash-verge-rev",
+      "file": "src-tauri/tauri.conf.json",
+      "sha": "2c60f55f45c51200fbfa0444779e46348fdd3365",
+      "url": "https://github.com/clash-verge-rev/clash-verge-rev/blob/2c60f55f45c51200fbfa0444779e46348fdd3365/src-tauri/tauri.conf.json",
+      "sha256": "69b174edaaa317047cc1744efba7d3d9a30e9e348e1f7712b41aad8572eb336e",
+      "bytes": 1996
+    },
+    {
+      "repo": "gitbutlerapp/gitbutler",
+      "file": "crates/gitbutler-tauri/tauri.conf.release.json",
+      "sha": "cb400035d9558ed7a48f22f34a9fb05a0b927926",
+      "url": "https://github.com/gitbutlerapp/gitbutler/blob/cb400035d9558ed7a48f22f34a9fb05a0b927926/crates/gitbutler-tauri/tauri.conf.release.json",
+      "sha256": "2d19b557c2e473da3bf8db33f54aac9dbc485ee5ad850f0ff4df1e90561de20e",
+      "bytes": 836
+    },
+    {
+      "repo": "spacedriveapp/spacedrive",
+      "file": "packages/interface/src/hooks/useAutoUpdater.ts",
+      "sha": "11523b224d1422d98def9a1c0f99e89fafada00d",
+      "url": "https://github.com/spacedriveapp/spacedrive/blob/11523b224d1422d98def9a1c0f99e89fafada00d/packages/interface/src/hooks/useAutoUpdater.ts",
+      "sha256": "fa734f1dba242808e8548cedab35ab679db6533a45f3373034d09c343f6671d9",
+      "bytes": 4224
+    },
+    {
+      "repo": "pot-app/pot-desktop",
+      "file": "src-tauri/src/updater.rs",
+      "sha": "594d32ede96acd106b0256deaa8bb440ffcdff40",
+      "url": "https://github.com/pot-app/pot-desktop/blob/594d32ede96acd106b0256deaa8bb440ffcdff40/src-tauri/src/updater.rs",
+      "sha256": "6b86fffdbd777ed0683b673e3d155992a5098baa9dbc53011295fef56c620e7b",
+      "bytes": 818
+    },
+    {
+      "repo": "pot-app/pot-desktop",
+      "file": "src-tauri/tauri.conf.json",
+      "sha": "594d32ede96acd106b0256deaa8bb440ffcdff40",
+      "url": "https://github.com/pot-app/pot-desktop/blob/594d32ede96acd106b0256deaa8bb440ffcdff40/src-tauri/tauri.conf.json",
+      "sha256": "1ceb5b4a620132962dc8a93d359d086358cd9bc6e7d4c9a286d673aa563cfefd",
+      "bytes": 4110
+    },
+    {
+      "repo": "clash-verge-rev/clash-verge-rev",
+      "file": "src-tauri/src/core/updater.rs",
+      "sha": "2c60f55f45c51200fbfa0444779e46348fdd3365",
+      "url": "https://github.com/clash-verge-rev/clash-verge-rev/blob/2c60f55f45c51200fbfa0444779e46348fdd3365/src-tauri/src/core/updater.rs",
+      "sha256": "4bb6dca1aa4b4ae78b2d87f6ffbbb6b292064e3bea390323e8d77db5d83511ed",
+      "bytes": 24708
+    },
+    {
+      "repo": "hoppscotch/hoppscotch",
+      "file": "packages/hoppscotch-desktop/src-tauri/src/updater.rs",
+      "sha": "55908a76a1d0555c9bbb5d74244c14173df95b06",
+      "url": "https://github.com/hoppscotch/hoppscotch/blob/55908a76a1d0555c9bbb5d74244c14173df95b06/packages/hoppscotch-desktop/src-tauri/src/updater.rs",
+      "sha256": "40e9fa5bb20135400320322ede51a603833776cc87ec591a920e88c6eb990b85",
+      "bytes": 19046
+    },
+    {
+      "repo": "pot-app/pot-desktop",
+      "file": "src/window/Updater/index.jsx",
+      "sha": "594d32ede96acd106b0256deaa8bb440ffcdff40",
+      "url": "https://github.com/pot-app/pot-desktop/blob/594d32ede96acd106b0256deaa8bb440ffcdff40/src/window/Updater/index.jsx",
+      "sha256": "1512fd2bac9502df36cc9b966130662962823df25473837aff2a87fc1ff29add",
+      "bytes": 7735
+    },
+    {
+      "repo": "hoppscotch/hoppscotch",
+      "file": "packages/hoppscotch-desktop/src/services/updater.client.ts",
+      "sha": "55908a76a1d0555c9bbb5d74244c14173df95b06",
+      "url": "https://github.com/hoppscotch/hoppscotch/blob/55908a76a1d0555c9bbb5d74244c14173df95b06/packages/hoppscotch-desktop/src/services/updater.client.ts",
+      "sha256": "e4deb9265b5ca5a6b07865ce9c3eba2085ef1f3b61ea4c07da42a68dcfabc6c8",
+      "bytes": 1877
+    },
+    {
+      "repo": "mountain-loop/yaak",
+      "file": "crates-tauri/yaak-updater/src/gate.rs",
+      "sha": "6e39955f1731b1315f18855343cc34b8de8ff26d",
+      "url": "https://github.com/mountain-loop/yaak/blob/6e39955f1731b1315f18855343cc34b8de8ff26d/crates-tauri/yaak-updater/src/gate.rs",
+      "sha256": "ba1c29a541451205ead7b726057522dfa9cf5d6550087122f2e8c8bf1f2dfc62",
+      "bytes": 22176
+    },
+    {
+      "repo": "hoppscotch/hoppscotch",
+      "file": "packages/hoppscotch-desktop/src-tauri/tauri.conf.json",
+      "sha": "55908a76a1d0555c9bbb5d74244c14173df95b06",
+      "url": "https://github.com/hoppscotch/hoppscotch/blob/55908a76a1d0555c9bbb5d74244c14173df95b06/packages/hoppscotch-desktop/src-tauri/tauri.conf.json",
+      "sha256": "0f5ead9e0380cf8b2f1ce0258a90fe22f9f0d40737f01c5db94131e7fda425c2",
+      "bytes": 1890
+    },
+    {
+      "repo": "mountain-loop/yaak",
+      "file": "crates-tauri/yaak-updater/src/lib.rs",
+      "sha": "6e39955f1731b1315f18855343cc34b8de8ff26d",
+      "url": "https://github.com/mountain-loop/yaak/blob/6e39955f1731b1315f18855343cc34b8de8ff26d/crates-tauri/yaak-updater/src/lib.rs",
+      "sha256": "a1eb953f3706d832d74d717cd936fb907a48ede1b90cc4830cab81b67dab4795",
+      "bytes": 20486
+    },
+    {
+      "repo": "janhq/jan",
+      "file": "src-tauri/src/core/updater/custom_updater.rs",
+      "sha": "171fdc77eba27909ff458d9822a4d902f1c023da",
+      "url": "https://github.com/janhq/jan/blob/171fdc77eba27909ff458d9822a4d902f1c023da/src-tauri/src/core/updater/custom_updater.rs",
+      "sha256": "d1c63aa1de16b0c1a8fa6e286a682c27d6f17cf215907e98ed5175112b5355cc",
+      "bytes": 8468
+    },
+    {
+      "repo": "janhq/jan",
+      "file": "src-tauri/tauri.conf.json",
+      "sha": "171fdc77eba27909ff458d9822a4d902f1c023da",
+      "url": "https://github.com/janhq/jan/blob/171fdc77eba27909ff458d9822a4d902f1c023da/src-tauri/tauri.conf.json",
+      "sha256": "ef8ef26288109173402a1d219e26ce1855c379fd71f36ad7f16f94dcfb35024e",
+      "bytes": 2613
+    },
+    {
+      "repo": "flxzt/rnote",
+      "file": "README.md",
+      "sha": "e507fcea95368d221cb68322b4c9bf97a8bf9205",
+      "url": "https://github.com/flxzt/rnote/blob/e507fcea95368d221cb68322b4c9bf97a8bf9205/README.md",
+      "sha256": "d197cf643d26ec2136025135c8356c15e16bcb289e5436037375e7936bc09cb9",
+      "bytes": 11648
+    },
+    {
+      "repo": "qarmin/czkawka",
+      "file": "czkawka_gui/src/connect_things/connect_about_buttons.rs",
+      "sha": "969617bbb6504f9c7a1699b4a576ea2c494e2e46",
+      "url": "https://github.com/qarmin/czkawka/blob/969617bbb6504f9c7a1699b4a576ea2c494e2e46/czkawka_gui/src/connect_things/connect_about_buttons.rs",
+      "sha256": "832872c8397e9a08a32cf1abe330c0e6f8392f66bc81687f2359150dd07ead44",
+      "bytes": 2193
+    },
+    {
+      "repo": "EasyTier/EasyTier",
+      "file": "easytier-gui/src-tauri/tauri.conf.json",
+      "sha": "2abb1676b475947e46c527b57acc5f296cb48482",
+      "url": "https://github.com/EasyTier/EasyTier/blob/2abb1676b475947e46c527b57acc5f296cb48482/easytier-gui/src-tauri/tauri.conf.json",
+      "sha256": "954d96a908ce008fd173a749f32b0bd9509eb5a0617ab45669da1accf82c8766",
+      "bytes": 823
+    },
+    {
+      "repo": "flxzt/rnote",
+      "file": "Cargo.toml",
+      "sha": "e507fcea95368d221cb68322b4c9bf97a8bf9205",
+      "url": "https://github.com/flxzt/rnote/blob/e507fcea95368d221cb68322b4c9bf97a8bf9205/Cargo.toml",
+      "sha256": "8f9f7f6631dd1a9e8030c074046fcd6ff73a58a4b37664afe669ce391ce77635",
+      "bytes": 2861
+    },
+    {
+      "repo": "HuLaSpark/HuLa",
+      "file": "src-tauri/tauri.conf.json",
+      "sha": "16871546d8f42252ed8b475540b0f74f1ea44fd6",
+      "url": "https://github.com/HuLaSpark/HuLa/blob/16871546d8f42252ed8b475540b0f74f1ea44fd6/src-tauri/tauri.conf.json",
+      "sha256": "8000176baebe0cc9740c220ef3ca36cd65ae9d7057604aec100a1d05e03a7487",
+      "bytes": 2435
+    },
+    {
+      "repo": "HuLaSpark/HuLa",
+      "file": "src/hooks/useCheckUpdate.ts",
+      "sha": "16871546d8f42252ed8b475540b0f74f1ea44fd6",
+      "url": "https://github.com/HuLaSpark/HuLa/blob/16871546d8f42252ed8b475540b0f74f1ea44fd6/src/hooks/useCheckUpdate.ts",
+      "sha256": "129a50c23558722d210694de0ea8d91426c1a90ed6c0b82ae33d59f09baf809d",
+      "bytes": 2578
+    },
+    {
+      "repo": "EasyTier/EasyTier",
+      "file": "easytier-gui/src/components/About.vue",
+      "sha": "2abb1676b475947e46c527b57acc5f296cb48482",
+      "url": "https://github.com/EasyTier/EasyTier/blob/2abb1676b475947e46c527b57acc5f296cb48482/easytier-gui/src/components/About.vue",
+      "sha256": "bfb7626f1253d3ee8cc3b4784a269b03a1d00e377217fed4365bdb71a5c6b552",
+      "bytes": 512
+    },
+    {
+      "repo": "HuLaSpark/HuLa",
+      "file": "src/views/Update.vue",
+      "sha": "16871546d8f42252ed8b475540b0f74f1ea44fd6",
+      "url": "https://github.com/HuLaSpark/HuLa/blob/16871546d8f42252ed8b475540b0f74f1ea44fd6/src/views/Update.vue",
+      "sha256": "5a4cf3e14018623ffde214f401f036125b6e7ee6e0e398defa4b0a67bce413d3",
+      "bytes": 4298
+    },
+    {
+      "repo": "gitbutlerapp/gitbutler",
+      "file": "apps/desktop/src/lib/backend/tauri.ts",
+      "sha": "cb400035d9558ed7a48f22f34a9fb05a0b927926",
+      "url": "https://github.com/gitbutlerapp/gitbutler/blob/cb400035d9558ed7a48f22f34a9fb05a0b927926/apps/desktop/src/lib/backend/tauri.ts",
+      "sha256": "ac996c120e863153e1562f6452a85cf5c286e416b2f5f76a664171d67ec0f911",
+      "bytes": 8266
+    },
+    {
+      "repo": "qarmin/czkawka",
+      "file": "krokiet/README.md",
+      "sha": "969617bbb6504f9c7a1699b4a576ea2c494e2e46",
+      "url": "https://github.com/qarmin/czkawka/blob/969617bbb6504f9c7a1699b4a576ea2c494e2e46/krokiet/README.md",
+      "sha256": "dd6fb0320b9a8b27828144d1f02664431ab2a8da43e00a889309aaffb64ba137",
+      "bytes": 3647
+    },
+    {
+      "repo": "EasyTier/EasyTier",
+      "file": "README.md",
+      "sha": "2abb1676b475947e46c527b57acc5f296cb48482",
+      "url": "https://github.com/EasyTier/EasyTier/blob/2abb1676b475947e46c527b57acc5f296cb48482/README.md",
+      "sha256": "86b481b351235b2edc4591fbca4f49f0366433e473a2c06c8d2deb67c9ad90cd",
+      "bytes": 13214
+    },
+    {
+      "repo": "janhq/jan",
+      "file": "web-app/src/services/updater/tauri.ts",
+      "sha": "171fdc77eba27909ff458d9822a4d902f1c023da",
+      "url": "https://github.com/janhq/jan/blob/171fdc77eba27909ff458d9822a4d902f1c023da/web-app/src/services/updater/tauri.ts",
+      "sha256": "1f572b19535ec5580539ea321caceb9de91714d36f409730838bb5d6e6aa43ca",
+      "bytes": 5910
+    },
+    {
+      "repo": "rustdesk/rustdesk",
+      "file": "src/update_metadata.rs",
+      "sha": "0bfe22083df9c6319d917849ab72c1efb3920d7e",
+      "url": "https://github.com/rustdesk/rustdesk/blob/0bfe22083df9c6319d917849ab72c1efb3920d7e/src/update_metadata.rs",
+      "sha256": "274132ecab5c3efd9cdee549e03a6af3e236ae385f9db6e9eecf7e976c0314a7",
+      "bytes": 8647
+    }
+  ]
+}
