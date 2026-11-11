@@ -1,6 +1,7 @@
 // Local presentation only. Never translate note content or user-provided names.
 export type Language = 'zh-CN' | 'en';
 export const messages = {
+  updatesTab: { 'zh-CN': '软件更新', en: 'Updates' },
   cancel: { 'zh-CN': '取消', en: 'Cancel' },
   showNoteList: { 'zh-CN': '显示笔记列表', en: 'Show note list' },
   hideNoteList: { 'zh-CN': '隐藏笔记列表', en: 'Hide note list' },

@@ -1,6 +1,6 @@
 # Android 客户端
 
-当前开发版本为 **0.1.4**（未发布），新增单条彻底删除、Windows 托盘左右键及桌面列表折叠。账号同步要求协议 2 服务端与相应客户端配套升级；既有 0.1.3 Release 不改变。本轮 Windows/Android 检查与 Linux 待验证项见[增量验证](../docs/client-updates-0.1.4-validation.md)。
+当前客户端开发版本为 **0.1.5**（未发布），加入 Windows / Android 自动更新客户端及签名发行工具；0.1.4 的彻底删除、托盘和列表折叠保持。core/server/同步协议与数据库基线不变，正式更新目录尚未部署。实际结果及未验证项见[0.1.5 验证](../docs/client-updates-0.1.5-validation.md)。
 
 0.1.3 加入共享离线代码高亮，保留 0.1.2 控件与滚动修正，基于 0.1.0 core，v1 尚未发布。Kotlin + Jetpack Compose 原生客户端，通过 UniFFI 调用共享 Rust core。最低系统设为 Android 10（API 29），APK 同时包含 arm64-v8a 与 x86_64；实际验证设备见下方记录。发布应用 ID 为 `app.djhx.memo`，调试为 `app.djhx.memo.debug`，两者数据隔离。应用数据与加密凭据在 Android 私有目录；卸载或清除数据前请先导出。
 

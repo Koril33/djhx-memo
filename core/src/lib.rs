@@ -7,6 +7,11 @@ mod highlight;
 mod model;
 mod purge;
 mod sync;
+mod update_barrier;
+mod update_catalog;
+pub use update_catalog::{
+    AndroidRelease, Release, UpdateService, validate_published_asset, validate_published_catalog,
+};
 
 use base64::Engine as _;
 use model::*;
@@ -84,6 +89,7 @@ impl MemoApp {
 }
 
 pub(crate) struct Engine {
+    activity: Arc<update_barrier::ActivityGate>,
     root: PathBuf,
     _root_lock: std::fs::File,
     registry: Mutex<Registry>,
@@ -158,6 +164,7 @@ impl Engine {
             .build()
             .map_err(|_| AppError::network())?;
         let this = Self {
+            activity: Arc::default(),
             root,
             _root_lock: root_lock,
             registry: Mutex::new(registry),
@@ -294,6 +301,7 @@ impl Engine {
     }
 
     fn dispatch(&self, request: &Value) -> Result<Value> {
+        let _activity = self.activity.enter()?;
         let action = text(request, "action")?;
         if action == "highlight_code" {
             return Ok(json!(highlight::highlight_markdown(&text(

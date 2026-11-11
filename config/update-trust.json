@@ -1,0 +1,9 @@
+{
+  "feed": "https://memo.djhx.site/updates/stable/current.json",
+  "catalog_keys": {
+    "catalog-2026-01": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDYxN0I5NDFGRTY5NEUwQkIKUldTNzRKVG1INVI3WVFQbFlKZkxNTm5TWTlhaUhaTWhpRHkvK0JoWWMxZDRmcGRhMXpsZ0ZaVlIK"
+  },
+  "package_keys": {
+    "package-2026-01": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQ4NTExRkZFRjU1QUIxMUUKUldRZXNWcjEvaDlSU0lkRGVlelFBRWlKb3JZaXpuZVlXaVdydVR2Sno5TGEyY2pvWEVIRDJiY2oK"
+  }
+}

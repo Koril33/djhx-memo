@@ -1,6 +1,6 @@
 # desktop
 
-当前开发版本为 **0.1.4**（未发布），新增单条彻底删除、Windows 托盘左右键及桌面列表折叠。账号同步要求协议 2 服务端与相应客户端配套升级；既有 0.1.3 Release 不改变。本轮 Windows/Android 检查与 Linux 待验证项见[增量验证](../docs/client-updates-0.1.4-validation.md)。
+当前客户端开发版本为 **0.1.5**（未发布），加入 Windows / Android 自动更新客户端及签名发行工具；0.1.4 的彻底删除、托盘和列表折叠保持。core/server/同步协议与数据库基线不变，正式更新目录尚未部署。实际结果及未验证项见[0.1.5 验证](../docs/client-updates-0.1.5-validation.md)。
 
 Windows / Linux Tauri 2 客户端。Rust 后端直接链接 core，本地前端在本目录内采用 Svelte + TypeScript + Vite，编辑器使用 CodeMirror 6；不依赖尚未开发的独立 Web 工程。
 

@@ -20,6 +20,8 @@ required-features = ["bindgen"]
 base64 = "=0.22.1"
 chrono = { version = "=0.4.45", features = ["serde"] }
 pulldown-cmark = "=0.13.6"
+minisign-verify = "=0.3.0"
+semver = "=1.0.28"
 reqwest = { version = "=0.13.5", default-features = false, features = ["blocking", "json", "query", "rustls-no-provider"] }
 rusqlite = { version = "=0.41.1", default-features = false, features = ["bundled", "backup"] }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }

@@ -1,6 +1,6 @@
 # Windows、Linux、Android 自动更新方案
 
-- 日期：2026-11-11；状态：**研究结论与技术提案，未实现**。
+- 设计日期：2026-11-11；实施更新：2026-11-12。**Windows/Android 已形成 0.1.5 候选实现，Linux 安装适配仍为提案**；实际检查见[0.1.5 验证](client-updates-0.1.5-validation.md)，发布见[操作说明](update-publishing.md)。
 - 基于 `93b0f18` 的 0.1.4 开发代码；公开 Release 与当前实现能力仍以[发布记录](client-release.md)为准。
 - 产品要求只在[更新提案规范](../spec/automatic-updates.md)定义；本文说明实现边界、发布方法与工程顺序。研究依据见[17 项调研](research/rust-gui-auto-update-survey.md)。
 
@@ -17,7 +17,7 @@
 
 默认后台检查、非计费网络下载、用户决定安装时机。首期不引入增量补丁、远程强制更新、后台提权服务或多个发布通道。这是针对当前单维护者、三端、手工发布的建议；“全部平台相同的静默替换”不适合本项目。
 
-## 2. 当前工程约束
+## 2. 设计时的工程基线（2026-11-11）
 
 | 已核实位置 | 当前状态 | 对方案的影响 |
 |---|---|---|
@@ -40,17 +40,16 @@ flowchart LR
   S --> V[Rust 发行目录验证与目标选择]
   V --> D[桌面原生更新协调器]
   V --> A[Android 原生更新协调器]
-  G --> D
-  G --> A
+  G --> V
   D --> T[Tauri updater / NSIS / AppImage]
   A --> I[PackageInstaller]
   D --> B[保存屏障与 core 安全停机]
   A --> B
 ```
 
-计划新增 `core/src/update_catalog.rs`：纯解析、验签、SemVer/序号比较、目标与兼容性选择，暴露最小 UniFFI DTO。它不持有账号、不做笔记同步、不执行安装、不改变 note/outbox 数据模型。平台原生层使用独立匿名 HTTP 客户端下载，将**原始字节**交给共享验证模块。若独立 crate 更利于依赖隔离，可在实现 PR 中调整目录，但共享验证行为和测试向量保持一份。
+现已新增 `core/src/update_catalog.rs` 与 UniFFI `UpdateService`：解析、验签、SemVer/序号比较、目标选择及设备偏好/缓存。实施时把匿名 HTTP 与限量流式下载也统一放进该独立模块，减少跨端重复；HTTP 对象不持有账号/token，不做笔记同步、不执行安装、不改变 note/outbox 数据模型。目录始终按**原始字节**验签。原生层负责网络计费判定、调度、保存屏障与系统安装。
 
-桌面计划 `desktop/src-tauri/src/update.rs` 管理下载和安装状态；Android 在应用原生层建立对应协调器。UI 只提交 `check`、`download`、`defer`、`install` 意图并订阅事件，不能提交任意 URL、路径、shell 参数或公钥；安装器只接收原生层内部生成的候选句柄。
+桌面 `desktop/src-tauri/src/update.rs` 管理 Windows 安装；Android `AppUpdates/UpdateInstaller` 管理原生生命周期与会话。UI 只提交固定意图并读取状态，不能提交任意 URL、路径、shell 参数或公钥；安装器只接收原生层内部生成的候选句柄。
 
 不把 updater 通用文件、shell、网络权限开放给 Markdown/WebView。原生命令校验主窗口来源和当前任务标识，拒绝过期句柄；一次只运行一条安装任务。多窗口、托盘事件和手动检查共享同一状态。
 
@@ -100,7 +99,7 @@ flowchart LR
 
 候选版本、URL 与包签名由验证后的条目转换成 Tauri `RemoteRelease` 对应 JSON，再由 Rust `Updater::restore_update` 创建任务；不二次请求另一个 unsigned latest.json。固定 [updater 2.14.1 源码](https://github.com/tauri-apps/plugins-workspace/blob/updater-v2.14.1/plugins/updater/src/updater.rs)已核实该 API、`Update::verify` 与 `Update::install` 的包验证路径。
 
-`restore_update` 会要求包签名的 trusted comment 绑定版本。构建启用 `createUpdaterArtifacts: true`；`tauri build` 生成版本签名，手动补签使用 `signer sign --app-version <版本>`。本机既有 CLI 的帮助已确认该选项；真实构建与签名互通仍须后续测试，不能仅凭帮助宣称升级成功。
+`restore_update` 会要求包签名的 trusted comment 绑定版本。构建启用 `createUpdaterArtifacts: true`；`tauri build` 生成版本签名，手动补签使用 `signer sign --app-version <版本>`。本机既有 CLI 的帮助已确认该选项；0.1.5 已完成真实 Windows 构建与签名互通检查；实际覆盖安装矩阵仍以验证记录为准。
 
 下载后除 Tauri 验签外再核对目录中的大小/哈希；安装前重验。同样检查最终包内版本与目录声明。首期不承诺 HTTP Range 续传：下载中断重试整包，保证实现简单；后续若加续传，必须绑定 ETag/目标哈希并最终全量校验。
 
@@ -114,7 +113,7 @@ flowchart LR
 
 目录签名钥与 Tauri 包签名钥分离保管，公钥随可信 U1 安装包内置；Android APK 仍用原证书。私钥在仓库外加密备份，发布机器仅在需要时取用；不把口令放命令行/聊天/日志。
 
-轮换采用桥接版本：先用旧钥签发包含新公钥的客户端，再逐步切换到新钥。目录需有按目标和当前 updater 版本选择的 `bridge_releases`，保留旧客户端可安装的桥接包；有 `min_updater_version` 限制时必须先提供可执行的升级路径，不能只显示“要求更高更新器”。双签/信任表的具体格式在实现 PR 冻结。丢失旧钥需人工核验来源后覆盖安装；泄露钥下仅提高序号不能修复信任，需独立可信渠道换钥。APK 原签名钥丢失更可能影响原包名覆盖升级，必须优先保全。
+轮换采用桥接版本：先用旧钥签发包含新公钥的客户端，再逐步切换到新钥。目录需有按目标和当前 updater 版本选择的 `bridge_releases`，保留旧客户端可安装的桥接包；有 `min_updater_version` 限制时必须先提供可执行的升级路径，不能只显示“要求更高更新器”。双签/信任表的具体格式在后续轮换实现 PR 冻结；0.1.5 不处理桥接字段。丢失旧钥需人工核验来源后覆盖安装；泄露钥下仅提高序号不能修复信任，需独立可信渠道换钥。APK 原签名钥丢失更可能影响原包名覆盖升级，必须优先保全。
 
 ## 5. 各平台安装
 
@@ -178,7 +177,7 @@ Authenticode 可作为独立后续改进，能改善系统发行身份但不能�
 
 1. 审阅代码并确定不可变 tag/完整 commit，各主机从同一源码构建。分支推送不是正式发行；构建记录必须能追溯来源。
 2. Windows 构建 NSIS；Android 由持原证书的主机构建 APK；Linux 在另一主机构建 DEB/AppImage。各机只保存本机 SDK/签名路径，公共脚本不写维护者绝对路径或 `7897` 代理。
-3. 发布者收齐实际版本、包格式、哈希/大小、平台验证、Tauri `.sig` 和 APK 证书摘要；使用统一离线发布工具验证。这一工具属于后续实现，当前不存在。
+3. 发布者收齐实际版本、包格式、哈希/大小、平台验证、Tauri `.sig` 和 APK 证书摘要；使用统一离线发布工具验证。当前本地工具为 [prepare-update-catalog.py](../scripts/prepare-update-catalog.py)，部署仍为人工操作。
 4. 上传 GitHub draft Release；在推广前将资产发布为可匿名下载并验证。未就绪的平台沿用上一条目；若一个 Release 后续补平台资产，使用新的目录序号推广，且不替换已有资产。
 5. 生成目录，检查 URL/版本/签名/兼容矩阵，由持钥者签名。先传版本化目录，再原子替换 `current.json`；缓存短 TTL，不依赖 CDN 秒级刷新。当前入口不得早于资产可访问。
 6. 用隔离旧版客户端实际升级，分别记录每平台结果；不以 Windows 通过替代 Linux/Android。官网新用户下载入口也与实际就绪资产一致。
@@ -190,11 +189,11 @@ Authenticode 可作为独立后续改进，能改善系统发行身份但不能�
 
 | 阶段 | 可审阅交付 | 完成条件 |
 |---|---|---|
-| A：本轮 | 调研、spec 提案、架构设计、ADR、检查记录 | 不添加客户端代码、依赖或部署配置 |
+| A：原调研轮次（已完成） | 调研、spec 提案、架构设计、ADR、检查记录 | 不添加客户端代码、依赖或部署配置 |
 | B：验证原型 | 测试签名目录、Rust 验证向量、NSIS/AppImage/Android 安装试验 | 验证 API 与锁定版本兼容；Linux 构建机配合 |
 | C：U1 实现 | 更新 UI、保存屏障接入、三端适配、手工发布工具和运维文档 | spec U-01～U-14 的对应测试/实际记录，独立安全与迁移边界评审 |
 | D：首次启用 | 正式钥管理、官网静态入口、实际 U1 包 | 一次手动升级；随后 U1→U2 三端真实更新，才确认能力可日常用 |
 
 默认设计已给出，后续不必重新选择 GUI 框架或更新商业服务。实现前仍要由维护者落实：生产目录/包签名钥及备份负责人、Android 原签名钥可用性、Linux 构建机、官网静态路径部署权限。是否建设 APT 仓库、购买 Authenticode、加入 Play/Flatpak/winget 属于后续渠道决策，本轮均未执行。
 
-本次仅文档检查，不声称更新器编译、自动安装、真实证书升级、迁移恢复或三端验收通过。实际调研/检查记录见[研究验证记录](automatic-update-research-validation.md)。
+原调研阶段仅做文档检查，记录见[研究验证](automatic-update-research-validation.md)。0.1.5 实现及实际安装范围另见[当前验证](client-updates-0.1.5-validation.md)。未来 Linux/桥接/商店等设计不代表已实现；启用格式以 spec U8 为准。

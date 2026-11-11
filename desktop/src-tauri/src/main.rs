@@ -20,6 +20,7 @@ use tauri::{
 };
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
+mod update;
 
 struct SystemCredentials;
 impl CredentialStore for SystemCredentials {
@@ -165,6 +166,12 @@ fn show_window(app: &tauri::AppHandle) {
 }
 
 fn request_lifecycle(app: &tauri::AppHandle, desired: Lifecycle) {
+    if app
+        .try_state::<update::Updates>()
+        .is_some_and(|u| u.installing.load(Ordering::Acquire))
+    {
+        return;
+    }
     let state = app.state::<Backend>();
     if !state.frontend_ready.load(Ordering::Acquire) {
         show_window(app);
@@ -445,6 +452,7 @@ fn main() {
         }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             let root = app.path().app_data_dir()?;
             fs::create_dir_all(&root)?;
@@ -458,6 +466,23 @@ fn main() {
                 Box::new(SystemCredentials),
                 cfg!(debug_assertions),
             )?;
+            let updates = djhx_memo_core::UpdateService::new(
+                root.join("updates").to_string_lossy().into_owned(),
+                if cfg!(all(windows, target_arch = "x86_64")) { "windows-x86_64-nsis" } else { "system-managed" }.into(),
+                env!("CARGO_PKG_VERSION").into(), 0, "app.djhx.memo".into());
+            if cfg!(all(windows, target_arch = "x86_64")) {
+                let scheduler = updates.clone();
+                std::thread::spawn(move || {
+                    let jitter = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.subsec_millis() as u64 % 30);
+                    std::thread::sleep(std::time::Duration::from_secs(30 + jitter));
+                    loop {
+                        scheduler.check(false);
+                        scheduler.download(false, false);
+                        std::thread::sleep(std::time::Duration::from_secs(3600));
+                    }
+                });
+            }
+            app.manage(update::Updates { service: updates, installing: AtomicBool::new(false) });
             let open = MenuItem::with_id(app, "open", "Open main window", true, None::<&str>)?;
             let create = MenuItem::with_id(app, "new", "New note", true, None::<&str>)?;
             let sync = MenuItem::with_id(app, "sync", "Sync now (local only)", false, None::<&str>)?;
@@ -542,6 +567,7 @@ fn main() {
             frontend_ready,
             set_presentation,
             system_appearance
+            ,update::update_invoke, update::install_update
         ])
         .run(tauri::generate_context!())
         .expect("DJHX Memo could not start. Check data-directory permissions and the system WebView. / 应用启动失败，请检查数据目录权限与 WebView。");

@@ -39,3 +39,6 @@ HTTP 错误结构为 `{"error":{"code":"...","message":"...","retryable":false},
 | PROFILE_CHANGED | 操作关联的空间已切换 | 禁止把原任务应用到当前空间 |
 | LOCAL_GENERATION_CONFLICT | UI 使用的本地代次已过期 | 保留缓冲并重读，禁止旧内容覆盖新代次 |
 | EXPORT_FAILED | 导出未全部完成 | 不显示全部成功，允许重新导出 |
+| UPDATE_BUSY | 原生安装屏障正等待/交接 | 暂停普通 UI 操作，取消安装后恢复；不是账号/同步协议错误 |
+
+发行更新的 `UPDATE_NETWORK / UPDATE_SIGNATURE / UPDATE_PACKAGE / UPDATE_CATALOG / UPDATE_EXPIRED / UPDATE_REPLAY / UPDATE_INCOMPATIBLE / UPDATE_UNSUPPORTED / UPDATE_CHANGED / UPDATE_STORAGE / UPDATE_SAVE / UPDATE_INSTALL / UPDATE_CANCELED / UPDATE_NOT_CONFIGURED / UPDATE_UNAVAILABLE` 只属于更新模块，使用固定本地化提示，不显示网络响应正文或安装器原始错误。失败不禁止本机记笔记；安装前校验失败不能切换到不验签的路径。

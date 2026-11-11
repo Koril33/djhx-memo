@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import uniffi.djhx_memo_core.CoreException
 import uniffi.djhx_memo_core.MemoApp
 
 /** 平台后台调用契约；测试可以验证 UI 的并发协调而不重写同步规则。 */
@@ -16,6 +17,13 @@ interface CoreBridge {
 
 /** 单进程 core 入口。所有数据库与网络业务都在 Rust 中执行，调用移到 IO 线程。 */
 class CoreGateway(context: Context) : CoreBridge {
+    /** Native installation barrier after the UI has saved its latest buffer. */
+    suspend fun pauseForUpdate() = withContext(Dispatchers.IO) {
+        try { core.pauseForUpdate() } catch (_: CoreException) { updateFailure("UPDATE_SAVE") }
+    }
+
+    /** Resumes notes and background work after a canceled/failed update. */
+    suspend fun resumeAfterUpdate() = withContext(Dispatchers.IO) { core.resumeAfterUpdate() }
     private val appContext = context.applicationContext
     private val core by lazy {
         MemoApp(

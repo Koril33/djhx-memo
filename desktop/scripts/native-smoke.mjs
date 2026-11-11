@@ -74,7 +74,7 @@ const body = `Windows 0.1.4 验证 ${Date.now()}`;
 try {
   await until(`!!document.querySelector('.cm-content')`);
   const runtime = await evaluate(`window.__TAURI_INTERNALS__.invoke('runtime_info')`);
-  assert.equal(runtime.version, '0.1.4');
+  assert.equal(runtime.version, process.env.DJHX_EXPECTED_VERSION ?? '0.1.5');
   assert.equal(runtime.debug_http, true);
   assert.equal((await core({ action: 'state' })).profile.kind, 'local');
   assert.equal(

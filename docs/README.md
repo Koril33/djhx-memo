@@ -2,7 +2,7 @@
 
 - [quick-start.md](quick-start.md)：候选版安装、离线使用与接入自有服务器。
 - [client-release.md](client-release.md)：GitHub/Gitea与0.1.3三端附件发布；实际构建：[Android](releases/0.1.3-android-validation.md)、[Linux](releases/0.1.3-linux-validation.md)。
-- 自动更新（尚未实现）：[17 个 Rust GUI 软件调研](research/rust-gui-auto-update-survey.md)、[三端方案](automatic-update-design.md)、[检查记录](automatic-update-research-validation.md)。
+- 自动更新：Windows/Android 的[发布与密钥说明](update-publishing.md)、[0.1.5 验证](client-updates-0.1.5-validation.md)；原[17 项调研](research/rust-gui-auto-update-survey.md)与[设计](automatic-update-design.md)，Linux 仍待实现。
 - [website-deployment.md](website-deployment.md)：官网、Nginx路由与双远程main的合并部署记录。
 - [brand-guidelines.md](brand-guidelines.md)：DJHX Memo 可编辑母版、设计板、多端尺寸与统一替换步骤。
 - [client-fixes-0.1.2-validation.md](client-fixes-0.1.2-validation.md)：0.1.2 下拉框文字与 Android 编辑滚动的复现、修正及实测。

@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit
 
 /** UI 与 WorkManager 复用单例 MemoApp，避免同一 outbox 并发发送。 */
 class MemoApplication : Application() {
+    val updates: AppUpdates by lazy { AppUpdates(this) }
     val gateway: CoreGateway by lazy { CoreGateway(this) }
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {

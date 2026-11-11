@@ -1,5 +1,7 @@
 # 本地质量检查与 v1 验收
 
+0.1.5 Windows/Android 自动更新的实际检查、签名与未验收边界见[增量验证](client-updates-0.1.5-validation.md)；不替代下列完整 v1 验收。
+
 0.1.4 本轮 Windows/Android 实际结果、协议升级与 Linux 交接见[增量验证](client-updates-0.1.4-validation.md)。
 
 测试范围与边界的文字描述（不含测试代码）见 [测试用例描述](test-cases.md)。

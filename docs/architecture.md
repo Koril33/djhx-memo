@@ -32,3 +32,7 @@ SQLite 写入、索引和同步状态有明确事务边界；本地每空间一�
 网络不在数据库写事务中长时间等待。SSE 更新信号在服务端提交后发出，丢失由 Pull 补偿。服务端 v1 单实例运行，数据库位于持久本地磁盘，不引入多副本写入或共享网络文件系统。
 
 schema 版本、API 版本和恢复 epoch 各司其职，不能用一个数字兼任。具体行为见 [数据模型](../spec/data-model.md) 与 [同步协议](../spec/sync-protocol.md)。
+
+## 应用发行更新（0.1.5）
+
+Windows/Android 通过独立 UpdateService 读取公开签名目录、限量下载和验证资产，不复用账号 HTTP 对象，不触及 note/outbox 规则。原生安装适配器先等待 UI 保存与 core 安装屏障；屏障覆盖普通调用、同步及 SSE 应用路径，取消恢复原工作。数据 schema / 协议保持不变。行为见[自动更新规范](../spec/automatic-updates.md)，签名与跨主机发布见[说明](update-publishing.md)。Linux 安装仍待后续实施。
