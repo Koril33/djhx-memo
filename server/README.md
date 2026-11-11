@@ -18,6 +18,8 @@ golangci-lint run
 python3 scripts/smoke.py ../dist/memo-server-linux-amd64
 ```
 
+发布包从仓库根目录执行 `bash scripts/package-server.sh`，输出 `dist/server/djhx-memo-server-0.1.4-linux-amd64.tar.gz`、二进制、部署资料、许可证和 SHA-256 清单。版本与当前提交写入二进制及 `BUILD.txt`；此入口只构建，不连接或升级生产服务。
+
 本地开发显式开启 HTTP，数据库和 epoch 分开存放，默认不开放跨域：
 
 ```sh
@@ -43,7 +45,7 @@ python3 scripts/smoke.py ../dist/memo-server-linux-amd64
 
 `serve` 可使用 `--registration-disabled` 停止注册；`--login-failures` 默认 5（IP 与账号各 15 分钟窗口）、`--register-attempts` 默认每 IP 每小时 5 次。限流在单进程内存保存，重启重新计数；反向代理同时限制连接。Argon2 请求并发上限 4，超额返回 503 和 Retry-After。HTTP 不输出请求正文或认证字段；CLI 失败只输出安全错误类别和路径，不能输出密码或正文。
 
-`version` 输出版本与构建提交；可通过构建 `-ldflags "-X main.version=0.1.0 -X main.commit=GIT_SHA"` 注入发布信息。设备 last_seen_at 最多每分钟落盘一次。
+`version` 输出版本与构建提交；可通过构建 `-ldflags "-X main.version=0.1.4 -X main.commit=GIT_SHA"` 注入发布信息。设备 last_seen_at 最多每分钟落盘一次。
 
 单实例锁位于 `<epoch-file>.lock`。运行时不要手动替换数据库或 epoch；已有数据库缺失 epoch 拒绝启动。迁移版本与 SHA-256 记录在数据库，发现高版本/校验错误时拒绝写入。
 
