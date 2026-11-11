@@ -1,5 +1,7 @@
 # 0.1.4 增量开发与验证
 
+本文件保留原开发轮的实际结果与交接状态。后续 Linux 补测、Windows 真实托盘、Android 新竞态修复、独立评审和发布推进见[0.1.4 发布验证](releases/0.1.4-validation.md)，不把开发轮未执行项目改写为当时已通过。
+
 日期：2026-11-11。状态：本轮 Windows/Android 自动检查与隔离功能验证完成，未发布；原生托盘鼠标验收及独立评审仍待完成。产品规则见[增量契约](../spec/permanent-deletion.md)，架构取舍见[ADR-0015](adr/0015-permanent-deletion.md)。
 
 ## 变更与兼容

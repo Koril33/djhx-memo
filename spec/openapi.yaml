@@ -3,7 +3,7 @@
   "info": {
     "title": "djhx-memo v1 API",
     "version": "0.1.4",
-    "description": "0.1.4 未发布实现契约；同步协议 protocol_version=2。单条彻底删除及兼容门槛见 permanent-deletion.md。"
+    "description": "0.1.4 增量实现契约；同步协议 protocol_version=2。单条彻底删除及兼容门槛见 permanent-deletion.md。"
   },
   "security": [
     {

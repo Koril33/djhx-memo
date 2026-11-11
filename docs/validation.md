@@ -1,5 +1,7 @@
 # 本地质量检查与 v1 验收
 
+2026-11-11 的 0.1.4 单条彻底删除、协议 2 与桌面控件增量，独立审查见[交叉评审](reviews/client-0.1.4-review.md)，三端构建、实际测试、修复和发布状态见[发布验证](releases/0.1.4-validation.md)。本轮结果不提前勾选下方完整 v1 矩阵或连续 7 天试用。
+
 0.1.4 本轮 Windows/Android 实际结果、协议升级与 Linux 交接见[增量验证](client-updates-0.1.4-validation.md)。
 
 测试范围与边界的文字描述（不含测试代码）见 [测试用例描述](test-cases.md)。
