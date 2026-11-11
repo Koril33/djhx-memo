@@ -35,6 +35,7 @@ type Note struct {
 	ID        string    `json:"id"`
 	Content   string    `json:"content"`
 	Deleted   bool      `json:"deleted"`
+	Purged    bool      `json:"purged"`
 	Rev       string    `json:"rev"`
 	Seq       string    `json:"seq"`
 	CreatedAt string    `json:"created_at"`

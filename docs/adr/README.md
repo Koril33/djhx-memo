@@ -15,4 +15,6 @@
 - [ADR-0013：离线代码着色](0013-offline-code-highlighting.md)
 - [ADR-0014：静态官网构建](0014-static-website.md)
 
+- [ADR-0015：单条彻底删除与同步协议 2](0015-permanent-deletion.md)
+
 新增依赖前记录确切版本、理由、许可证与维护来源；工具探针的通过不能代替业务验收。

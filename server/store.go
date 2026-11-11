@@ -53,7 +53,8 @@ func Open(path string) (*Store, error) {
 		return nil, e
 	}
 	query := url.Values{"_pragma": {"busy_timeout(5000)", "foreign_keys(1)", "journal_mode(WAL)", "synchronous(FULL)"}}
-	dsn := (&url.URL{Scheme: "file", Path: abs, RawQuery: query.Encode()}).String()
+	// A slash before a Windows drive keeps it a file URI path, rather than an authority.
+	dsn := (&url.URL{Scheme: "file", Path: "/" + strings.TrimPrefix(filepath.ToSlash(abs), "/"), RawQuery: query.Encode()}).String()
 	db, e := sql.Open("sqlite", dsn)
 	if e != nil {
 		return nil, e
@@ -77,54 +78,56 @@ func (s *Store) initialize() error {
 	if e := s.db.QueryRow("PRAGMA user_version").Scan(&version); e != nil {
 		return e
 	}
-	if version > 1 {
+	names := []string{"migrations/001_initial.sql", "migrations/002_permanent_deletion.sql"}
+	if version > len(names) {
 		return errors.New("database schema is newer than this server")
 	}
 	if _, e := s.db.Exec(`CREATE TABLE IF NOT EXISTS schema_migrations(version INTEGER PRIMARY KEY, checksum TEXT NOT NULL, applied_at TEXT NOT NULL)`); e != nil {
 		return e
 	}
-	raw, e := migrations.ReadFile("migrations/001_initial.sql")
-	if e != nil {
+	var latest int
+	if e := s.db.QueryRow("SELECT COALESCE(MAX(version),0) FROM schema_migrations").Scan(&latest); e != nil {
 		return e
 	}
-	h := sha256.Sum256(raw)
-	sum := hex.EncodeToString(h[:])
-	var saved string
-	e = s.db.QueryRow("SELECT checksum FROM schema_migrations WHERE version=1").Scan(&saved)
-	if e == nil {
-		if saved != sum {
-			return errors.New("migration checksum mismatch")
-		}
-		var latest int
-		if e = s.db.QueryRow("SELECT COALESCE(MAX(version),0) FROM schema_migrations").Scan(&latest); e != nil {
+	if latest != version {
+		return errors.New("inconsistent or unsupported migration version")
+	}
+	for i, name := range names {
+		raw, e := migrations.ReadFile(name)
+		if e != nil {
 			return e
 		}
-		if latest > 1 || version != 1 {
-			return errors.New("inconsistent or unsupported migration version")
+		sum := hash(string(raw))
+		next := i + 1
+		if next <= version {
+			var saved string
+			if e = s.db.QueryRow("SELECT checksum FROM schema_migrations WHERE version=?", next).Scan(&saved); e != nil {
+				return e
+			}
+			if saved != sum {
+				return errors.New("migration checksum mismatch")
+			}
+			continue
 		}
-		return nil
+		tx, e := s.db.Begin()
+		if e != nil {
+			return e
+		}
+		if _, e = tx.Exec(string(raw)); e == nil {
+			_, e = tx.Exec("INSERT INTO schema_migrations VALUES(?,?,?)", next, sum, stamp(s.now()))
+		}
+		if e == nil {
+			_, e = tx.Exec(fmt.Sprintf("PRAGMA user_version=%d", next))
+		}
+		if e != nil {
+			_ = tx.Rollback()
+			return e
+		}
+		if e = tx.Commit(); e != nil {
+			return e
+		}
 	}
-	if !errors.Is(e, sql.ErrNoRows) {
-		return e
-	}
-	if version != 0 {
-		return errors.New("missing migration history")
-	}
-	tx, e := s.db.Begin()
-	if e != nil {
-		return e
-	}
-	defer func() { _ = tx.Rollback() }()
-	if _, e = tx.Exec(string(raw)); e != nil {
-		return e
-	}
-	if _, e = tx.Exec("INSERT INTO schema_migrations VALUES(1,?,?)", sum, stamp(s.now())); e != nil {
-		return e
-	}
-	if _, e = tx.Exec("PRAGMA user_version=1"); e != nil {
-		return e
-	}
-	return tx.Commit()
+	return nil
 }
 
 // Close releases the database after active requests have stopped.
@@ -151,7 +154,7 @@ func scanNote(row interface{ Scan(...any) error }) (Note, error) {
 	var n Note
 	var rev, seq int64
 	var conflict sql.NullString
-	e := row.Scan(&n.ID, &n.Content, &n.Deleted, &rev, &seq, &n.CreatedAt, &n.UpdatedAt, &conflict)
+	e := row.Scan(&n.ID, &n.Content, &n.Deleted, &rev, &seq, &n.CreatedAt, &n.UpdatedAt, &conflict, &n.Purged)
 	if e != nil {
 		return n, e
 	}
@@ -165,7 +168,7 @@ func scanNote(row interface{ Scan(...any) error }) (Note, error) {
 	return n, nil
 }
 
-const noteColumns = "id,content,deleted,rev,seq,created_at,updated_at,conflict"
+const noteColumns = "id,content,deleted,rev,seq,created_at,updated_at,conflict,purged"
 
 func internal(err error) *APIError {
 	if err == nil {
@@ -215,6 +218,9 @@ func (s *Store) push(ctx context.Context, a identity, o Operation) (Result, bool
 		return result, false, e
 	}
 	base, _ := counter(o.BaseRev)
+	if exists && n.Purged {
+		return resultErr(&id, apiError("NOTE_PURGED")), false, nil
+	}
 	current, _ := counter(n.Rev)
 	if !exists && base > 0 {
 		return resultErr(&id, apiError("NOTE_NOT_FOUND")), false, nil

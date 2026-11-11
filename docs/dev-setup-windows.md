@@ -118,3 +118,15 @@ $env:HTTPS_PROXY = $env:HTTP_PROXY
 ```
 
 不需要时执行 `Remove-Item Env:HTTP_PROXY, Env:HTTPS_PROXY -ErrorAction SilentlyContinue` 撤销示例变量。端口只是例子。Gradle 还需 Java 代理参数；Android 会话辅助可显式用 `-ProxyUrl 'http://127.0.0.1:7890'`，或按 [Gradle 说明](https://docs.gradle.org/current/userguide/networking.html)配置个人 Gradle 配置，不提交代理或签名凭据。官方工具下载失败时先检查网络、代理和证书链，不关闭 TLS 校验。首次 NSIS 构建可能需要下载其工具资源，`--offline` 只适用于已完整缓存的 Cargo 依赖。
+
+## 0.1.4 业务联调的 Windows 检查入口
+
+完整服务端与 epoch/CLI 仍依赖 Unix。可在 Windows 从仓库根目录执行真实 Go HTTP 业务测试（显式文件集不包含 epoch.go 和 CLI，不是模拟实现）：
+
+```powershell
+$env:DJHX_CORE_PURGE_INTEGRATION = '1'
+go -C server test -v types.go store.go auth.go http.go export.go purge.go purge_test.go
+Remove-Item Env:DJHX_CORE_PURGE_INTEGRATION
+```
+
+此入口同时运行 `core/tests/server_integration.rs` 的永久删除 HTTP 场景，测试实例和账号均隔离。`go vet` 可使用相同文件集；`-race` 另需兼容的 Windows C 编译器，只在当前进程配置 `CC`，不要复制其他机器绝对路径。Go 完整测试、CLI/备份恢复和 Linux 桌面测试继续在另一台主机执行。

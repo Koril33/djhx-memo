@@ -1,5 +1,7 @@
 # v1 平台桥接接口
 
+0.1.4 增量以[单条彻底删除与协议 2 契约](permanent-deletion.md)为准，替代下文旧基线中不提供永久删除及保留正文的对应范围。普通删除/恢复行为不变；永久删除不生成冲突副本。
+
 本文件细化 [core-api](core-api.md) 的语言包装，不改变同步协议。Rust 导出 UniFFI 对象 `MemoApp`，桌面 Rust 后端直接使用同一对象。所有调用在平台的后台线程执行。
 
 ## 入口与凭据
@@ -21,6 +23,7 @@
 | get | id | NoteView |
 | create | content, request_id（UUID） | NoteView；重试同 request_id 返回同笔记 |
 | save | id, expected_generation, content | NoteView |
+| purge | id, expected_generation | NoteView；pending/purged 语义见增量契约 |
 | set_deleted | id, expected_generation, deleted | NoteView |
 | toggle_task | id, expected_generation, line（从 0 开始的源码行） | NoteView；核心只修改 CommonMark 任务标记，排除代码块 |
 | highlight_code | source（当前 Markdown 缓冲） | `{source_spans,blocks}`，仅计算显示用的围栏代码着色 |
@@ -37,7 +40,7 @@
 
 ProfileInfo：`id,kind,label,server_url,user_id,username,device_id,read_only`，非适用字段为 null。kind 为 local/account/recovery。
 
-NoteView：`id,content,title,generation,deleted,created_at,updated_at,conflict,save_state,sync_state`。conflict 结构同 OpenAPI；save_state 返回 saved 只表示事务已提交。sync_state 为 local/pending/synced/blocked。另可返回 `redirected_from` 供冲突后焦点迁移。
+NoteView：`id,content,title,generation,deleted,purge_state,created_at,updated_at,conflict,save_state,sync_state`。purge_state 为 none/pending/rejected/purged；get 可返回已清空的永久标记，list 不返回 purged。conflict 结构同 OpenAPI；save_state 返回 saved 只表示事务已提交。sync_state 为 local/pending/synced/blocked。另可返回 `redirected_from` 供冲突后焦点迁移。
 
 SyncInfo：`state,pending,last_success,error`。state 为 local/pending/syncing/synced/offline/auth_required/recovery_required/error；error 为可空的稳定错误对象。时间为 RFC3339 字符串或 null。
 

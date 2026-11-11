@@ -87,6 +87,7 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
     var statusDetails by remember { mutableStateOf(false) }
     var preview by rememberSaveable { mutableStateOf(false) }
     var deleteConfirm by rememberSaveable { mutableStateOf(false) }
+    var purgeTarget by remember { mutableStateOf<org.json.JSONObject?>(null) }
     val clipboard = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -208,13 +209,25 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                             ) {
                                 if (model.editorOpen && model.selected != null) {
                                     val deleted = model.selected!!.optBoolean("deleted")
+                                    val purgeState = model.selected!!.optString("purge_state")
                                     MemoMenuItem(
                                         if (deleted) R.drawable.ic_ui_rotate_ccw else R.drawable.ic_ui_trash_2,
                                         stringResource(if (deleted) R.string.restore else R.string.delete),
-                                        !model.busy
+                                        !model.busy && purgeState !in setOf("pending", "purged") && profile?.optBoolean("read_only") != true
                                     ) {
                                         more = false
                                         if (deleted) model.setDeleted(false) else deleteConfirm = true
+                                    }
+                                    if (deleted && purgeState != "purged") {
+                                        MemoMenuItem(
+                                            R.drawable.ic_ui_trash_2,
+                                            stringResource(R.string.purge_note),
+                                            !model.busy && purgeState != "pending" && profile?.optBoolean("read_only") != true
+                                        ) {
+                                            more = false
+                                            purgeTarget = org.json.JSONObject(model.selected.toString())
+                                                .put("profile_id", profile!!.getString("id"))
+                                        }
                                     }
                                 }
                                 if (!model.editorOpen) {
@@ -264,6 +277,11 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
             if (model.editorOpen) {
                 val codeHighlights = rememberCodeHighlights(model.content, model)
                 ConflictInfo(model.selected)
+                when (model.selected?.optString("purge_state")) {
+                    "pending" -> Text(stringResource(R.string.purge_pending), Modifier.padding(16.dp))
+                    "rejected" -> Text(stringResource(R.string.purge_rejected), Modifier.padding(16.dp))
+                    "purged" -> Text(stringResource(R.string.note_purged), Modifier.padding(16.dp))
+                }
                 if (model.saveFailed) {
                     SaveRescue(model, onCopy = { clipboard.setText(AnnotatedString(model.content)) })
                 }
@@ -303,6 +321,20 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
             statusDetails = false
             openSettings("spaces")
         }) { statusDetails = false }
+    }
+    purgeTarget?.let { target ->
+        MemoAlertDialog(
+            onDismissRequest = { purgeTarget = null },
+            title = { Text(stringResource(R.string.purge_confirm)) },
+            text = { Text(stringResource(R.string.purge_help)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    purgeTarget = null
+                    model.purge(target)
+                }) { Text(stringResource(R.string.purge_note)) }
+            },
+            dismissButton = { TextButton(onClick = { purgeTarget = null }) { Text(stringResource(R.string.cancel)) } }
+        )
     }
     if (deleteConfirm) {
         MemoAlertDialog(
@@ -399,6 +431,16 @@ private fun NoteList(model: MemoModel, onOpen: (JSONObject) -> Unit) {
                         )
                     }
                     Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        when (note.optString("purge_state")) {
+                            "pending" -> Text(
+                                stringResource(R.string.purge_pending),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                            "rejected" -> Text(
+                                stringResource(R.string.purge_rejected),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
                         Text(
                             formattedTime(note.optString("updated_at")),
                             style = MaterialTheme.typography.labelSmall,

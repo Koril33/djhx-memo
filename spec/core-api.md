@@ -1,5 +1,7 @@
 # UI 与 core 的接口边界
 
+0.1.4 增量以[单条彻底删除与协议 2 契约](permanent-deletion.md)为准，替代下文旧基线中不提供永久删除及保留正文的对应范围。普通删除/恢复行为不变；永久删除不生成冲突副本。
+
 状态：语言无关的接口契约；Rust/UniFFI 和 Tauri 包装名称可遵循各语言风格，行为不得变化。具体类型定义随实现提交，本轮不生成绑定代码。
 
 ## 1. 接口分组
@@ -10,6 +12,7 @@
 | list_notes / get_note | profile、分页/回收站条件 → NoteView | 只读本地；列表稳定排序；分页游标由 core 生成 |
 | create_note | profile、首份非空白正文、客户端本地请求 ID → NoteView | core 生成 UUID；同本地请求 ID 重试返回同一笔记，创建与幂等映射一起提交 |
 | save_note | profile、note_id、expected_generation、content → 新 generation | 乐观并发校验；同事务保存 notes/索引/待发状态 |
+| purge | profile、note_id、expected_generation → NoteView | 仅单条回收站；持久化请求、永久标记及错误见增量契约 |
 | set_deleted | profile、note_id、expected_generation、deleted → 新 generation | 删除和恢复保留正文，过期 UI 不能覆盖更新内容 |
 | search_notes | profile、literal_query、limit → 本地结果 | 字面搜索，短词兜底，过滤回收站 |
 | export_notes | profile、范围 → 导出数据/结果 | 核心生成 ZIP 内容，平台层选择目标位置并原子写入 |

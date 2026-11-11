@@ -79,9 +79,27 @@ export class EditorSession {
 
   /** Background refresh must never replace input which lacks a commit acknowledgement. */
   acceptRemote(note: Note): void {
+    if (this.note?.id === note.id && note.purge_state === 'purged') {
+      this.clearTimers();
+      const rescue = this.unsaved || this.saving || this.composing;
+      this.note = note;
+      if (rescue) {
+        this.error = new InvokeError({ code: 'NOTE_PURGED', message: '', retryable: false });
+        this.generationConflict = true;
+      } else {
+        this.content = '';
+        this.committed = '';
+      }
+      this.changed();
+      return;
+    }
     if (this.note?.id !== note.id || this.unsaved || this.saving || this.composing || this.error)
       return;
-    if (BigInt(note.generation) <= BigInt(this.note.generation)) return;
+    if (
+      BigInt(note.generation) <= BigInt(this.note.generation) &&
+      note.purge_state === this.note.purge_state
+    )
+      return;
     this.note = note;
     this.content = note.content;
     this.committed = note.content;
@@ -142,6 +160,8 @@ export class EditorSession {
                 request_id: this.requestId,
               },
         );
+        if (this.note?.purge_state === 'purged')
+          throw new InvokeError({ code: 'NOTE_PURGED', message: '', retryable: false });
         this.note = result;
         // An idempotent create retry can return the first committed text, not this retry's text.
         this.committed = result.content;
@@ -149,7 +169,8 @@ export class EditorSession {
       } catch (error) {
         this.error = error;
         this.generationConflict =
-          error instanceof InvokeError && error.detail.code === 'LOCAL_GENERATION_CONFLICT';
+          error instanceof InvokeError &&
+          ['LOCAL_GENERATION_CONFLICT', 'NOTE_PURGED'].includes(error.detail.code);
         throw error;
       } finally {
         this.saving = false;

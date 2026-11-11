@@ -1,5 +1,7 @@
 # Android 客户端
 
+当前版本为 **0.1.4**，新增单条彻底删除、Windows 托盘左右键及桌面列表折叠。账号同步要求协议 2 服务端与相应客户端配套升级；既有 0.1.3 Release 不改变。三端实际测试、交叉评审、安装包和发布状态见[0.1.4 发布验证](../docs/releases/0.1.4-validation.md)。
+
 0.1.3 加入共享离线代码高亮，保留 0.1.2 控件与滚动修正，基于 0.1.0 core，v1 尚未发布。Kotlin + Jetpack Compose 原生客户端，通过 UniFFI 调用共享 Rust core。最低系统设为 Android 10（API 29），APK 同时包含 arm64-v8a 与 x86_64；实际验证设备见下方记录。发布应用 ID 为 `app.djhx.memo`，调试为 `app.djhx.memo.debug`，两者数据隔离。应用数据与加密凭据在 Android 私有目录；卸载或清除数据前请先导出。
 
 ## 构建
@@ -75,3 +77,9 @@ Windows 的 Gradle 命令相应改为 `.\gradlew.bat`。`connectedDebugAndroidTe
 UI、网络恢复触发及 WorkManager 共享应用单例 core；后台仅尽力执行，不承诺固定时间同步。UI 不实现同步、outbox、冲突裁决或数据迁移。安全凭据使用每个账号独立的 Keystore AES-GCM key，加密失败由 core 保持进程内凭据并提示用户。
 
 独立评审及修复依据见 [Android 评审](../docs/reviews/android-review.md)。创建已提交但回包未知时，平台保留原创建请求内容，获取原 Note 后继续提交全部续写；只有返回正文与可见缓冲一致才显示保存成功。跨空间切换前先完成本地提交并清空旧空间的界面列表。
+
+## 隔离验证包
+
+在 Windows 会话中先按上述步骤生成 JNI，再执行 `gradlew.bat assembleDebug assembleDebugAndroidTest -PisolatedValidation`。该可选属性将 debug 应用标识设为 `app.djhx.memo.validation014`，测试包为 `app.djhx.memo.validation014.test`，不打开普通 debug/release 数据目录。正式包及默认 debug 身份不变。
+
+从根目录可用 `DJHX_ANDROID_TEST_SERIAL` 指定 Android Emulator 的 adb serial，再执行开发说明中的 Go 显式文件集测试。`TestPermanentDeletionAndroidHTTP` 启动隔离 Go HTTP 实例，通过模拟器的 `10.0.2.2` 映射运行永久删除 JNI 联调；不会使用生产邀请码或账号。此自动入口仅支持 Android Emulator，物理设备需另配网络。

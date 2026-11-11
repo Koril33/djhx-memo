@@ -1188,3 +1188,18 @@ svg {
   background: var(--editor-selection);
   color: var(--ink);
 }
+
+.app-shell.list-collapsed {
+  grid-template-columns: 60px minmax(0, 1fr);
+}
+.note-column.concealed {
+  display: none;
+}
+.space-chip {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--muted);
+}

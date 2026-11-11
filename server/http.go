@@ -131,7 +131,7 @@ func httpStatus(code string) int {
 		return 403
 	case "NOT_FOUND":
 		return 404
-	case "DEVICE_ID_UNAVAILABLE", "USERNAME_TAKEN", "OP_ID_REUSED", "CURSOR_INVALID", "SYNC_EPOCH_MISMATCH":
+	case "DEVICE_ID_UNAVAILABLE", "USERNAME_TAKEN", "OP_ID_REUSED", "CURSOR_INVALID", "SYNC_EPOCH_MISMATCH", "PURGE_CONFLICT", "NOTE_PURGED":
 		return 409
 	case "NOTE_TOO_LARGE", "NOTE_NOT_FOUND", "INVALID_BASE_REV":
 		return 422
@@ -200,6 +200,10 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, e)
 		return
 	}
+	if (strings.HasPrefix(r.URL.Path, "/v1/sync/") && r.URL.Path != "/v1/sync/status" || r.URL.Path == "/v1/events" || r.URL.Path == "/v1/export" || r.URL.Path == "/v1/notes/purge") && r.Header.Get("X-Memo-Protocol") != "2" {
+		writeError(w, r, apiError("PROTOCOL_UNSUPPORTED"))
+		return
+	}
 	switch {
 	case r.URL.Path == "/v1/auth/logout" && r.Method == http.MethodPost:
 		e = s.store.revoke(r.Context(), a, a.DeviceID)
@@ -227,11 +231,14 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 		h, err := s.store.head(r.Context(), a.UserID)
 		e = err
 		if e == nil {
-			writeJSON(w, 200, map[string]any{"epoch": s.cfg.Epoch, "head_seq": num(h), "protocol_version": 1})
+			writeJSON(w, 200, map[string]any{"epoch": s.cfg.Epoch, "head_seq": num(h), "protocol_version": 2})
 			return
 		}
 	case r.URL.Path == "/v1/sync/push" && r.Method == http.MethodPost:
 		s.pushHTTP(w, r, a)
+		return
+	case r.URL.Path == "/v1/notes/purge" && r.Method == http.MethodPost:
+		s.purgeHTTP(w, r, a)
 		return
 	case r.URL.Path == "/v1/sync/pull" && r.Method == http.MethodGet:
 		s.pullHTTP(w, r, a)

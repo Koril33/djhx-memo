@@ -1,5 +1,7 @@
 # Go 服务端
 
+当前版本为 **0.1.4**，新增单条彻底删除、Windows 托盘左右键及桌面列表折叠。账号同步要求协议 2 服务端与相应客户端配套升级；既有 0.1.3 Release 不改变。三端实际测试、交叉评审、安装包和发布状态见[0.1.4 发布验证](../docs/releases/0.1.4-validation.md)。
+
 已实现 v1 HTTP API、SQLite 权威存储、邀请码注册登录、设备管理、幂等 Push、固定上界 Pull、SSE、完整 ZIP 导出和本机管理命令。行为以 [spec](../spec/README.md) 为准；已有 [独立交叉评审](../docs/reviews/server-review.md) 及 core 联调，完整三端验收仍待完成。候选实例 `https://memo.djhx.site` 的实际部署检查见 [云部署记录](../docs/cloud-deployment.md)。
 
 ## 构建与本地运行
@@ -15,6 +17,8 @@ go test -race ./...
 golangci-lint run
 python3 scripts/smoke.py ../dist/memo-server-linux-amd64
 ```
+
+发布包从仓库根目录执行 `bash scripts/package-server.sh`，输出 `dist/server/djhx-memo-server-0.1.4-linux-amd64.tar.gz`、二进制、部署资料、许可证和 SHA-256 清单。版本与当前提交写入二进制及 `BUILD.txt`；此入口只构建，不连接或升级生产服务。
 
 本地开发显式开启 HTTP，数据库和 epoch 分开存放，默认不开放跨域：
 
@@ -41,7 +45,7 @@ python3 scripts/smoke.py ../dist/memo-server-linux-amd64
 
 `serve` 可使用 `--registration-disabled` 停止注册；`--login-failures` 默认 5（IP 与账号各 15 分钟窗口）、`--register-attempts` 默认每 IP 每小时 5 次。限流在单进程内存保存，重启重新计数；反向代理同时限制连接。Argon2 请求并发上限 4，超额返回 503 和 Retry-After。HTTP 不输出请求正文或认证字段；CLI 失败只输出安全错误类别和路径，不能输出密码或正文。
 
-`version` 输出版本与构建提交；可通过构建 `-ldflags "-X main.version=0.1.0 -X main.commit=GIT_SHA"` 注入发布信息。设备 last_seen_at 最多每分钟落盘一次。
+`version` 输出版本与构建提交；可通过构建 `-ldflags "-X main.version=0.1.4 -X main.commit=GIT_SHA"` 注入发布信息。设备 last_seen_at 最多每分钟落盘一次。
 
 单实例锁位于 `<epoch-file>.lock`。运行时不要手动替换数据库或 epoch；已有数据库缺失 epoch 拒绝启动。迁移版本与 SHA-256 记录在数据库，发现高版本/校验错误时拒绝写入。
 

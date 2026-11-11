@@ -172,4 +172,11 @@
     <string name="hide_account_form">Hide sign-in form</string>
     <string name="sign_in_for_devices">Sign in to manage devices</string>
     <string name="about_app">About DJHX Memo</string>
+    <string name="purge_note">Delete permanently</string>
+    <string name="purge_confirm">Permanently delete this note?</string>
+    <string name="purge_help">This cannot be restored in the app. Account notes are removed on other devices when they sync. Existing history, backups and exported files are retained.</string>
+    <string name="purge_pending">Permanent deletion pending sync</string>
+    <string name="purge_rejected">Permanent deletion was not completed because the note changed. Review it before confirming again.</string>
+    <string name="note_purged">This note was permanently deleted. Copy any unsaved text or save it as a new note.</string>
+    <string name="purge_done">Note permanently deleted.</string>
 </resources>

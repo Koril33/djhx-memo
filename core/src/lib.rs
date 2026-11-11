@@ -5,6 +5,7 @@
 mod db;
 mod highlight;
 mod model;
+mod purge;
 mod sync;
 
 use base64::Engine as _;
@@ -153,7 +154,7 @@ impl Engine {
             .connect_timeout(Duration::from_secs(8))
             .timeout(Duration::from_secs(35))
             .redirect(reqwest::redirect::Policy::none())
-            .user_agent("djhx-memo/0.1.0")
+            .user_agent("djhx-memo/0.1.4")
             .build()
             .map_err(|_| AppError::network())?;
         let this = Self {
@@ -399,6 +400,17 @@ impl Engine {
                 self.changed(&profile);
                 Ok(n.view(profile.kind == "account", false))
             }
+            "purge" => {
+                let _guard = self.writable(&profile)?;
+                let n = purge::request(
+                    &mut database,
+                    &text(request, "id")?,
+                    counter(&text(request, "expected_generation")?)?,
+                    profile.kind == "account",
+                )?;
+                self.changed(&profile);
+                Ok(n.view(profile.kind == "account", false))
+            }
             "save" | "set_deleted" | "toggle_task" => {
                 let _guard = self.writable(&profile)?;
                 let tx =
@@ -406,11 +418,34 @@ impl Engine {
                 let requested_id = text(request, "id")?;
                 let expected = counter(&text(request, "expected_generation")?)?;
                 let mut n = db::note(&tx, &requested_id)?;
+                if n.purge_state == "purged" {
+                    return Err(AppError::new(
+                        "NOTE_PURGED",
+                        "笔记已被彻底删除，可将未保存文字另存新笔记",
+                    ));
+                }
+                if n.purge_state == "pending" {
+                    return Err(AppError::new("PURGE_PENDING", "笔记正在等待彻底删除"));
+                }
+                if n.purge_state == "rejected" {
+                    n.purge_state = "none".into();
+                }
                 let mut redirected = false;
                 if n.generation != expected {
                     let alias:Option<(String,i64)>=tx.query_row("SELECT target_id,target_generation FROM redirects WHERE source_id=?1 AND source_generation=?2",params![requested_id,expected],|r|Ok((r.get(0)?,r.get(1)?))).optional()?;
                     if let Some((target, generation)) = alias {
                         let candidate = db::note(&tx, &target)?;
+                        // The alias only redirects identity and generation; it
+                        // must not bypass the destination's deletion barrier.
+                        if candidate.purge_state == "purged" {
+                            return Err(AppError::new(
+                                "NOTE_PURGED",
+                                "笔记已被彻底删除，可将未保存文字另存新笔记",
+                            ));
+                        }
+                        if candidate.purge_state == "pending" {
+                            return Err(AppError::new("PURGE_PENDING", "笔记正在等待彻底删除"));
+                        }
                         if candidate.generation == generation {
                             n = candidate;
                             redirected = true;
@@ -609,6 +644,9 @@ fn export(
         zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
     let mut manifest = Vec::new();
     for n in notes {
+        if matches!(n.purge_state.as_str(), "pending" | "purged") {
+            continue;
+        }
         if !valid_id(&n.id) {
             return Err(AppError::new("EXPORT_FAILED", "笔记标识无效，导出已停止"));
         }

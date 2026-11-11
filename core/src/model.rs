@@ -108,6 +108,8 @@ pub(crate) struct WireNote {
     pub id: String,
     pub content: String,
     pub deleted: bool,
+    #[serde(default)]
+    pub purged: bool,
     pub rev: String,
     pub seq: String,
     pub created_at: String,
@@ -129,6 +131,7 @@ pub(crate) struct LocalNote {
     pub id: String,
     pub content: String,
     pub deleted: bool,
+    pub purge_state: String,
     pub generation: i64,
     pub acknowledged: i64,
     pub base_rev: i64,
@@ -138,9 +141,9 @@ pub(crate) struct LocalNote {
 }
 impl LocalNote {
     pub fn view(&self, account: bool, blocked: bool) -> Value {
-        json!({"id":self.id,"content":self.content,"title":title(&self.content),"deleted":self.deleted,
+        json!({"id":self.id,"content":self.content,"title":title(&self.content),"deleted":self.deleted,"purge_state":self.purge_state,
             "generation":self.generation.to_string(),"created_at":self.created_at,"updated_at":self.updated_at,
-            "conflict":self.conflict,"save_state":"saved", "sync_state":if !account {"local"} else if blocked {"blocked"} else if self.generation>self.acknowledged {"pending"} else {"synced"}})
+            "conflict":self.conflict,"save_state":"saved", "sync_state":if !account {"local"} else if self.purge_state=="pending" {"pending"} else if blocked {"blocked"} else if self.generation>self.acknowledged {"pending"} else {"synced"}})
     }
 }
 

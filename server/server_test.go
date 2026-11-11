@@ -59,6 +59,7 @@ func (t *testEnv) request(method, path, token string, body any) (int, []byte, ht
 	}
 	if token != "" {
 		r.Header.Set("Authorization", "Bearer "+token)
+		r.Header.Set("X-Memo-Protocol", "2")
 	}
 	resp, e := http.DefaultClient.Do(r)
 	if e != nil {
@@ -168,9 +169,9 @@ func TestSharedConformance(t *testing.T) {
 			for _, n := range c.Initial {
 				id := resolve(n.Note)
 				now := stamp(env.store.now())
-				snapshot := Note{id, n.Content, n.Deleted, n.Rev, n.Seq, now, now, nil}
+				snapshot := Note{ID: id, Content: n.Content, Deleted: n.Deleted, Rev: n.Rev, Seq: n.Seq, CreatedAt: now, UpdatedAt: now}
 				raw, _ := json.Marshal(snapshot)
-				_, e := env.store.db.Exec("INSERT INTO notes VALUES(?,?,?,?,?,?,?,?,NULL)", a.UserID, id, n.Content, n.Deleted, n.Rev, n.Seq, now, now)
+				_, e := env.store.db.Exec("INSERT INTO notes(user_id,id,content,deleted,rev,seq,created_at,updated_at,conflict) VALUES(?,?,?,?,?,?,?,?,NULL)", a.UserID, id, n.Content, n.Deleted, n.Rev, n.Seq, now, now)
 				if e != nil {
 					t.Fatal(e)
 				}
@@ -501,6 +502,7 @@ func TestSSESignalReplacementAndRevocation(t *testing.T) {
 	a := env.account(t, "alice")
 	open := func() *http.Response {
 		req, _ := http.NewRequest("GET", env.http.URL+"/v1/events", nil)
+		req.Header.Set("X-Memo-Protocol", "2")
 		req.Header.Set("Authorization", "Bearer "+a.Token)
 		resp, e := http.DefaultClient.Do(req)
 		if e != nil {
@@ -585,7 +587,7 @@ func TestMigrationEpochAndBackup(t *testing.T) {
 	if e = s.IntegrityCheck(context.Background()); e != nil {
 		t.Fatal(e)
 	}
-	_, e = s.db.Exec("PRAGMA user_version=2")
+	_, e = s.db.Exec("PRAGMA user_version=3")
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -732,7 +734,7 @@ func TestMigrationFailureRollsBackAndUpgradeEmpty(t *testing.T) {
 	defer func() { _ = s.Close() }()
 	var version int
 	_ = s.db.QueryRow("PRAGMA user_version").Scan(&version)
-	if version != 1 {
+	if version != 2 {
 		t.Fatal("upgrade version", version)
 	}
 }

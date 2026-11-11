@@ -16,7 +16,7 @@ use std::{
 use tauri::{
     Emitter, Manager, State,
     menu::{Menu, MenuItem},
-    tray::TrayIconBuilder,
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
 };
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
@@ -48,6 +48,7 @@ enum Lifecycle {
     Quit,
 }
 struct Backend {
+    last_left_click: Mutex<Option<std::time::Instant>>,
     core: Arc<MemoApp>,
     tray_available: bool,
     next_lifecycle: AtomicU64,
@@ -464,8 +465,35 @@ fn main() {
             let menu = Menu::with_items(app, &[&open, &create, &sync, &quit])?;
             let mut tray = TrayIconBuilder::with_id("memo")
                 .menu(&menu)
-                .tooltip("DJHX Memo")
-                .show_menu_on_left_click(true)
+                .tooltip(app.config().product_name.as_deref().unwrap_or("DJHX Memo"))
+                .show_menu_on_left_click(false)
+                .on_tray_icon_event(|tray, event| {
+                    let app = tray.app_handle();
+                    let Some(state) = app.try_state::<Backend>() else { return; };
+                    let Some(window) = app.get_webview_window("main") else { return; };
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event {
+                        if state.pending_lifecycle.lock().map_or(true, |p| p.is_some()) {
+                            return;
+                        }
+                        let now = std::time::Instant::now();
+                        let Ok(mut last) = state.last_left_click.lock() else { return; };
+                        // One physical double-click must not hide then immediately reopen.
+                        if last.is_some_and(|v| now.duration_since(v) < std::time::Duration::from_millis(600)) {
+                            return;
+                        }
+                        *last = Some(now);
+                        drop(last);
+                        if window.is_visible().unwrap_or(false) && !window.is_minimized().unwrap_or(true) {
+                            request_lifecycle(app, Lifecycle::Hide);
+                        } else {
+                            show_window(app);
+                        }
+                    }
+                })
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "open" => show_window(app),
                     "new" => {
@@ -483,6 +511,7 @@ fn main() {
             }
             let tray_available = tray.build(app).is_ok() && tray_host_available();
             app.manage(Backend {
+                last_left_click: Mutex::new(None),
                 core,
                 tray_available,
                 next_lifecycle: AtomicU64::new(1),

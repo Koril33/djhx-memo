@@ -42,6 +42,7 @@ fn account() -> Profile {
 }
 fn wire(note_id: &str, content: &str, rev: i64, seq: i64) -> WireNote {
     WireNote {
+        purged: false,
         id: note_id.into(),
         content: content.into(),
         deleted: false,
@@ -155,7 +156,7 @@ fn recovery_storage_failure_releases_sync_and_preserves_registry() {
     let app = engine();
     let epoch = id();
     let (server, handle) = status_server(
-        json!({"protocol_version":1,"epoch":epoch,"head_seq":"0"}),
+        json!({"protocol_version":2,"epoch":epoch,"head_seq":"0"}),
         "200 OK",
         "",
         2,
@@ -201,7 +202,7 @@ fn retry_after_blocks_requests_and_wait_returns_sync_info() {
 fn explicit_sync_wakes_the_coordinator_with_a_hidden_window() {
     let app = Arc::new(engine());
     let (server, handle) = status_server(
-        json!({"protocol_version":1,"epoch":id(),"head_seq":"0"}),
+        json!({"protocol_version":2,"epoch":id(),"head_seq":"0"}),
         "200 OK",
         "",
         1,
@@ -609,6 +610,28 @@ fn migration_backup_checksum_and_newer_schema_are_enforced() {
     db.execute_batch("CREATE TABLE schema_migrations(version INTEGER PRIMARY KEY,checksum TEXT NOT NULL,applied_at TEXT NOT NULL)").unwrap();
     db.execute_batch(include_str!("../migrations/0001_local.sql"))
         .unwrap();
+    let legacy_id = id();
+    let legacy_op = Operation {
+        op_id: id(),
+        note_id: legacy_id.clone(),
+        base_rev: "1".into(),
+        content: "migration pending trash".into(),
+        deleted: true,
+    };
+    db.execute(
+        "INSERT INTO notes VALUES(?1,?2,1,2,1,1,?3,?3,NULL)",
+        params![legacy_id, legacy_op.content, now()],
+    )
+    .unwrap();
+    db.execute(
+        "INSERT INTO outbox(op_id,note_id,snapshot,frozen_generation) VALUES(?1,?2,?3,2)",
+        params![
+            legacy_op.op_id,
+            legacy_id,
+            serde_json::to_string(&legacy_op).unwrap()
+        ],
+    )
+    .unwrap();
     db.execute(
         "INSERT INTO schema_migrations VALUES(1,?1,?2)",
         params![
@@ -623,11 +646,24 @@ fn migration_backup_checksum_and_newer_schema_are_enforced() {
     db.pragma_update(None, "user_version", 1).unwrap();
     drop(db);
     let db = db::open(&path).unwrap();
+    let preserved = db::note(&db, &legacy_id).unwrap();
+    assert_eq!(preserved.content, legacy_op.content);
+    assert_eq!(preserved.purge_state, "none");
+    assert!(preserved.deleted);
+    assert_eq!((preserved.generation, preserved.acknowledged), (2, 1));
+    let snapshot: String = db
+        .query_row(
+            "SELECT snapshot FROM outbox WHERE op_id=?",
+            [&legacy_op.op_id],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(snapshot, serde_json::to_string(&legacy_op).unwrap());
     assert!(path.with_extension("before-v2.sqlite").exists());
     assert_eq!(
         db.pragma_query_value(None, "user_version", |r| r.get::<_, i64>(0))
             .unwrap(),
-        2
+        3
     );
     db.pragma_update(None, "user_version", 99).unwrap();
     drop(db);
@@ -641,6 +677,127 @@ fn migration_backup_checksum_and_newer_schema_are_enforced() {
     .unwrap();
     drop(db);
     assert_eq!(db::open(&bad).unwrap_err().code, "LOCAL_STORAGE_FAILED");
+}
+
+// PURGE-01/02/03/04/05/06: local visibility, durable requests and immutable deletion.
+#[test]
+fn permanent_delete_local_and_pending_conformance() {
+    let app = engine();
+    let n = invoke(
+        &app,
+        json!({"action":"create","content":"purge fixture","request_id":id()}),
+    );
+    let n = invoke(
+        &app,
+        json!({"action":"set_deleted","id":n["id"],"expected_generation":n["generation"],"deleted":true}),
+    );
+    let removed = invoke(
+        &app,
+        json!({"action":"purge","id":n["id"],"expected_generation":n["generation"]}),
+    );
+    assert_eq!(removed["purge_state"], "purged");
+    assert_eq!(removed["content"], "");
+    assert!(
+        invoke(&app, json!({"action":"list","deleted":true}))
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+    assert_eq!(app.dispatch(&json!({"action":"set_deleted","id":n["id"],"expected_generation":removed["generation"],"deleted":false})).unwrap_err().code,"NOTE_PURGED");
+    let exported = invoke(&app, json!({"action":"export","include_deleted":true}));
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(exported["bytes_base64"].as_str().unwrap())
+        .unwrap();
+    let zip = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
+    assert_eq!(zip.len(), 1);
+    let p = account();
+    let path = app.path(&p);
+    let mut db = db::open(&path).unwrap();
+    let nid = id();
+    let mut deleted = wire(&nid, "cloud trash", 2, 2);
+    deleted.deleted = true;
+    db::apply_page(&mut db, &[deleted.clone()], "2", "2", false).unwrap();
+    let old = db::note(&db, &nid).unwrap();
+    let pending = purge::request(&mut db, &nid, old.generation, true).unwrap();
+    assert_eq!(pending.purge_state, "pending");
+    let frozen = purge::next(&db).unwrap().unwrap();
+    drop(db);
+    let mut db = db::open(&path).unwrap();
+    assert_eq!(purge::next(&db).unwrap().unwrap(), frozen);
+    let mut restored = wire(&nid, "restored remotely", 3, 3);
+    restored.deleted = false;
+    db::apply_page(&mut db, &[restored], "3", "3", false).unwrap();
+    assert!(purge::next(&db).unwrap().is_none());
+    assert_eq!(db::note(&db, &nid).unwrap().purge_state, "rejected");
+    // A device with a frozen edit must consume deletion instead of creating a copy.
+    edit(&db, &nid, "offline edit");
+    let (op, g) = db::freeze(&mut db).unwrap().unwrap();
+    let mut permanent = wire(&nid, "", 4, 4);
+    permanent.deleted = true;
+    permanent.purged = true;
+    db::apply_page(&mut db, &[permanent.clone()], "4", "4", false).unwrap();
+    assert!(db::freeze(&mut db).unwrap().is_none());
+    assert!(db::list(&db, "", true).unwrap().is_empty());
+    db::acknowledge(
+        &mut db,
+        &op,
+        g,
+        &confirmation(&op, json!({"status":"accepted","rev":"4","seq":"4"})),
+        &p,
+    )
+    .unwrap();
+    db::apply_page(&mut db, &[deleted, permanent], "4", "4", false).unwrap();
+    assert_eq!(db::note(&db, &nid).unwrap().purge_state, "purged");
+}
+
+#[test]
+fn permanent_delete_waits_for_unknown_write_and_original_delete_ack() {
+    let app = engine();
+    let p = account();
+    let mut db = db::open(&app.path(&p)).unwrap();
+    let nid = id();
+    seed(&mut db, &nid);
+    let mut n = db::note(&db, &nid).unwrap();
+    n.deleted = true;
+    n.generation += 1;
+    db::put(&db, &n).unwrap();
+    purge::request(&mut db, &nid, n.generation, true).unwrap();
+    assert!(purge::next(&db).unwrap().is_none());
+    let (op, g) = db::freeze(&mut db).unwrap().unwrap();
+    db::acknowledge(
+        &mut db,
+        &op,
+        g,
+        &confirmation(&op, json!({"status":"accepted","rev":"2","seq":"2"})),
+        &p,
+    )
+    .unwrap();
+    assert_eq!(purge::next(&db).unwrap().unwrap().2, 2);
+}
+
+#[test]
+fn permanent_delete_request_does_not_follow_a_conflicting_soft_delete_copy() {
+    let app = engine();
+    let p = account();
+    let mut db = db::open(&app.path(&p)).unwrap();
+    let nid = id();
+    seed(&mut db, &nid);
+    let mut n = db::note(&db, &nid).unwrap();
+    n.deleted = true;
+    n.generation += 1;
+    db::put(&db, &n).unwrap();
+    purge::request(&mut db, &nid, n.generation, true).unwrap();
+    let (op, generation) = db::freeze(&mut db).unwrap().unwrap();
+    db::apply_page(&mut db, &[wire(&nid, "remote edit", 2, 2)], "2", "2", false).unwrap();
+    let copy = id();
+    let result = confirmation(
+        &op,
+        json!({"status":"conflict","rev":"2","conflict_note_id":copy,"conflict_rev":"1","conflict_seq":"3"}),
+    );
+    db::acknowledge(&mut db, &op, generation, &result, &p).unwrap();
+    assert_eq!(db::note(&db, &nid).unwrap().purge_state, "rejected");
+    assert_eq!(db::note(&db, &copy).unwrap().purge_state, "none");
+    assert!(purge::next(&db).unwrap().is_none());
 }
 
 #[test]
@@ -674,4 +831,110 @@ fn database_failure_rolls_back_visible_content_and_fts() {
     assert_eq!(db::note(&db, &n).unwrap().content, "初始");
     assert_eq!(db::get_state(&db, "cursor").unwrap().unwrap(), "1");
     assert_eq!(db::shadow(&db, &n).unwrap().unwrap().rev, "1");
+}
+
+// PURGE-04/05: a successful old conflict response is weaker than later deletion.
+#[test]
+fn lost_conflict_acknowledgement_preserves_target_deletion_state() {
+    for continued in [false, true] {
+        for state in ["pending", "purged"] {
+            let app = engine();
+            let p = account();
+            let mut db = db::open(&app.path(&p)).unwrap();
+            let source = id();
+            let target = id();
+            seed(&mut db, &source);
+            edit(&db, &source, "sent stale text");
+            let (op, generation) = db::freeze(&mut db).unwrap().unwrap();
+            if continued {
+                edit(&db, &source, "continued offline input");
+            }
+            let mut trash = wire(&target, "conflict copy now in trash", 2, 4);
+            trash.deleted = true;
+            db::apply_page(
+                &mut db,
+                &[wire(&source, "new remote source", 2, 2), trash],
+                "4",
+                "4",
+                false,
+            )
+            .unwrap();
+            let n = db::note(&db, &target).unwrap();
+            purge::request(&mut db, &target, n.generation, true).unwrap();
+            if state == "purged" {
+                let mut permanent = wire(&target, "", 3, 5);
+                permanent.deleted = true;
+                permanent.purged = true;
+                db::apply_page(&mut db, &[permanent], "5", "5", false).unwrap();
+            }
+            let before = db::note(&db, &target).unwrap().view(true, false);
+            let pending = purge::next(&db).unwrap();
+            let result = confirmation(
+                &op,
+                json!({"status":"conflict","rev":"2","conflict_note_id":target,"conflict_rev":"1","conflict_seq":"3"}),
+            );
+            db::acknowledge(&mut db, &op, generation, &result, &p).unwrap();
+            assert_eq!(db::note(&db, &target).unwrap().view(true, false), before);
+            assert_eq!(purge::next(&db).unwrap(), pending);
+            assert_eq!(db::note(&db, &source).unwrap().content, "new remote source");
+            if state == "purged" {
+                assert_eq!(db::list(&db, "", false).unwrap().len(), 1);
+                assert!(db::list(&db, "", true).unwrap().is_empty());
+                assert!(db::freeze(&mut db).unwrap().is_none());
+                assert_eq!(db::redirects(&db).unwrap()[&source], target);
+            }
+        }
+    }
+}
+
+#[test]
+fn redirects_cannot_bypass_target_deletion_barrier() {
+    for state in ["pending", "purged"] {
+        let app = engine();
+        let p = account();
+        {
+            let mut registry = app.registry.lock().unwrap();
+            registry.selected = p.id.clone();
+            registry.profiles.push(p.clone());
+        }
+        let mut db = db::open(&app.path(&p)).unwrap();
+        let source = id();
+        let target = id();
+        seed(&mut db, &source);
+        edit(&db, &source, "authoritative source after conflict");
+        let mut trash = wire(&target, "- [ ] old conflict copy", 2, 4);
+        trash.deleted = true;
+        db::apply_page(&mut db, &[trash], "4", "4", false).unwrap();
+        let n = db::note(&db, &target).unwrap();
+        purge::request(&mut db, &target, n.generation, true).unwrap();
+        if state == "purged" {
+            let mut permanent = wire(&target, "", 3, 5);
+            permanent.deleted = true;
+            permanent.purged = true;
+            db::apply_page(&mut db, &[permanent], "5", "5", false).unwrap();
+        }
+        let target_note = db::note(&db, &target).unwrap();
+        db.execute(
+            "INSERT INTO redirects VALUES(?1,?2,1,?3)",
+            params![source, target, target_note.generation],
+        )
+        .unwrap();
+        for action in ["save", "set_deleted", "toggle_task"] {
+            let error = app
+                .dispatch(&json!({"action":action,"profile_id":p.id,"id":source,"expected_generation":"1","content":"must not revive","deleted":false,"line":0}))
+                .unwrap_err();
+            assert_eq!(
+                error.code,
+                if state == "purged" {
+                    "NOTE_PURGED"
+                } else {
+                    "PURGE_PENDING"
+                }
+            );
+            assert_eq!(
+                db::note(&db, &target).unwrap().view(true, false),
+                target_note.view(true, false)
+            );
+        }
+    }
 }

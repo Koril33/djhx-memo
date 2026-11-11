@@ -1,5 +1,7 @@
 # 数据模型与术语
 
+0.1.4 增量以[单条彻底删除与协议 2 契约](permanent-deletion.md)为准，替代下文旧基线中不提供永久删除及保留正文的对应范围。普通删除/恢复行为不变；永久删除不生成冲突副本。
+
 状态：未发布的 v1 契约；字段表是逻辑约束，实施时通过版本化迁移建立实际 schema。
 
 ## 1. 通用类型与限制
@@ -28,7 +30,7 @@
 
 所有业务实体的关联、索引及写入均带账号条件。相同 note ID 可以存在于不同账号，跨账号查询只返回不存在。设备名变化不改变历史冲突记录的来源设备 ID。
 
-完整 Note wire 字段：`id, content, deleted, rev, seq, created_at, updated_at, conflict`。普通笔记 `conflict=null`；冲突副本包含 `source_note_id, source_device_id, source_device_name, source_op_id, reason, detected_at`，reason 取 `stale_edit / stale_delete / edit_after_delete`。元数据由服务端生成并在后续编辑中保留，客户端不能注入或修改。
+完整 Note wire 字段：`id, content, deleted, purged, rev, seq, created_at, updated_at, conflict`。普通笔记 `conflict=null`；冲突副本包含 `source_note_id, source_device_id, source_device_name, source_op_id, reason, detected_at`，reason 取 `stale_edit / stale_delete / edit_after_delete`。元数据由服务端生成并在后续编辑中保留，客户端不能注入或修改。
 
 服务端更新 notes、分配序号、追加 changes、保存 processed_ops 结果必须原子完成。冲突只创建副本时，原笔记 rev/seq 不变，副本 rev=1，消耗一个新 seq。删除保留正文，恢复复用原 ID 并增加版本。
 
@@ -42,6 +44,7 @@
 |---|---|
 | notes | id；当前可见 content/deleted；generation；draft_base_rev；本地时间；冲突元数据 |
 | note_shadows | id；最后已知的完整权威快照；干净状态下的新编辑以其 rev 为依据 |
+| purge_requests | note_id 主键、op_id 唯一、base_rev 可空；待普通删除确认后只绑定一次；随账号数据库隔离 |
 | outbox | op_id；note_id；base_rev；content/deleted 不可变快照；frozen_generation；状态；重试信息 |
 | sync_state | epoch；cursor；进行中的 until；最近成功时间；需恢复状态 |
 | imports | source_profile_id、source_note_id、source_generation 联合唯一；target_note_id；目标账号由数据库本身限定 |

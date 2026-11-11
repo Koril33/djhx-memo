@@ -205,3 +205,25 @@ describe('edit commit buffer', () => {
     editor.dispose();
   });
 });
+
+describe('remote permanent deletion', () => {
+  it('retains uncommitted text, stops old writes and requires explicit rescue with a new ID', async () => {
+    const { editor, invoke } = setup(async (req) => ({
+      ...note(req.content as string, '1'),
+      id: 'new-note',
+    }));
+    await editor.open(note('saved', '1'));
+    editor.edit('unsaved rescue text');
+    editor.acceptRemote({ ...note('', '2'), deleted: true, purge_state: 'purged' });
+    expect(editor.content).toBe('unsaved rescue text');
+    expect(editor.generationConflict).toBe(true);
+    await expect(editor.flush()).rejects.toBeInstanceOf(InvokeError);
+    expect(invoke).not.toHaveBeenCalled();
+    await editor.saveAsCopy();
+    expect(invoke).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'create', content: 'unsaved rescue text' }),
+    );
+    expect(editor.note?.id).toBe('new-note');
+    editor.dispose();
+  });
+});
