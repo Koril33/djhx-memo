@@ -1,6 +1,6 @@
 # core
 
-当前开发版本为 **0.1.4**（未发布），新增单条彻底删除、Windows 托盘左右键及桌面列表折叠。账号同步要求协议 2 服务端与相应客户端配套升级；既有 0.1.3 Release 不改变。本轮 Windows/Android 检查与 Linux 待验证项见[增量验证](../docs/client-updates-0.1.4-validation.md)。
+当前版本为 **0.1.4**，新增单条彻底删除、Windows 托盘左右键及桌面列表折叠。账号同步要求协议 2 服务端与相应客户端配套升级；既有 0.1.3 Release 不改变。三端实际测试、交叉评审、安装包和发布状态见[0.1.4 发布验证](../docs/releases/0.1.4-validation.md)。
 
 Rust 本地优先核心，负责 SQLite 存储与迁移、持久 outbox、客户端同步状态机、搜索、回收站、导出和空间隔离。Android 经 UniFFI 调用，Tauri Rust 后端直接链接。
 

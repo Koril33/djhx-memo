@@ -7,7 +7,7 @@
 - 后续修正（2026-11-08）：0.1.2 验证并修正桌面原生下拉文字裁切及 Android 源码滚动，实际结果见[增量验证](docs/client-fixes-0.1.2-validation.md)。
 - 本文替代 v0.1 草案；行为只在 [spec](spec/README.md) 中定义，历史草案可通过 Git 查看。
 
-0.1.4 增量（2026-11-11）：维护者批准[单条彻底删除及桌面操作契约](spec/permanent-deletion.md)，先更新规范再实施；本轮只验证 Windows/Android，Linux 测试和打包交其他主机。独立同步/迁移评审另行完成。
+0.1.4 增量（2026-11-11）：维护者批准[单条彻底删除及桌面操作契约](spec/permanent-deletion.md)，先更新规范再实施；本轮只验证 Windows/Android，Linux 测试和打包交其他主机。独立同步/迁移评审另行完成。 后续发布轮的三端实际测试及已完成的独立评审见[0.1.4 发布验证](docs/releases/0.1.4-validation.md)，完整设备矩阵与 7 天试用状态保持不变。
 
 ## 1. 目标与范围
 

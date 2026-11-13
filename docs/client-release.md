@@ -4,6 +4,23 @@ Gitea 保存开发分支和评审记录。审核通过后，以保留历史的�
 
 0.1.5 的 Windows/Android 更新器与[本地发行工具](update-publishing.md)已实现，正式目录尚未部署，AppImage 仍待实现。本文既有 0.1.3 Release 记录不改变；SHA256SUMS 不能替代更新签名，推送源码不等于发布安装包。
 
+## 0.1.4 安装包与升级顺序
+
+本次客户端、core 和服务端版本为 0.1.4，同步协议为 2。先完成[交叉评审](reviews/client-0.1.4-review.md)和[三端实际验证](releases/0.1.4-validation.md)，备份并升级服务端，再公开 Release；旧客户端会收到升级提示，不能继续与协议 2 服务端同步。HTTP 路径仍为 `/v1`，不表示完整产品 v1 已验收。
+
+| 平台 | 构建入口 | GitHub 附件名 |
+| --- | --- | --- |
+| Windows x64 | `desktop/`：`npm run tauri build -- --bundles nsis -- --locked` | `djhx-memo-0.1.4-windows-x64-setup.exe` |
+| Linux amd64 | `desktop/`：`npm run tauri build -- --config src-tauri/tauri.linux.conf.json --bundles deb -- --locked` | `djhx-memo-0.1.4-linux-amd64.deb` |
+| Android | 按 Android README 重建双 ABI JNI/绑定，使用原证书签名 release APK | `djhx-memo-0.1.4-android.apk` |
+| 服务端 Linux amd64 | `bash scripts/package-server.sh` | `djhx-memo-server-0.1.4-linux-amd64.tar.gz` |
+
+Android 核验 `app.djhx.memo`、`versionCode=5`、两种 ABI 和原发布证书；Windows 当前包未做代码签名。附统一 `SHA256SUMS`，从公开附件重新下载逐一核对后才更新官网版本及下载链接。旧包、旧 tag 和既有 Git 历史保留。
+
+2026-11-12 已发布 [v0.1.4](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.4)，四个包、统一清单的公开下载及官网链接均已核验；云端已配套升级到协议 2，实际证据见上述发布记录。
+
+服务端升级保留原 epoch，并保全旧二进制、数据库/WAL/SHM 和一致快照。新 schema 不能由旧程序直接打开；公网重新接收写入后，不能自动恢复旧备份而丢弃新写入。部署实际结果与公开附件以发布记录和 Release 状态为准。
+
 ## 0.1.3 安装包
 
 发布标签为 `v0.1.3`。Windows 优先，Linux 和 Android 可从同一标签构建后追加。0.1.3 是客户端版本，v1 验收状态见[产品规范](../spec/product-v1.md)。

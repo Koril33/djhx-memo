@@ -1,4 +1,4 @@
-# 0.1.3 客户端使用说明
+# 0.1.4 客户端使用说明
 
 这是未正式发布的候选版本。实际验收范围见 [验证记录](validation.md)；物理 arm64 Android、完整系统/输入法矩阵与连续 7 天日常试用仍待完成。
 
@@ -8,19 +8,19 @@
 
 | 系统 | 文件 | 安装方式 |
 |---|---|---|
-| Windows x64 | `dist/windows/djhx-memo-0.1.3-windows-x64-setup.exe` | 运行安装程序，默认当前用户安装；依赖 WebView2，缺失时配置为运行随包引导程序下载 |
-| Linux amd64 | `dist/linux/djhx-memo-0.1.3-linux-amd64.deb` | 在仓库根目录运行下面的 apt 命令，安装 WebKit/AppIndicator 运行依赖 |
-| Android | `dist/android/djhx-memo-0.1.3-android.apk` | 将 APK 复制到设备并安装；包含 arm64-v8a 与 x86_64，Android 10+ |
+| Windows x64 | `dist/windows/djhx-memo-0.1.4-windows-x64-setup.exe` | 运行安装程序，默认当前用户安装；依赖 WebView2，缺失时配置为运行随包引导程序下载 |
+| Linux amd64 | `dist/linux/djhx-memo-0.1.4-linux-amd64.deb` | 在仓库根目录运行下面的 apt 命令，安装 WebKit/AppIndicator 运行依赖 |
+| Android | `dist/android/djhx-memo-0.1.4-android.apk` | 将 APK 复制到设备并安装；包含 arm64-v8a 与 x86_64，Android 10+ |
 
 ```sh
-sudo apt install --reinstall ./dist/linux/djhx-memo-0.1.3-linux-amd64.deb
+sudo apt install --reinstall ./dist/linux/djhx-memo-0.1.4-linux-amd64.deb
 ```
 
 Windows 包尚无代码签名证书；版本和文件来源以本机校验值为准。Linux GNOME 的托盘需要 AppIndicator 支持；无法确认托盘可用时，客户端采用普通窗口模式并说明关闭后退出。
 
-本次为 0.1.3 客户端，加入离线代码高亮并保留既有界面/滚动修正；服务端与同步协议仍使用既有0.1.0基线。Linux 使用上述 `--reinstall` 也可覆盖同版本预览包。桌面安装完成后从托盘退出旧进程再重新打开；Android 沿用同一签名直接覆盖安装，保留既有数据。
+本次为 0.1.4 客户端，增加回收站单条彻底删除、Windows 托盘左右键与桌面列表折叠，保留离线代码高亮及既有修正。账号同步使用协议 2，服务端和各客户端必须配套升级；0.1.3 及更早客户端不能继续同步。Linux 使用上述 `--reinstall` 也可覆盖同版本预览包。桌面安装完成后从托盘退出旧进程再重新打开；Android 沿用同一签名直接覆盖安装，保留既有数据。
 
-安装包也可从[GitHub Release v0.1.3](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.3)下载，并用同页SHA256SUMS核对。
+安装包也可从[GitHub Release v0.1.4](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.4)下载，并用同页SHA256SUMS核对。
 
 ## 新界面入口
 
