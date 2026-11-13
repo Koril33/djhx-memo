@@ -4,6 +4,19 @@ Gitea 保存开发分支和评审记录。审核通过后，以保留历史的�
 
 0.1.5 的 Windows/Android 更新器与[本地发行工具](update-publishing.md)已实现，正式目录尚未部署，AppImage 仍待实现。本文既有 0.1.3 Release 记录不改变；SHA256SUMS 不能替代更新签名，推送源码不等于发布安装包。
 
+## 0.1.5 客户端与待签名 Android 附件
+
+本次 Windows/Android 更新器保持协议 2、local schema 3；core/server 版本仍为 0.1.4，无需仅为客户端版本重新部署账号服务。完整本轮结果见[0.1.5 发布检查](releases/0.1.5-validation.md)，独立评审见[core](reviews/client-0.1.5-core-review.md)和[平台](reviews/client-0.1.5-platform-review.md)。
+
+| 平台 | 附件与本次边界 |
+|---|---|
+| Windows x64 | `djhx-memo-0.1.5-windows-x64-setup.exe` 和 `.exe.sig`；Tauri 更新签名不等于 Authenticode |
+| Linux amd64 | `djhx-memo-0.1.5-linux-amd64.deb`；继续系统包管理，无 Linux 自动安装能力 |
+| Android debug | `djhx-memo-0.1.5-android-debug.apk`；独立测试身份，不覆盖正式安装 |
+| Android unsigned | `djhx-memo-0.1.5-android-release-unsigned.apk`；需原证书签名，不可直接安装 |
+
+本轮维护者授权公开 debug/unsigned 作为临时构建资料，后续由持原证书的主机追加正式 Android APK；操作与更新目录推广规则见[签名发布说明](update-publishing.md#7-本次-android-待签名附件例外)。Windows/Linux 资产与旧标签不替换，Android 正式下载在补齐前保持 0.1.4。
+
 ## 0.1.4 安装包与升级顺序
 
 本次客户端、core 和服务端版本为 0.1.4，同步协议为 2。先完成[交叉评审](reviews/client-0.1.4-review.md)和[三端实际验证](releases/0.1.4-validation.md)，备份并升级服务端，再公开 Release；旧客户端会收到升级提示，不能继续与协议 2 服务端同步。HTTP 路径仍为 `/v1`，不表示完整产品 v1 已验收。

@@ -1,5 +1,7 @@
 # 0.1.5 Windows / Android 更新器验证
 
+本文保留 2026-11-12 原开发轮事实；2026-11-13 的整合、独立评审、修复和三端发布检查见[发布记录](releases/0.1.5-validation.md)，不能把两轮范围混为一谈。
+
 - 日期：2026-11-12；主机：Windows；分支 `codex/windows-android-updater`，基于调研提交 `7bf581b`。
 - 范围：客户端 0.1.5（Android versionCode 6），core/server 仍为 0.1.4 / 协议 2 / local schema 3。无 Linux 构建测试，无 CI/Runner，无服务器部署或远程 Release/tag。
 - 私钥在仓库外由维护者授权生成，提交仅公钥。签名工具与公开配置见[发布说明](update-publishing.md)。

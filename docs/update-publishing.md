@@ -1,6 +1,6 @@
 # Windows / Android 自动更新发布
 
-0.1.5 已接入客户端和本地发行工具，**本轮没有部署更新目录、发布 tag 或上传 GitHub Release**。产品规则见 [spec](../spec/automatic-updates.md)，实测与限制见 [验证记录](client-updates-0.1.5-validation.md)。Linux 更新安装仍交后续主机实现；当前工具只推广 Windows / Android。
+0.1.5 已接入客户端和本地发行工具。原开发轮未部署目录或发布 Release；2026-11-13 的实际整合、三端包与部署状态以[发布记录](releases/0.1.5-validation.md)为准。产品规则见 [spec](../spec/automatic-updates.md)，实测与限制见 [验证记录](client-updates-0.1.5-validation.md)。Linux 更新安装仍交后续主机实现；当前工具只推广 Windows / Android。
 
 ## 1. 用户入口与首次升级
 
@@ -96,3 +96,11 @@ Android 加入目标 `android-universal-apk`：`version/commit/notes/file/url` �
 Android `UpdatePlatformTest` 的较新包案例需要隔离 APK 和 `updateApk` 参数；系统安装案例额外需要安装来源授权。测试版本覆盖参数只对 `-PisolatedValidation` 生效：`-PupdateTestVersionCode=7`、`-PupdateTestVersionName=0.1.6`，不会改变普通 release/debug 的 0.1.5 基线。在 PowerShell 中将每个 `-P...` 参数整体加引号。
 
 仅收集固定错误码、版本、目标、阶段与哈希；不要记录响应正文、笔记、token 或完整系统安装 Intent。下载失败/签名失败保留正常使用；状态损坏时需核对来源再处理更新状态目录，不能通过 UI 重置序号来绕过防回放，更不能删除笔记数据库。
+
+## 7. 本次 Android 待签名附件例外
+
+维护者于 2026-11-13 明确授权先上传 `djhx-memo-0.1.5-android-debug.apk` 与 `djhx-memo-0.1.5-android-release-unsigned.apk` 作为测试/待签名资料。前者使用独立 `.debug` 应用身份，后者不可直接安装；两者都不覆盖原正式应用，也不进入稳定更新目录或官网正式 Android 下载链接。原正式 Android 下载继续指向已签名的 0.1.4。
+
+持原证书的主机后续从同一 `v0.1.5` 标签重编 JNI/APK，验签、核对身份/versionCode=6 和覆盖升级后，**追加**正式 `djhx-memo-0.1.5-android.apk`，更新 SHA256SUMS、说明与官网 Android 链接，再以更高目录序号推广 Android 条目。保留调试/unsigned 名称可避免把已下载的待签名文件误认成正式包。不要移动标签或覆盖已推广的 Windows 包。
+
+GitHub 普通 Release 可编辑说明并追加附件；不可变 Release 发布后不能增删/替换附件。本次已核仓库 release immutability 未启用，最终 Release 创建后仍需核对 `immutable=false`，不更改仓库全局发布策略。若后续政策改变，改用新版本追加，不绕过平台限制。

@@ -6,4 +6,4 @@
 - 托盘为首版必需；菜单可恢复窗口、创建笔记、同步和退出，不依赖 Linux 图标左键事件。
 - 保存失败不误报完成；关闭隐藏与退出分别处理，托盘不可用时窗口必须可找回。
 - Markdown 禁止危险 HTML/协议和外部图片自动加载，不能访问 Tauri 特权命令。
-- 本地执行前端/Rust 检查，Windows/Linux 实测按任务范围记录；全局快捷键、分享、自启继续后置。维护者已授权 0.1.5 Windows 自动更新，按 spec/automatic-updates.md 实施；Linux 更新安装与本轮验收暂缓。
+- 本地执行前端/Rust 检查，Windows/Linux 实测按任务范围记录；全局快捷键、分享、自启继续后置。维护者已授权 0.1.5 Windows 自动更新，按 spec/automatic-updates.md 实施；Linux 自动更新安装暂缓；维护者已授权本轮 Ubuntu 24.04 VM 的 DEB 构建与测试，按实际结果记录。

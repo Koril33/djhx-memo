@@ -1,6 +1,6 @@
 # 客户端自动更新
 
-- 状态：**0.1.5 Windows/Android 候选实现，正式发行目录尚未部署**；2026-11-12。Linux 安装适配继续为提案，不在本轮实现/测试。
+- 状态：**0.1.5 Windows/Android 候选实现，正式发行目录尚未部署**；2026-11-12。Linux 自动安装适配继续为提案；2026-11-13 发布轮在 Ubuntu 24.04 虚拟机单独检查并打包 DEB，结果以发布记录为准。
 - 本轮实现：Windows NSIS、Android APK、共享验证器与离线发布工具；协议 2 / core schema 3 不变。旧 0.1.3/0.1.4 安装不因新源码自动取得更新器。
 - 依据：[17 个软件调研](../docs/research/rust-gui-auto-update-survey.md)、[技术设计](../docs/automatic-update-design.md)、[ADR-0016](../docs/adr/0016-automatic-updates.md)。通过后续实现 PR 启用；不把提案加入现有版本的已完成清单。
 
