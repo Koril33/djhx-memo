@@ -251,6 +251,28 @@ fn corrupt_state_cannot_be_reset_by_preferences_or_defer_and_notes_are_untouched
 }
 
 #[test]
+fn install_failures_cannot_clear_corrupt_replay_state() {
+    let (trust, _, _) = fixture();
+    let root = root();
+    fs::write(root.join("state.json"), b"truncated").unwrap();
+    let service = UpdateService::open(
+        root.clone(),
+        "windows-x86_64-nsis".into(),
+        "0.1.5".into(),
+        0,
+        "app.djhx.memo".into(),
+        trust,
+    );
+    service.installation_failed();
+    service.preferences(true, "any".into());
+    service.prepare_install();
+    service.defer();
+    assert_eq!(fs::read(root.join("state.json")).unwrap(), b"truncated");
+    assert!(service.snapshot().contains("UPDATE_STORAGE"));
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn replay_state_and_attempt_survive_reopen_without_changing_preferences() {
     let (trust, _, _) = fixture();
     let root = root();

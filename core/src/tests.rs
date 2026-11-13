@@ -70,6 +70,128 @@ fn edit(db: &Connection, note_id: &str, content: &str) {
 }
 
 #[test]
+fn update_checkpoint_preserves_all_spaces_and_frozen_outbox_and_recovers_from_busy_reader() {
+    let app = engine();
+    let account = account();
+    let mut recovery = account.clone();
+    recovery.id = id();
+    recovery.kind = "recovery".into();
+    recovery.read_only = true;
+    let profiles = [Profile::local(), account, recovery];
+    {
+        let mut registry = app.registry.lock().unwrap();
+        registry.profiles.extend(profiles[1..].iter().cloned());
+        app.persist_registry(&registry).unwrap();
+        assert_eq!(registry.selected, "local");
+    }
+    let core = MemoApp {
+        inner: Arc::new(app),
+    };
+    // Keep every writer open: closing a connection must not perform the checkpoint for us.
+    let mut spaces = Vec::new();
+    for profile in &profiles {
+        let mut db = db::open(&core.inner.path(profile)).unwrap();
+        db.pragma_update(None, "wal_autocheckpoint", 0).unwrap();
+        let note_id = id();
+        let initial = LocalNote {
+            id: note_id.clone(),
+            content: "更新前的合成笔记😀".into(),
+            deleted: false,
+            purge_state: "none".into(),
+            generation: 1,
+            acknowledged: 0,
+            base_rev: 0,
+            created_at: now(),
+            updated_at: now(),
+            conflict: None,
+        };
+        db::put(&db, &initial).unwrap();
+        if profile.kind != "local" {
+            let (frozen, generation) = db::freeze(&mut db).unwrap().unwrap();
+            assert_eq!(generation, 1);
+            assert_eq!(frozen.content, initial.content);
+            edit(&db, &note_id, "冻结后继续输入的中文😀");
+        }
+        spaces.push((profile, db, note_id));
+    }
+    // Pin an older account snapshot, then add a newer WAL frame. TRUNCATE must fail safely.
+    let reader = Connection::open(core.inner.path(&profiles[1])).unwrap();
+    reader.execute_batch("BEGIN").unwrap();
+    let _: i64 = reader
+        .query_row("SELECT count(*) FROM notes", [], |r| r.get(0))
+        .unwrap();
+    edit(&spaces[1].1, &spaces[1].2, "安装屏障前最后保存的中文😀");
+    type FrozenRow = (String, String, i64, Option<String>);
+    let snapshot = |profile: &Profile, db: &Connection, note_id: &str| {
+        let note = db::note(db, note_id).unwrap();
+        let frozen: Option<FrozenRow> = db
+            .query_row(
+                "SELECT op_id,snapshot,frozen_generation,blocked FROM outbox WHERE note_id=?",
+                [note_id],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
+            )
+            .optional()
+            .unwrap();
+        (
+            note.view(profile.kind == "account", false),
+            note.acknowledged,
+            note.base_rev,
+            frozen,
+        )
+    };
+    let expected: Vec<_> = spaces
+        .iter()
+        .map(|(profile, db, note_id)| snapshot(profile, db, note_id))
+        .collect();
+    assert!(expected[0].3.is_none());
+    assert!(expected[1].3.is_some());
+    assert!(expected[2].3.is_some());
+    assert!(core.pause_for_update().is_err());
+    assert!(core.inner.dispatch(&json!({"action":"state"})).is_ok());
+    reader.execute_batch("ROLLBACK").unwrap();
+    drop(reader);
+    core.pause_for_update().unwrap();
+    assert_eq!(
+        core.inner
+            .dispatch(&json!({"action":"create","request_id":id(),"content":"不应写入"}))
+            .unwrap_err()
+            .code,
+        "UPDATE_BUSY"
+    );
+    for (index, (profile, db, note_id)) in spaces.iter().enumerate() {
+        let wal = PathBuf::from(format!("{}-wal", core.inner.path(profile).display()));
+        assert_eq!(std::fs::metadata(wal).unwrap().len(), 0);
+        assert_eq!(snapshot(profile, db, note_id), expected[index]);
+    }
+    core.resume_after_update();
+    assert!(core.inner.dispatch(&json!({"action":"state"})).is_ok());
+    let root = core.inner.root.clone();
+    let note_ids: Vec<_> = spaces.iter().map(|(_, _, id)| id.clone()).collect();
+    drop(spaces);
+    drop(core);
+    let reopened =
+        Engine::open(root.clone(), Arc::new(MemoryCredentials::default()), true).unwrap();
+    assert_eq!(reopened.registry.lock().unwrap().profiles.len(), 3);
+    for (index, profile) in profiles.iter().enumerate() {
+        let db = db::open(&reopened.path(profile)).unwrap();
+        assert_eq!(snapshot(profile, &db, &note_ids[index]), expected[index]);
+        let count: i64 = db
+            .query_row("SELECT count(*) FROM notes", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(count, 1);
+    }
+    drop(reopened);
+    assert!(root.starts_with(std::env::temp_dir()));
+    assert!(
+        root.file_name()
+            .unwrap()
+            .to_string_lossy()
+            .starts_with("djhx-core-test-")
+    );
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn instance_lock_and_credential_session_replacement_are_safe() {
     let app = engine();
     assert!(

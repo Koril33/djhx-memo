@@ -20,6 +20,33 @@ import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 class UpdatePlatformTest {
+    @Test fun uncommittedJournaledSessionIsAbandonedAfterControllerRecreation() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val app = context.applicationContext as MemoApplication
+        val installer = context.packageManager.packageInstaller
+        val journal = context.getSharedPreferences("updates-install", Context.MODE_PRIVATE)
+        val id = installer.createSession(
+            android.content.pm.PackageInstaller.SessionParams(
+                android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTALL
+            )
+        )
+        try {
+            assertFalse(installer.getSessionInfo(id)!!.isCommitted)
+            assertTrue(journal.edit().putInt("session", id).remove("continuation").commit())
+            val restored = AppUpdates(app)
+            assertTrue(restored.installing)
+            InstrumentationRegistry.getInstrumentation().runOnMainSync { restored.foreground(null, true) }
+            val deadline = android.os.SystemClock.elapsedRealtime() + 5000
+            while (restored.installing && android.os.SystemClock.elapsedRealtime() < deadline) Thread.sleep(50)
+            assertFalse("Interrupted pre-commit installation must not permanently lock notes", restored.installing)
+            assertFalse(journal.contains("session"))
+            assertNull(installer.getSessionInfo(id))
+            assertNotNull(app.gateway.obj("state"))
+        } finally {
+            if (installer.getSessionInfo(id) != null) installer.abandonSession(id)
+        }
+    }
+
     @Test fun sessionRequiresSystemConfirmationAndKeepsCommittedData() = runBlocking {
         val args = InstrumentationRegistry.getArguments()
         val candidate = args.getString("updateApk")

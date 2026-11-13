@@ -48,11 +48,17 @@ class AppUpdates(private val app: MemoApplication) {
         private set
     private var automaticReady = false
     private var started = false
+    private var submissionActive = false
+    private var finishing = false
+
+    /** A journaled session remains cancelable even if its confirmation callback was lost. */
+    val canCancelInstallation: Boolean get() = installing && !submissionActive && journal.getInt("session", -1) >= 0
 
     /** Cancels unfinished background downloads and checks when the foreground deadline is due. */
     fun foreground(screen: MainActivity?, active: Boolean) {
         activity = WeakReference(if (active) screen else null)
         if (!active) service.cancel()
+        if (active) reconcileInstallation()
         if (started) {
             if (active && automaticReady && !installing) action("automatic")
             return
@@ -60,17 +66,24 @@ class AppUpdates(private val app: MemoApplication) {
         started = true
         scope.launch {
             refresh()
-            if (installing && app.packageManager.packageInstaller.getSessionInfo(journal.getInt("session", -1)) == null) {
-                finish(
-                    false
-                )
-            }
+            reconcileInstallation()
             delay(30000 + (0..30000L).random())
             automaticReady = true
             while (true) {
                 if (activity.get() != null && !installing) perform("automatic")
                 delay(3600000)
             }
+        }
+    }
+
+    /** Recovers a process death between journaling a session and committing it to Android. */
+    internal fun reconcileInstallation() {
+        if (!installing || submissionActive || finishing) return
+        val id = journal.getInt("session", -1)
+        val session = app.packageManager.packageInstaller.getSessionInfo(id)
+        if (session == null || !session.isCommitted) {
+            if (session != null) runCatching { app.packageManager.packageInstaller.abandonSession(id) }
+            finish(false)
         }
     }
 
@@ -128,6 +141,7 @@ class AppUpdates(private val app: MemoApplication) {
         }
         scope.launch {
             installing = true
+            submissionActive = true
             installError = null
             try {
                 val prepared = withContext(Dispatchers.IO) { JSONObject(service.prepareInstall()) }
@@ -143,6 +157,8 @@ class AppUpdates(private val app: MemoApplication) {
             } catch (error: Exception) {
                 installError = (error as? UpdateFailure)?.code ?: "UPDATE_INSTALL"
                 finish(false)
+            } finally {
+                submissionActive = false
             }
             refresh()
         }
@@ -152,6 +168,7 @@ class AppUpdates(private val app: MemoApplication) {
     @Suppress("DEPRECATION") // API 29 has no typed Parcelable overload.
     fun receive(intent: Intent) {
         if (intent.getIntExtra(PackageInstaller.EXTRA_SESSION_ID, -2) != journal.getInt("session", -1)) return
+        installing = true
         val result = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)
         if (result == PackageInstaller.STATUS_PENDING_USER_ACTION) {
             val confirmation = intent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
@@ -181,24 +198,35 @@ class AppUpdates(private val app: MemoApplication) {
 
     /** Abandons the pending system session and releases the core installation barrier. */
     fun cancelInstallation() {
-        if (!needsConfirmation) return
+        if (!canCancelInstallation) return
         val id = journal.getInt("session", -1)
         if (id >= 0) runCatching { app.packageManager.packageInstaller.abandonSession(id) }
         finish(false)
     }
 
     private fun finish(success: Boolean) {
+        if (finishing) return
+        finishing = true
         journal.edit().remove("session").remove("continuation").commit()
         needsConfirmation = false
         scope.launch {
             try {
                 if (!success) withContext(Dispatchers.IO) { service.installationFailed() }
                 app.gateway.resumeAfterUpdate()
+                // onStart may have been blocked while the restored installation journal locked UI.
+                var active: Boolean
+                do {
+                    active = activity.get() != null
+                    app.gateway.call("foreground", "active" to active)
+                } while (active != (activity.get() != null))
             } catch (_: CoreException) {
+                installError = "UPDATE_SAVE"
+            } catch (_: CoreFailure) {
                 installError = "UPDATE_SAVE"
             } finally {
                 // A new attempt must not race a delayed release from this installation.
                 installing = false
+                finishing = false
                 refresh()
             }
         }

@@ -306,6 +306,9 @@ impl UpdateService {
     pub fn prepare_install(&self) -> String {
         let result = (|| {
             let _op = self.operation.try_lock().map_err(|_| "UPDATE_BUSY")?;
+            if self.state.lock().map_err(|_| "UPDATE_STORAGE")?.error == Some("UPDATE_STORAGE") {
+                return Err("UPDATE_STORAGE");
+            }
             let prior = self.candidate()?;
             self.fetch_catalog()?;
             if self.candidate()? != prior {
@@ -453,6 +456,10 @@ impl UpdateService {
     }
     fn fail(&self, code: &'static str) {
         if let Ok(mut s) = self.state.lock() {
+            // A later installer/network error must not reset a corrupt replay-state barrier.
+            if s.error == Some("UPDATE_STORAGE") {
+                return;
+            }
             s.phase = if code == "UPDATE_CANCELED" {
                 "canceled"
             } else {

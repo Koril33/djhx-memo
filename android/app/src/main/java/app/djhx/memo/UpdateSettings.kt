@@ -80,6 +80,8 @@ fun UpdateSettings(model: MemoModel) {
         }
         if (updates.needsConfirmation) {
             Button(onClick = updates::continueInstallation) { Text(stringResource(R.string.update_continue)) }
+        }
+        if (updates.canCancelInstallation) {
             TextButton(onClick = updates::cancelInstallation) { Text(stringResource(R.string.cancel)) }
         }
         Row {
