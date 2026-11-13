@@ -56,7 +56,7 @@ class UpdatePlatformTest {
             candidate != null && context.packageManager.canRequestPackageInstalls()
         )
         val app = context.applicationContext as MemoApplication
-        val file = File(candidate!!)
+        val file = candidateFile(context, candidate!!)
         UpdateInstaller(context).verify(file, release(context, file))
         val note = app.gateway.obj(
             "create",
@@ -99,6 +99,17 @@ class UpdatePlatformTest {
         assertEquals("安装更新前的合成笔记😀", note.getString("content"))
     }
 
+    private fun candidateFile(context: Context, candidate: String): File {
+        if (!candidate.startsWith("asset:")) return File(candidate)
+        val destination = context.cacheDir.resolve("update-platform-candidate.apk")
+        InstrumentationRegistry.getInstrumentation().context.assets.open(
+            candidate.removePrefix("asset:")
+        ).use { input ->
+            destination.outputStream().use { input.copyTo(it) }
+        }
+        return destination
+    }
+
     @Suppress("DEPRECATION")
     private fun release(context: Context, file: File): JSONObject {
         val info = context.packageManager.getPackageArchiveInfo(
@@ -131,7 +142,7 @@ class UpdatePlatformTest {
         val candidate = InstrumentationRegistry.getArguments().getString("updateApk")
         assumeTrue("Supply an isolated newer APK as updateApk", candidate != null)
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val file = File(candidate!!)
+        val file = candidateFile(context, candidate!!)
         assertTrue(file.exists())
         UpdateInstaller(context).verify(file, release(context, file))
     }

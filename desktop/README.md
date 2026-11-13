@@ -1,6 +1,6 @@
 # desktop
 
-当前源码 **0.1.6 发布检查中**：列表顶部“选择”进入多选，支持普通删除撤销与单个 Markdown 文件导入；Windows/Linux实际结果见[本轮记录](../docs/releases/0.1.6-validation.md)。公开正式版0.1.5的Windows更新器已启用，Linux继续DEB系统包管理。
+当前客户端 **0.1.6**：列表顶部“选择”进入多选，支持普通删除撤销与单个 Markdown 文件导入；Windows/Linux实际结果见[本轮记录](../docs/releases/0.1.6-validation.md)。公开正式版0.1.5的Windows更新器已启用，Linux继续DEB系统包管理。
 
 0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](../docs/releases/0.1.4-validation.md)。
 

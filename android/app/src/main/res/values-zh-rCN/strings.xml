@@ -222,4 +222,5 @@
     <string name="finish_composition">请先完成当前输入法输入，再重试操作。</string>
     <string name="batch_result">已移入回收站 %1$d 条，失败 %2$d 条。</string>
     <string name="undo_result">已恢复 %1$d 条，失败 %2$d 条。</string>
+    <string name="restored_count">已恢复 %1$d 条笔记</string>
 </resources>

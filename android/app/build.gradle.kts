@@ -88,3 +88,15 @@ val prepareNotices by tasks.registering(Copy::class) {
 }
 android.sourceSets["main"].assets.srcDir(layout.buildDirectory.dir("generated/notices"))
 tasks.named("preBuild") { dependsOn(prepareNotices) }
+
+// Optional fixture stays in build/ and is never packaged into the application release.
+providers.gradleProperty("updateFixtureApk").orNull?.let { fixture ->
+    val prepareUpdateFixture by tasks.registering(Copy::class) {
+        from(fixture) { rename { "update-candidate.apk" } }
+        into(layout.buildDirectory.dir("generated/update-test-assets"))
+    }
+    android.sourceSets["androidTest"].assets.srcDir(layout.buildDirectory.dir("generated/update-test-assets"))
+    tasks.matching { it.name in setOf("mergeDebugAndroidTestAssets", "mergeReleaseAndroidTestAssets") }.configureEach {
+        dependsOn(prepareUpdateFixture)
+    }
+}

@@ -230,7 +230,7 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
             Column(Modifier.statusBarsPadding().fillMaxWidth()) {
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 8.dp).background(
-                        if (model.selecting) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.background,
+                        if (model.selecting) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.background,
                         RoundedCornerShape(16.dp)
                     ).heightIn(min = 64.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -570,7 +570,7 @@ private fun NoteList(model: MemoModel, onOpen: (JSONObject) -> Unit) {
                         ).semantics { if (model.selecting) selected = note.optString("id") in model.selection }
                             .background(
                                 if (note.optString("id") in model.selection) {
-                                    MaterialTheme.colorScheme.secondaryContainer
+                                    MaterialTheme.colorScheme.primaryContainer
                                 } else {
                                     MaterialTheme.colorScheme.background
                                 }

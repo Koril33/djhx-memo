@@ -155,7 +155,11 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
             "items" to JSONArray(items)
         ).getJSONArray("results").objects()
         val restored = results.count { it.optBoolean("ok") }
-        if (restored != results.size) actionNotice = UiText(R.string.undo_result, listOf(restored, results.size - restored))
+        actionNotice = if (restored == results.size) {
+            UiText(R.string.restored_count, listOf(restored))
+        } else {
+            UiText(R.string.undo_result, listOf(restored, results.size - restored))
+        }
         loadNotes()
     }
 

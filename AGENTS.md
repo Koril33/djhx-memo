@@ -3,7 +3,7 @@
 ## 阅读顺序与当前状态
 
 - 阅读 [README](README.md)、[项目计划](djhx-memo-project-plan.md)、[spec 索引](spec/README.md) 及工作目录中的 `AGENTS.md`。
-- 当前 0.1.6 源码正在检查，客户端扩展自 0.1.4 与 0.1.0 自用候选基线；完整产品 v1 尚未发布。实际检查见各模块验证记录；同步、迁移、鉴权的交叉评审见 `docs/reviews/`，不得把未完成的三端验收或 7 天试用当作已通过。
+- 当前0.1.6客户端扩展自0.1.5更新器与0.1.4数据基线；完整产品 v1 尚未发布。实际检查见各模块验证记录；同步、迁移、鉴权的交叉评审见 `docs/reviews/`，不得把未完成的三端验收或 7 天试用当作已通过。
 - `spec/` 是产品与实现行为的唯一事实来源。改行为先改规范，规范与实现同批提交；不得把计划或占位内容当作已实现的能力。
 
 ## 工作方式
@@ -42,4 +42,4 @@
 - 按 [SECURITY](SECURITY.md)检查待公开源码、可达历史与提交元信息，不扫描后就宣称绝对无漏洞。维护者明确选择保留既有作者身份与完整历史；不擅自重写/强推或改变仓库可见性。
 - 外部贡献者无原仓库写权限时使用fork/PR；具备授权的协作者按独立分支提交推送。无CI/Runner要求仍有效，不能以开源准备为由添加工作流。
 
-0.1.6 依 spec/client-0.1.6.md 增加批量普通删除/严格代次撤销、Android左滑和单Markdown导入；core版本同步0.1.6，server/协议/schema不变。交叉评审见 docs/reviews/client-0.1.6-review.md；检查进行中，发布与三端升级结果只以 docs/releases/0.1.6-validation.md 为准。
+0.1.6 依 spec/client-0.1.6.md 增加批量普通删除/严格代次撤销、Android左滑和单Markdown导入；core版本同步0.1.6，server/协议/schema不变。交叉评审见 docs/reviews/client-0.1.6-review.md；发布与三端升级结果只以 docs/releases/0.1.6-validation.md 为准。

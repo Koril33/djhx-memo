@@ -44,10 +44,13 @@ class NoteGestureTest {
     }
     private fun row(text: String): Rect {
         fun visit(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
-            val clickableNote = node.isClickable && node.isLongClickable
-            val editable = node.className?.toString() == "android.widget.EditText"
-            if (clickableNote && !editable && node.text?.toString()?.contains(text) == true) {
-                return node
+            if (node.text?.toString()?.lineSequence()?.any { it == text } == true) {
+                var current: AccessibilityNodeInfo? = node
+                while (current != null) {
+                    if (current.isEditable || current.className?.toString() == "android.widget.EditText") break
+                    if (current.isClickable) return current
+                    current = current.parent
+                }
             }
             for (index in 0 until node.childCount) node.getChild(
                 index
@@ -126,8 +129,8 @@ class NoteGestureTest {
             assertFalse(deleted())
             swipe(bounds, 0.51f) { assertFalse("Drag alone cannot delete before release", deleted()) }
             waitFor { deleted() && !model.busy }
-            capture("undo-016.png")
             var undo = accessible(application.getString(R.string.undo_trash))
+            capture("undo-016.png")
             while (!undo.isClickable && undo.parent != null) undo = undo.parent
             assertTrue(undo.performAction(AccessibilityNodeInfo.ACTION_CLICK))
             waitFor { !deleted() && !model.busy }
