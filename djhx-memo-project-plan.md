@@ -17,7 +17,7 @@ v1 必须交付：三端客户端、桌面托盘、本地保存、邀请码注�
 
 暂缓：独立 Web 客户端、Apple 客户端、全局快捷键、系统分享、开机自启、附件、多人协作、端到端加密、自动墓碑清理、完整版本历史 UI、CI 与 Runner。独立 Web 暂缓不影响 Tauri 使用本地 WebView 前端。
 
-自动升级（2026-11-11）已按维护者要求进入[三端方案设计](docs/automatic-update-design.md)，完成[17 个 Rust GUI 软件调研](docs/research/rust-gui-auto-update-survey.md)。2026-11-12 已形成 [0.1.5 Windows/Android 实现](spec/automatic-updates.md)及[本机验证](docs/client-updates-0.1.5-validation.md)，正式目录与公开 Release 尚未推广；Linux 自动安装仍为后续范围。
+自动升级（2026-11-11）已按维护者要求进入[三端方案设计](docs/automatic-update-design.md)，完成[17 个 Rust GUI 软件调研](docs/research/rust-gui-auto-update-survey.md)。2026-11-12 已形成 [0.1.5 Windows/Android 实现](spec/automatic-updates.md)及[本机验证](docs/client-updates-0.1.5-validation.md)，2026-11-13 已完成[公开发行及 Windows 目录部署](docs/releases/0.1.5-validation.md)，Android 原证书正式包待后补；Linux DEB 已构建，自动安装仍为后续范围。
 
 下一版本（2026-11-13）：0.1.6 将加入[多选、左滑、普通删除撤销与单个 Markdown 导入](spec/client-0.1.6.md)。本轮只固化规范，不实施这些功能；Web 继续暂缓。
 

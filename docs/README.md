@@ -4,7 +4,7 @@
 
 - [quick-start.md](quick-start.md)：候选版安装、离线使用与接入自有服务器。
 - [client-release.md](client-release.md)：GitHub/Gitea 发布流程；[0.1.4 三端验证与发布](releases/0.1.4-validation.md)、[0.1.4 同步/迁移交叉评审](reviews/client-0.1.4-review.md)；历史 0.1.3 构建：[Android](releases/0.1.3-android-validation.md)、[Linux](releases/0.1.3-linux-validation.md)。
-- [0.1.5 三端发布检查](releases/0.1.5-validation.md)：本轮构建、独立评审与 Android 待签名边界。
+- [0.1.5 三端发布与部署](releases/0.1.5-validation.md)：本轮构建、独立评审与 Android 待签名边界。
 - 自动更新：Windows/Android 的[发布与密钥说明](update-publishing.md)、[0.1.5 验证](client-updates-0.1.5-validation.md)；原[17 项调研](research/rust-gui-auto-update-survey.md)与[设计](automatic-update-design.md)，Linux 仍待实现。
 - [website-deployment.md](website-deployment.md)：官网、Nginx路由与双远程main的合并部署记录。
 - [brand-guidelines.md](brand-guidelines.md)：DJHX Memo 可编辑母版、设计板、多端尺寸与统一替换步骤。

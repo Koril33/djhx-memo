@@ -1,6 +1,6 @@
 # Android 客户端
 
-当前客户端开发版本为 **0.1.5**（未发布），加入 Windows / Android 自动更新客户端及签名发行工具；0.1.4 的彻底删除、托盘和列表折叠保持。core/server/同步协议与数据库基线不变，正式更新目录尚未部署。实际结果及未验证项见[0.1.5 验证](../docs/client-updates-0.1.5-validation.md)。
+当前客户端代码为 **0.1.5**；本次 Release 仅提供独立 debug 和 unsigned 构建资料，正式可安装 APK 需持原证书主机后补。原正式版本保持0.1.4，稳定更新目录暂不推广 Android；实际检查和后补要求见[发布记录](../docs/releases/0.1.5-validation.md)。
 
 0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](../docs/releases/0.1.4-validation.md)。
 

@@ -2,7 +2,7 @@
 
 Gitea 保存开发分支和评审记录。审核通过后，以保留历史的方式合并到 `main`，将同一主分支和发布标签推到 [GitHub 仓库](https://github.com/Koril33/djhx-memo)。发布者从同一发布提交分别构建各平台，GitHub Release 保存安装包、变更说明和 SHA-256 校验值。
 
-0.1.5 的 Windows/Android 更新器与[本地发行工具](update-publishing.md)已实现，正式目录尚未部署，AppImage 仍待实现。本文既有 0.1.3 Release 记录不改变；SHA256SUMS 不能替代更新签名，推送源码不等于发布安装包。
+0.1.5 的 Windows/Android 更新器与[本地发行工具](update-publishing.md)已实现，Windows 正式目录已部署；Android 本次仅debug/unsigned资料，AppImage 仍待实现。本文既有 0.1.3 Release 记录不改变；SHA256SUMS 不能替代更新签名，推送源码不等于发布安装包。
 
 ## 0.1.5 客户端与待签名 Android 附件
 

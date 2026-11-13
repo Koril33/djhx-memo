@@ -1,12 +1,12 @@
 # desktop
 
-当前客户端开发版本为 **0.1.5**（未发布），加入 Windows / Android 自动更新客户端及签名发行工具；0.1.4 的彻底删除、托盘和列表折叠保持。core/server/同步协议与数据库基线不变，正式更新目录尚未部署。实际结果及未验证项见[0.1.5 验证](../docs/client-updates-0.1.5-validation.md)。
+当前 Windows / Linux 客户端 **0.1.5 已发布**，Windows 更新器与签名目录已启用，Linux DEB 继续系统包管理。本轮 Ubuntu24.04构建/原生验证、Windows检查与未验收边界见[发布记录](../docs/releases/0.1.5-validation.md)。
 
 0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](../docs/releases/0.1.4-validation.md)。
 
 Windows / Linux Tauri 2 客户端。Rust 后端直接链接 core，本地前端在本目录内采用 Svelte + TypeScript + Vite，编辑器使用 CodeMirror 6；不依赖尚未开发的独立 Web 工程。
 
-此前 0.1.3 加入共享离线代码高亮，保留 0.1.2 控件修正、0.1.1 设计及 0.1.0 核心功能，包含托盘、未登录笔记、账号、Markdown、搜索、回收站、导出与同步。全局快捷键、开机自启、自动升级暂缓。Windows 首先验收负责人当前的 Windows 10 22H2 x86_64，Windows 11 兼容性另行记录；Linux 默认 Ubuntu 24.04 x86_64，验证 Wayland/X11、输入法及 AppIndicator 环境。
+此前 0.1.3 加入共享离线代码高亮，保留 0.1.2 控件修正、0.1.1 设计及 0.1.0 核心功能，包含托盘、未登录笔记、账号、Markdown、搜索、回收站、导出与同步。全局快捷键、开机自启继续暂缓；Windows 自动更新按 0.1.5 契约启用，Linux 自动安装更新仍暂缓。Windows 首先验收负责人当前的 Windows 10 22H2 x86_64，Windows 11 兼容性另行记录；Linux 默认 Ubuntu 24.04 x86_64，验证 Wayland/X11、输入法及 AppIndicator 环境。
 
 ## 开发与构建
 

@@ -103,4 +103,4 @@ Android `UpdatePlatformTest` 的较新包案例需要隔离 APK 和 `updateApk` 
 
 持原证书的主机后续从同一 `v0.1.5` 标签重编 JNI/APK，验签、核对身份/versionCode=6 和覆盖升级后，**追加**正式 `djhx-memo-0.1.5-android.apk`，更新 SHA256SUMS、说明与官网 Android 链接，再以更高目录序号推广 Android 条目。保留调试/unsigned 名称可避免把已下载的待签名文件误认成正式包。不要移动标签或覆盖已推广的 Windows 包。
 
-GitHub 普通 Release 可编辑说明并追加附件；不可变 Release 发布后不能增删/替换附件。本次已核仓库 release immutability 未启用，最终 Release 创建后仍需核对 `immutable=false`，不更改仓库全局发布策略。若后续政策改变，改用新版本追加，不绕过平台限制。
+GitHub 普通 Release 可编辑说明并追加附件；不可变 Release 发布后不能增删/替换附件。本次已核仓库 release immutability 未启用，已核对本次公开 Release 为 `immutable=false`，不更改仓库全局发布策略。若后续政策改变，改用新版本追加，不绕过平台限制。
