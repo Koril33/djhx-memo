@@ -1060,3 +1060,195 @@ fn redirects_cannot_bypass_target_deletion_barrier() {
         }
     }
 }
+
+#[test]
+fn markdown_file_import_is_bounded_utf8_idempotent_and_profile_scoped() {
+    let app = engine();
+    let request = json!({"action":"import_markdown","profile_id":"local","filename":"example.MD","request_id":id(),"bytes_base64":base64::prelude::BASE64_STANDARD.encode("\u{feff}\r\n# 中文😀\r\n```rust\rlet x = 1;\r```\n")});
+    let note = invoke(&app, request.clone());
+    assert_eq!(note["content"], "\n# 中文😀\n```rust\nlet x = 1;\n```\n");
+    assert_eq!(note["title"], "中文😀");
+    assert_eq!(invoke(&app, request.clone())["id"], note["id"]);
+    let mut duplicate = request.clone();
+    duplicate["request_id"] = json!(id());
+    assert_ne!(invoke(&app, duplicate)["id"], note["id"]);
+    let mut wrong = request.clone();
+    wrong["profile_id"] = json!("different");
+    assert_eq!(app.dispatch(&wrong).unwrap_err().code, "PROFILE_CHANGED");
+    let before = invoke(&app, json!({"action":"list"}))
+        .as_array()
+        .unwrap()
+        .len();
+    for (bytes, code) in [
+        (vec![0xff], "IMPORT_INVALID_ENCODING"),
+        (b" \r\n\t".to_vec(), "IMPORT_EMPTY"),
+        (vec![b'x'; MAX_CONTENT + 1], "NOTE_TOO_LARGE"),
+        (vec![b'\r'; MAX_CONTENT * 2 + 4], "NOTE_TOO_LARGE"),
+    ] {
+        let mut invalid = request.clone();
+        invalid["request_id"] = json!(id());
+        invalid["bytes_base64"] = json!(base64::prelude::BASE64_STANDARD.encode(bytes));
+        assert_eq!(app.dispatch(&invalid).unwrap_err().code, code);
+    }
+    assert_eq!(
+        invoke(&app, json!({"action":"list"}))
+            .as_array()
+            .unwrap()
+            .len(),
+        before
+    );
+    let mut boundary = request;
+    boundary["request_id"] = json!(id());
+    boundary["bytes_base64"] = json!(
+        base64::prelude::BASE64_STANDARD.encode(format!("\u{feff}{}", "\r\n".repeat(MAX_CONTENT)))
+    );
+    assert_eq!(app.dispatch(&boundary).unwrap_err().code, "IMPORT_EMPTY");
+}
+
+#[test]
+fn batch_trash_is_partial_durable_and_undo_never_overwrites_a_new_generation() {
+    let app = engine();
+    let one = invoke(
+        &app,
+        json!({"action":"create","content":"first","request_id":id()}),
+    );
+    let two = invoke(
+        &app,
+        json!({"action":"create","content":"second","request_id":id()}),
+    );
+    let items = json!([{"id":one["id"],"expected_generation":"1"},{"id":two["id"],"expected_generation":"99"},{"id":one["id"],"expected_generation":"1"}]);
+    let result = invoke(
+        &app,
+        json!({"action":"batch_set_deleted","profile_id":"local","deleted":true,"items":items}),
+    );
+    assert_eq!(result["results"][0]["note"]["generation"], "2");
+    assert_eq!(
+        result["results"][1]["error"]["code"],
+        "LOCAL_GENERATION_CONFLICT"
+    );
+    assert_eq!(result["results"][2]["ok"], false);
+    assert_eq!(
+        invoke(&app, json!({"action":"list","deleted":true}))
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    invoke(
+        &app,
+        json!({"action":"save","id":one["id"],"expected_generation":"2","content":"newer"}),
+    );
+    let stale = invoke(
+        &app,
+        json!({"action":"batch_set_deleted","deleted":false,"items":[{"id":one["id"],"expected_generation":"2"}]}),
+    );
+    assert_eq!(
+        stale["results"][0]["error"]["code"],
+        "LOCAL_GENERATION_CONFLICT"
+    );
+    let current = invoke(&app, json!({"action":"get","id":one["id"]}));
+    assert_eq!(current["content"], "newer");
+    assert_eq!(current["deleted"], true);
+    invoke(
+        &app,
+        json!({"action":"purge","id":one["id"],"expected_generation":"3"}),
+    );
+    let purged = invoke(
+        &app,
+        json!({"action":"batch_set_deleted","deleted":false,"items":[{"id":one["id"],"expected_generation":"4"}]}),
+    );
+    assert_eq!(purged["results"][0]["error"]["code"], "NOTE_PURGED");
+}
+
+#[test]
+fn batch_undo_keeps_the_frozen_delete_and_enqueues_a_new_restore() {
+    let app = engine();
+    let account = account();
+    {
+        let mut registry = app.registry.lock().unwrap();
+        registry.selected = account.id.clone();
+        registry.profiles.push(account.clone());
+    }
+    let mut database = db::open(&app.path(&account)).unwrap();
+    let note = seed(&mut database, &id());
+    let deleted = invoke(
+        &app,
+        json!({"action":"batch_set_deleted","deleted":true,"items":[{"id":note.id,"expected_generation":note.generation.to_string()}]}),
+    );
+    let (frozen, generation) = db::freeze(&mut database).unwrap().unwrap();
+    let original = serde_json::to_value(&frozen).unwrap();
+    let undo = invoke(
+        &app,
+        json!({"action":"batch_set_deleted","deleted":false,"items":[{"id":note.id,"expected_generation":deleted["results"][0]["note"]["generation"]}]}),
+    );
+    assert_eq!(undo["results"][0]["note"]["deleted"], false);
+    let (retry, retry_generation) = db::freeze(&mut database).unwrap().unwrap();
+    assert_eq!(serde_json::to_value(retry).unwrap(), original);
+    assert_eq!(retry_generation, generation);
+    assert!(db::note(&database, &note.id).unwrap().generation > generation);
+    db::acknowledge(
+        &mut database,
+        &frozen,
+        generation,
+        &confirmation(&frozen, json!({"status":"accepted","rev":"2","seq":"2"})),
+        &account,
+    )
+    .unwrap();
+    let (restore, _) = db::freeze(&mut database).unwrap().unwrap();
+    assert!(!restore.deleted);
+    assert_eq!(restore.content, note.content);
+    assert_eq!(restore.base_rev, "2");
+    assert_ne!(restore.op_id, frozen.op_id);
+}
+
+#[test]
+fn batch_never_redirects_or_restores_pending_purge_or_writes_recovery() {
+    let app = engine();
+    let account = account();
+    {
+        let mut registry = app.registry.lock().unwrap();
+        registry.selected = account.id.clone();
+        registry.profiles.push(account.clone());
+    }
+    let mut database = db::open(&app.path(&account)).unwrap();
+    let mut source = seed(&mut database, &id());
+    source.deleted = true;
+    source.generation = 3;
+    db::put(&database, &source).unwrap();
+    let target = seed(&mut database, &id());
+    database
+        .execute(
+            "INSERT INTO redirects VALUES(?1,?2,2,?3)",
+            params![source.id, target.id, target.generation],
+        )
+        .unwrap();
+    let request = json!({"action":"batch_set_deleted","deleted":false,"items":[{"id":source.id,"expected_generation":"2"}]});
+    assert_eq!(
+        invoke(&app, request.clone())["results"][0]["error"]["code"],
+        "LOCAL_GENERATION_CONFLICT"
+    );
+    assert_eq!(
+        db::note(&database, &target.id).unwrap().generation,
+        target.generation
+    );
+    source.purge_state = "pending".into();
+    db::put(&database, &source).unwrap();
+    assert_eq!(
+        invoke(&app, request.clone())["results"][0]["error"]["code"],
+        "PURGE_PENDING"
+    );
+    {
+        let mut registry = app.registry.lock().unwrap();
+        let p = registry
+            .profiles
+            .iter_mut()
+            .find(|p| p.id == account.id)
+            .unwrap();
+        p.read_only = true;
+        p.kind = "recovery".into();
+    }
+    assert_eq!(
+        invoke(&app, request)["results"][0]["error"]["code"],
+        "RECOVERY_REQUIRED"
+    );
+}

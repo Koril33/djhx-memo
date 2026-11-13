@@ -31,6 +31,10 @@ HTTP 错误结构为 `{"error":{"code":"...","message":"...","retryable":false},
 
 | code | 含义 | 行为 |
 |---|---|---|
+| IMPORT_INVALID_FILE | 不是单个 .md 文件 | 不创建记录，重新选择 |
+| IMPORT_INVALID_ENCODING | 文件不是有效 UTF-8 | 不猜测编码，不创建记录 |
+| IMPORT_EMPTY | 规范化后内容为空白 | 不创建记录，重新选择 |
+| IMPORT_READ_FAILED | 文件权限或读取失败 | 保留原编辑缓冲，重新选择 |
 | PURGE_PENDING | 正在等待彻底删除 | 禁止编辑和恢复，联网后确认 |
 | LOCAL_STORAGE_FAILED | 数据库、磁盘或权限故障 | 不显示已保存；保留缓冲内容，重试或救援导出 |
 | LOCAL_SCHEMA_TOO_NEW | 数据库版本高于应用 | 不写入、不降级，提示升级 |

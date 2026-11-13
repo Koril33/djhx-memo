@@ -206,4 +206,20 @@
     <string name="update_storage">请检查磁盘空间和更新文件权限。</string>
     <string name="update_privacy">无需登录。更新检查不发送笔记或账号凭据。安装需要允许此应用安装更新，并在系统页面确认。</string>
     <string name="update_last_check">上次检查：%1$s</string>
+    <string name="select_notes">选择笔记</string>
+    <string name="select_all_results">全选当前结果</string>
+    <string name="selected_count">已选择 %1$d 条</string>
+    <string name="batch_partial">部分笔记未能移入回收站，失败项保持选中，请检查后重试。</string>
+    <string name="undo_partial">部分笔记状态已变化，未能恢复。请在回收站检查。</string>
+    <string name="undo_trash">撤销删除</string>
+    <string name="trashed_count">已移入回收站 %1$d 条</string>
+    <string name="import_markdown">导入 Markdown</string>
+    <string name="import_cloud_help">导入到当前账号后会同步到其他设备。是否继续？</string>
+    <string name="markdown_imported">已导入到当前空间并保存。</string>
+    <string name="import_invalid">请选择有效的 UTF-8 Markdown 文件。</string>
+    <string name="import_empty">Markdown 文件内容为空。</string>
+    <string name="import_read_failed">无法读取文件，请检查权限并重新选择。</string>
+    <string name="finish_composition">请先完成当前输入法输入，再重试操作。</string>
+    <string name="batch_result">已移入回收站 %1$d 条，失败 %2$d 条。</string>
+    <string name="undo_result">已恢复 %1$d 条，失败 %2$d 条。</string>
 </resources>

@@ -1,7 +1,14 @@
 package app.djhx.memo
 
 /** 仅按稳定错误码选择固定翻译，绝不显示服务器原始错误或用户凭据。 */
-internal fun errorResource(code: String?): Int = when (code) {
+private val importErrors = mapOf(
+    "IMPORT_INVALID_FILE" to R.string.import_invalid,
+    "IMPORT_INVALID_ENCODING" to R.string.import_invalid,
+    "IMPORT_EMPTY" to R.string.import_empty,
+    "IMPORT_READ_FAILED" to R.string.import_read_failed
+)
+internal fun errorResource(code: String?): Int = importErrors[code] ?: coreErrorResource(code)
+private fun coreErrorResource(code: String?): Int = when (code) {
     "NOTE_PURGED" -> R.string.note_purged
     "PURGE_PENDING" -> R.string.purge_pending
     "PURGE_CONFLICT" -> R.string.purge_rejected

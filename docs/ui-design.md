@@ -35,3 +35,9 @@
 ## 预览检查
 
 使用明确的演示笔记检查列表、编辑、搜索、更多菜单、设置、浅深主题及中英文；截图只展示演示内容。安装包须检查原签名/身份与旧数据保留。实际结果、截图和未验收项记录在 [桌面 UI 预览验证](desktop-ui-preview-validation.md) 与 [Android UI 预览验证](android-ui-preview-validation.md)，不能把预览效果等同于全部 v1 发布验收。
+
+## 0.1.6 列表操作
+
+本轮参考[Gmail批量选择/左滑删除](https://support.google.com/mail/answer/7401?co=GENIE.Platform%3DAndroid&hl=en)、[Material上下文操作栏](https://m2.material.io/develop/android/components/app-bar-layout/)和[Snackbar](https://m3.material.io/components/snackbar/overview)，沿用产品已有纸白/炭灰、品牌绿与Lucide图标，不引入运行时UI依赖。
+
+桌面在列表顶部直接显示“选择”，进入后以同一高度的上下文栏提供退出、数量、全选和红色删除图标；条目左侧为对齐的选择标记，标题/摘要/日期保持同列，不使用Unicode方框代替控件。Android长按后以退出/数量/三态全选/删除替换普通顶栏，选择框与正文横向对齐，不额外占一行。两端删除成功以紧凑、对比清楚的底部Snackbar提供撤销，避免再显示重复成功提示。无障碍名称和禁用状态与操作范围一致；busy/IME/原空间屏障不因视觉调整削弱。

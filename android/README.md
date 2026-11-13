@@ -1,6 +1,6 @@
 # Android 客户端
 
-当前客户端代码为 **0.1.5**；本次 Release 仅提供独立 debug 和 unsigned 构建资料，正式可安装 APK 需持原证书主机后补。原正式版本保持0.1.4，稳定更新目录暂不推广 Android；实际检查和后补要求见[发布记录](../docs/releases/0.1.5-validation.md)。
+当前源码 **0.1.6 发布检查中**，新增长按多选、左滑移入回收站、普通删除撤销和单个 Markdown 文件导入，见[本轮验证](../docs/releases/0.1.6-validation.md)。公开0.1.5已补齐原证书正式APK与Android稳定目录，debug/unsigned仅保留资料用途，见[0.1.5记录](../docs/releases/0.1.5-validation.md)。
 
 0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](../docs/releases/0.1.4-validation.md)。
 
@@ -85,3 +85,9 @@ UI、网络恢复触发及 WorkManager 共享应用单例 core；后台仅尽力
 在 Windows 会话中先按上述步骤生成 JNI，再执行 `gradlew.bat assembleDebug assembleDebugAndroidTest -PisolatedValidation`。该可选属性将 debug 应用标识设为 `app.djhx.memo.validation014`，测试包为 `app.djhx.memo.validation014.test`，不打开普通 debug/release 数据目录。正式包及默认 debug 身份不变。
 
 从根目录可用 `DJHX_ANDROID_TEST_SERIAL` 指定 Android Emulator 的 adb serial，再执行开发说明中的 Go 显式文件集测试。`TestPermanentDeletionAndroidHTTP` 启动隔离 Go HTTP 实例，通过模拟器的 `10.0.2.2` 映射运行永久删除 JNI 联调；不会使用生产邀请码或账号。此自动入口仅支持 Android Emulator，物理设备需另配网络。
+
+## 0.1.6 列表与文件操作
+
+普通列表长按条目进入多选，顶栏提供取消、数量、三态全选和删除；全选仅作用于当前搜索结果。非多选时左滑超过半行并松手移入回收站，底部提示可撤销；普通删除不再逐次确认，彻底删除仍独立确认。更多菜单提供“导入Markdown”，使用系统选择器选一个UTF-8 `.md` 文件，正文限1MiB；文件名不写入正文，标题仍从首个非空行派生。账号导入先提示会同步，本机空间可未登录导入。
+
+发行机可用 `-PreleaseValidation` 选择 release instrumentation 目标，测试包应以同一发布证书签名，只用于明确隔离的模拟器正式包升级验证，不在真实设备卸载/清数据。签名变量仍按上文设置；此属性不改变正式应用ID、版本或运行行为。

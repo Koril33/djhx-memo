@@ -38,3 +38,7 @@ NoteView 同时带 generation、正文、删除/冲突元数据、本地保存�
 错误分类复用 [错误码](error-codes.md)。本地 generation 冲突以 LOCAL_GENERATION_CONFLICT 表达，可重读并保留草稿。异步取消不撤回已经提交的本地事务；UI 超时必须查询结果，不能假定保存未发生。
 
 “已保存到本机”只由提交完成事件或返回值产生。无法写入数据库时，UI 持有未提交文本并允许复制/救援导出；core 保存失败不能通过触发云请求绕过。
+
+## 0.1.6 列表与文件入口
+
+`batch_set_deleted` 逐条以原 ID、原 generation 提交普通删除或恢复，返回各项成功的 NoteView 或稳定错误。不重定向冲突副本，不修改冻结 outbox；撤销也是新代次。`import_markdown` 在 core 校验单文件扩展名、UTF-8/BOM、规范化行尾及有界大小，再用 request_id 幂等创建。平台选择器携带原空间和请求令牌；重复回调不重建，空间变化停止。参数见[桥接接口](core-bridge.md)，交互见[0.1.6 规范](client-0.1.6.md)。

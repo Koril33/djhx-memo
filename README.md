@@ -1,6 +1,6 @@
 # djhx-memo
 
-当前客户端 **0.1.5 已发布**：Windows EXE、Linux DEB，以及 Android debug / unsigned 构建资料。Windows 签名更新目录已上线；Android 原正式签名包仍为 0.1.4，0.1.5 正式 APK 待持钥主机后补。core/server/协议与 schema 保持 0.1.4 基线；Linux 本版继续系统包管理。实际检查和未验收项见[0.1.5 发布记录](docs/releases/0.1.5-validation.md)。
+当前源码 **0.1.6 正在发布检查**：三端多选、删除撤销、单个 Markdown 导入，以及 Android 左滑。实际结果见[0.1.6验证](docs/releases/0.1.6-validation.md)。当前公开正式版0.1.5已补齐原证书Android APK，Windows/Android签名更新目录已上线；Linux继续DEB。server为0.1.4，协议与schema保持不变。完整设备矩阵和7天试用仍待完成。
 
 0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](docs/releases/0.1.4-validation.md)。
 

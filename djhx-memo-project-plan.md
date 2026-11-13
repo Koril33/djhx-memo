@@ -19,7 +19,7 @@ v1 必须交付：三端客户端、桌面托盘、本地保存、邀请码注�
 
 自动升级（2026-11-11）已按维护者要求进入[三端方案设计](docs/automatic-update-design.md)，完成[17 个 Rust GUI 软件调研](docs/research/rust-gui-auto-update-survey.md)。2026-11-12 已形成 [0.1.5 Windows/Android 实现](spec/automatic-updates.md)及[本机验证](docs/client-updates-0.1.5-validation.md)，2026-11-13 已完成[公开发行及 Windows 目录部署](docs/releases/0.1.5-validation.md)，Android 原证书正式包待后补；Linux DEB 已构建，自动安装仍为后续范围。
 
-下一版本（2026-11-13）：0.1.6 将加入[多选、左滑、普通删除撤销与单个 Markdown 导入](spec/client-0.1.6.md)。本轮只固化规范，不实施这些功能；Web 继续暂缓。
+下一版本（2026-11-13）：0.1.6 将加入[多选、左滑、普通删除撤销与单个 Markdown 导入](spec/client-0.1.6.md)。维护者已授权本轮实现、三端测试/打包/发布及0.1.5升级验证，见[实际记录](docs/releases/0.1.6-validation.md)；Web继续暂缓。
 
 ## 2. 已确定的技术方案
 

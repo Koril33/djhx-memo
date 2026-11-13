@@ -206,4 +206,20 @@
     <string name="update_storage">Check free space and update storage permissions.</string>
     <string name="update_privacy">No sign-in needed. Checks send no notes or account credentials. Allow this app to install updates and confirm in the system installer.</string>
     <string name="update_last_check">Last checked: %1$s</string>
+    <string name="select_notes">Select notes</string>
+    <string name="select_all_results">Select all results</string>
+    <string name="selected_count">%1$d selected</string>
+    <string name="batch_partial">Some notes could not be moved. Failed items remain selected; review and retry.</string>
+    <string name="undo_partial">Some notes changed and could not be restored. Review the trash.</string>
+    <string name="undo_trash">Undo deletion</string>
+    <string name="trashed_count">%1$d moved to trash</string>
+    <string name="import_markdown">Import Markdown</string>
+    <string name="import_cloud_help">Imported notes will sync to your other devices. Continue?</string>
+    <string name="markdown_imported">Imported and saved in the current space.</string>
+    <string name="import_invalid">Choose a valid UTF-8 Markdown file.</string>
+    <string name="import_empty">The Markdown file is empty.</string>
+    <string name="import_read_failed">Could not read the file. Check permissions and select it again.</string>
+    <string name="finish_composition">Finish the current input composition, then try again.</string>
+    <string name="batch_result">%1$d moved to trash; %2$d failed.</string>
+    <string name="undo_result">%1$d restored; %2$d failed.</string>
 </resources>

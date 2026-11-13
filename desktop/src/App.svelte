@@ -27,7 +27,7 @@
     profileLabel,
     type Preferences,
   } from './lib/preferences';
-  import type { AppState, Device, Note, RuntimeInfo } from './lib/types';
+  import type { AppState, Device, Note, Profile, RuntimeInfo } from './lib/types';
 
   let preferences: Preferences = (() => {
     try {
@@ -112,6 +112,143 @@
   let state: AppState | null = null;
   let runtime: RuntimeInfo | null = null;
   let notes: Note[] = [];
+  let selecting = false;
+  let selection = new Set<string>();
+  type BatchResult = { results: { id: string; ok: boolean; note?: Note }[] };
+  let undoGroup: { profile: string; notes: Note[] } | null = null;
+  let undoTimer: ReturnType<typeof setTimeout> | undefined;
+  function clearListActions(): void {
+    selecting = false;
+    selection = new Set();
+  }
+  function clearUndo(): void {
+    clearTimeout(undoTimer);
+    undoGroup = null;
+  }
+  function toggleSelection(id: string): void {
+    selection = new Set(selection);
+    if (selection.has(id)) selection.delete(id);
+    else selection.add(id);
+  }
+  function restartUndoTimer(): void {
+    clearTimeout(undoTimer);
+    if (undoGroup) undoTimer = setTimeout(clearUndo, 8000);
+  }
+  function offerUndo(profile: string, saved: Note[]): void {
+    if (!saved.length) return;
+    clearUndo();
+    undoGroup = { profile, notes: saved };
+    // Keep the action available while focused/hovered for keyboard and assistive use.
+    restartUndoTimer();
+  }
+  async function batchTrash(targets = notes.filter((n) => selection.has(n.id))): Promise<void> {
+    const profile = state!.profile.id;
+    await editor.finishLifecycle(async () => {
+      targets = targets.map((n) => (n.id === editor.note?.id ? editor.note! : n));
+      const result = await call<BatchResult>({
+        action: 'batch_set_deleted',
+        profile_id: profile,
+        deleted: true,
+        items: targets.map((n) => ({ id: n.id, expected_generation: n.generation })),
+      });
+      const saved = result.results.flatMap((r) => (r.ok && r.note ? [r.note] : []));
+      selection = new Set(result.results.filter((r) => !r.ok).map((r) => r.id));
+      selecting = selection.size > 0;
+      if (saved.some((n) => n.id === editor.note?.id)) {
+        await editor.open(null);
+        documentKey++;
+      }
+      if (saved.length) notice = null;
+      offerUndo(profile, saved);
+      await refreshState(true);
+      if (saved.length !== result.results.length)
+        notify('batchResult', {
+          count: saved.length,
+          failed: result.results.length - saved.length,
+        });
+    });
+  }
+  async function undoTrash(): Promise<void> {
+    const group = undoGroup;
+    if (!group || group.profile !== state?.profile.id) {
+      clearUndo();
+      return;
+    }
+    clearUndo();
+    const result = await call<BatchResult>({
+      action: 'batch_set_deleted',
+      profile_id: group.profile,
+      deleted: false,
+      items: group.notes.map((n) => ({ id: n.id, expected_generation: n.generation })),
+    });
+    await refreshState(true);
+    const count = result.results.filter((r) => r.ok).length;
+    notify('undoResult', { count, failed: result.results.length - count });
+  }
+  let pendingMarkdown: {
+    profile: string;
+    request: string;
+    filename: string;
+    bytes_base64: string;
+  } | null = null;
+  let markdownConfirmProfile: Profile | null = null;
+  async function importMarkdown(confirmed = false): Promise<void> {
+    const profile = state!.profile;
+    if (!pendingMarkdown) {
+      if (profile.kind === 'account' && !confirmed) {
+        markdownConfirmProfile = profile;
+        return;
+      }
+      const request = crypto.randomUUID();
+      const picked = await native<{ filename: string; bytes_base64: string } | null>(
+        'pick_markdown',
+      );
+      if (!picked) return;
+      pendingMarkdown = { profile: profile.id, request, ...picked };
+    }
+    const pending = pendingMarkdown;
+    if (pending.profile !== state!.profile.id) {
+      pendingMarkdown = null;
+      throw new LocalizedError('profileChanged');
+    }
+    await editor.finishLifecycle(async () => {
+      let note: Note;
+      try {
+        note = await call<Note>({
+          action: 'import_markdown',
+          profile_id: pending.profile,
+          request_id: pending.request,
+          filename: pending.filename,
+          bytes_base64: pending.bytes_base64,
+        });
+      } catch (error) {
+        const code = (error as { detail?: { code?: string } })?.detail?.code;
+        if (
+          code &&
+          [
+            'IMPORT_INVALID_FILE',
+            'IMPORT_INVALID_ENCODING',
+            'IMPORT_EMPTY',
+            'NOTE_TOO_LARGE',
+            'PROFILE_CHANGED',
+            'RECOVERY_REQUIRED',
+          ].includes(code)
+        )
+          pendingMarkdown = null;
+        throw error;
+      }
+      pendingMarkdown = null;
+      await editor.open(note);
+      documentKey++;
+      trash = false;
+      query = '';
+      clearListActions();
+      await refreshState(true);
+      notify('importedMarkdown', {
+        space: profileLabel(profile, t, language, preferences.timeZone),
+      });
+    });
+  }
   let query = '';
   let trash = false;
   let mode: 'source' | 'preview' | 'split' = 'source';
@@ -202,7 +339,7 @@
       }[state.sync.state]
     : t('opening');
   $: readOnly =
-    busy ||
+    (busy && !editor.composing) ||
     editor.inputLocked ||
     (lifecyclePending && !editor.composing) ||
     !!editor.note?.deleted ||
@@ -297,6 +434,7 @@
     });
     if (request !== requestCounter || state.profile.id !== profileId) return;
     notes = next;
+    selection = new Set([...selection].filter((id) => next.some((n) => n.id === id)));
     if (editor.note) {
       const selected = notes.find((note) => note.id === editor.note?.id);
       if (selected) editor.acceptRemote(selected);
@@ -323,11 +461,19 @@
       }
       await editor.open(null);
       documentKey++;
+      clearListActions();
+      clearUndo();
+      pendingMarkdown = null;
       trash = false;
       query = '';
     }
     const changed =
       force || !state || next.profile.id !== state.profile.id || next.event_seq !== state.event_seq;
+    if (state?.profile.id !== next.profile.id) {
+      clearListActions();
+      clearUndo();
+      pendingMarkdown = null;
+    }
     state = next;
     editor.profileId = next.profile.id;
     activeMismatch = false;
@@ -374,6 +520,7 @@
     notice = null;
   }
   async function newNote(): Promise<void> {
+    clearListActions();
     if (state?.profile.read_only) throw new LocalizedError('recoveryReadOnlyError');
     await editor.open(null);
     documentKey++;
@@ -385,6 +532,7 @@
   async function changeSection(deleted: boolean): Promise<void> {
     setListVisible(true);
     await editor.flush();
+    clearListActions();
     trash = deleted;
     query = '';
     await editor.open(null);
@@ -401,6 +549,9 @@
     documentKey++;
     query = '';
     trash = false;
+    clearListActions();
+    clearUndo();
+    pendingMarkdown = null;
     state = null;
     await refreshState(true);
     notify('profileSwitched');
@@ -439,6 +590,9 @@
       });
       await editor.open(null);
       documentKey++;
+      clearListActions();
+      clearUndo();
+      pendingMarkdown = null;
       state = null;
       query = '';
       trash = false;
@@ -468,6 +622,9 @@
     const result = await call<{ remote_revoked: boolean }>({ action: 'logout' });
     await editor.open(null);
     documentKey++;
+    clearListActions();
+    clearUndo();
+    pendingMarkdown = null;
     state = null;
     query = '';
     trash = false;
@@ -483,6 +640,10 @@
   async function setDeleted(deleted: boolean): Promise<void> {
     await editor.flush();
     if (!editor.note) return;
+    if (deleted) {
+      await batchTrash([editor.note]);
+      return;
+    }
     const result = await call<Note>({
       action: 'set_deleted',
       profile_id: state!.profile.id,
@@ -595,6 +756,7 @@
     notify('revokedNotice');
   }
   function search(): void {
+    clearListActions();
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => {
       void refreshNotes().catch((error) => {
@@ -750,7 +912,10 @@
     void call({ action: 'sync' }).catch(() => {});
   }}
   on:keydown={(event) => {
-    if (event.key === 'Escape') closeMenus(undefined, true);
+    if (event.key === 'Escape') {
+      closeMenus(undefined, true);
+      if (selecting && !busy) clearListActions();
+    }
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'n') {
       event.preventDefault();
       void run(newNote);
@@ -822,6 +987,24 @@
             title={t('moreActions')}><Icon name="ellipsis" /></summary
           >
           <div class="menu-panel">
+            <button
+              disabled={!state || busy || state.profile.read_only}
+              on:click={(event) => menuAction(event, importMarkdown)}
+              ><Icon name="download" />{t('importMarkdown')}</button
+            >
+            {#if pendingMarkdown}<button
+                on:click={() => {
+                  pendingMarkdown = null;
+                }}>{t('cancel')} · {t('importMarkdown')}</button
+              >{/if}
+            {#if !trash}<button
+                disabled={busy || !!state?.profile.read_only}
+                on:click={() => {
+                  closeMenus();
+                  selecting = !selecting;
+                  selection = new Set();
+                }}>{t('selectNotes')}</button
+              >{/if}
             <button disabled={!state || busy} on:click={(event) => menuAction(event, exportNotes)}
               ><Icon name="download" />{t(trash ? 'exportTrash' : 'exportNotes')}</button
             >
@@ -834,22 +1017,79 @@
           </div>
         </details>
       </div>
-      <div class="list-heading">
-        <h1>{t(trash ? 'trash' : 'allNotes')}</h1>
-        <span>{t(query ? 'matches' : 'records', { count: notes.length })}</span>
-        <button
-          class="icon-button"
-          aria-label={t('refreshList')}
-          title={t('refresh')}
-          disabled={busy}
-          on:click={() => run(() => refreshState(true))}
-          ><Icon name="refresh-cw" size={16} /></button
-        >
+      <div
+        class="list-heading"
+        class:selecting
+        role="toolbar"
+        aria-label={t(selecting ? 'selectNotes' : 'noteList')}
+      >
+        {#if selecting}
+          <button
+            class="icon-button selection-exit"
+            disabled={busy}
+            aria-label={t('cancel')}
+            title={t('cancel')}
+            on:click={clearListActions}><Icon name="x" size={18} /></button
+          >
+          <strong class="selection-count">{t('selectedCount', { count: selection.size })}</strong>
+          <button
+            class="selection-all"
+            class:checked={selection.size === notes.length && notes.length > 0}
+            disabled={busy || !notes.length}
+            title={t('selectAll')}
+            aria-label={t('selectAll')}
+            aria-pressed={selection.size === notes.length && notes.length > 0}
+            on:click={() => {
+              selection =
+                selection.size === notes.length ? new Set() : new Set(notes.map((n) => n.id));
+            }}
+          >
+            <span class="selection-check" aria-hidden="true"
+              >{#if selection.size === notes.length && notes.length > 0}<Icon
+                  name="check"
+                  size={12}
+                />{/if}</span
+            >{t('selectAllShort')}
+          </button>
+          <button
+            class="icon-button selection-trash"
+            disabled={busy || !selection.size}
+            aria-label={t('moveToTrash')}
+            title={t('moveToTrash')}
+            on:click={() => run(() => batchTrash())}><Icon name="trash-2" size={18} /></button
+          >
+        {:else}
+          <h1>{t(trash ? 'trash' : 'allNotes')}</h1>
+          <span>{t(query ? 'matches' : 'records', { count: notes.length })}</span>
+          {#if !trash}
+            <button
+              class="list-select-button"
+              disabled={busy || !state || state.profile.read_only}
+              aria-label={t('selectNotes')}
+              on:click={() => {
+                selecting = true;
+                selection = new Set();
+              }}
+            >
+              <span class="selection-check" aria-hidden="true"><Icon name="check" size={12} /></span
+              >{t('selectShort')}
+            </button>
+          {/if}
+          <button
+            class="icon-button"
+            aria-label={t('refreshList')}
+            title={t('refresh')}
+            disabled={busy}
+            on:click={() => run(() => refreshState(true))}
+            ><Icon name="refresh-cw" size={16} /></button
+          >
+        {/if}
       </div>
       <label class="search"
         ><Icon name="search" size={20} /><input
           aria-label={t('searchCurrent')}
           bind:value={query}
+          disabled={busy}
           on:input={search}
           placeholder={t('searchNotes')}
         /></label
@@ -859,22 +1099,31 @@
       {#each notes as note (note.id)}
         <button
           class="note-card"
-          class:selected={editor.note?.id === note.id}
-          on:click={() => run(() => selectNote(note))}
+          class:selected={selecting ? selection.has(note.id) : editor.note?.id === note.id}
+          aria-pressed={selecting ? selection.has(note.id) : undefined}
+          on:click={() => (selecting ? toggleSelection(note.id) : run(() => selectNote(note)))}
           disabled={busy}
         >
-          <div class="note-card-title">{note.content.trim() ? note.title : t('untitled')}</div>
-          {#if note.purge_state === 'pending'}<p>
-              {t('purgePending')}
-            </p>{:else if note.purge_state === 'rejected'}<p>{t('purgeRejected')}</p>{/if}
-          {#if excerpt(note)}<p>{excerpt(note)}</p>{/if}
-          <div class="note-meta">
-            <time>{time(note.updated_at, language, preferences.timeZone)}</time>
-            {#if note.conflict}<span class="conflict-chip">{t('conflictCopy')}</span
-              >{:else if note.sync_state === 'pending'}<span
-                class="pending-dot"
-                title={t('pendingShort')}
-              ></span>{/if}
+          {#if selecting}<span
+              class="selection-check note-check"
+              class:checked={selection.has(note.id)}
+              aria-hidden="true"
+              >{#if selection.has(note.id)}<Icon name="check" size={13} />{/if}</span
+            >{/if}
+          <div class="note-card-body">
+            <div class="note-card-title">{note.content.trim() ? note.title : t('untitled')}</div>
+            {#if note.purge_state === 'pending'}<p>
+                {t('purgePending')}
+              </p>{:else if note.purge_state === 'rejected'}<p>{t('purgeRejected')}</p>{/if}
+            {#if excerpt(note)}<p>{excerpt(note)}</p>{/if}
+            <div class="note-meta">
+              <time>{time(note.updated_at, language, preferences.timeZone)}</time>
+              {#if note.conflict}<span class="conflict-chip">{t('conflictCopy')}</span
+                >{:else if note.sync_state === 'pending'}<span
+                  class="pending-dot"
+                  title={t('pendingShort')}
+                ></span>{/if}
+            </div>
           </div>
         </button>
       {:else}
@@ -1526,6 +1775,49 @@
   </div>
 {/if}
 
+{#if markdownConfirmProfile}
+  <div class="modal-backdrop" role="presentation">
+    <div
+      class="import-dialog"
+      use:modal={() => {
+        markdownConfirmProfile = null;
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="markdown-heading"
+      tabindex="-1"
+    >
+      <span class="import-icon"><Icon name="download" size={24} /></span>
+      <h2 id="markdown-heading">{t('importMarkdown')}</h2>
+      <p>
+        <strong>{profileLabel(markdownConfirmProfile, t, language, preferences.timeZone)}</strong>
+      </p>
+      <p class="help-text">{t('importCloud')}</p>
+      <div class="dialog-actions">
+        <button
+          class="secondary-button"
+          disabled={busy}
+          on:click={() => {
+            markdownConfirmProfile = null;
+          }}>{t('cancel')}</button
+        >
+        <button
+          class="primary-button"
+          disabled={busy}
+          on:click={() => {
+            const target = markdownConfirmProfile;
+            markdownConfirmProfile = null;
+            void run(async () => {
+              if (target?.id !== state?.profile.id) throw new LocalizedError('profileChanged');
+              await importMarkdown(true);
+            });
+          }}>{t('importMarkdown')}</button
+        >
+      </div>
+    </div>
+  </div>
+{/if}
+
 {#if purgeConfirmation}
   <div class="modal-backdrop" role="presentation">
     <div
@@ -1554,5 +1846,32 @@
       </div>
       {#if failure}<p class="inline-error">{errorText(failure, language)}</p>{/if}
     </div>
+  </div>
+{/if}
+
+{#if undoGroup}
+  <div
+    class="trash-snackbar"
+    role="status"
+    on:mouseenter={() => clearTimeout(undoTimer)}
+    on:focusin={() => clearTimeout(undoTimer)}
+    on:mouseleave={(event) => {
+      if (!event.currentTarget.contains(document.activeElement)) restartUndoTimer();
+    }}
+    on:focusout={(event) => {
+      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) restartUndoTimer();
+    }}
+  >
+    <span class="snackbar-mark" aria-hidden="true"><Icon name="check" size={18} /></span>
+    <span class="snackbar-message">{t('trashNotice', { total: undoGroup.notes.length })}</span>
+    <button
+      class="snackbar-undo"
+      disabled={busy}
+      aria-label={t('undoTrash')}
+      on:click={() => run(undoTrash)}><Icon name="rotate-ccw" size={15} />{t('undoShort')}</button
+    >
+    <button class="snackbar-dismiss" aria-label={t('dismiss')} on:click={clearUndo}
+      ><Icon name="x" size={16} /></button
+    >
   </div>
 {/if}

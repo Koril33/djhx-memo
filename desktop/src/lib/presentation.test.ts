@@ -134,6 +134,17 @@ describe('bilingual UI contract', () => {
   });
   it('uses complete English singular forms for one and plural forms for zero or two', () => {
     const expected = {
+      selectedCount: ['1 selected', '0 selected', '2 selected'],
+      batchResult: [
+        '1 moved to trash · {failed} failed',
+        '0 moved to trash · {failed} failed',
+        '2 moved to trash · {failed} failed',
+      ],
+      undoResult: [
+        '1 restored · {failed} failed',
+        '0 restored · {failed} failed',
+        '2 restored · {failed} failed',
+      ],
       pending: ['Pending · 1', 'Pending · 0', 'Pending · 2'],
       imported: [
         'Copied 1 note. The original remains in the source space.',

@@ -1203,3 +1203,138 @@ svg {
   font-size: 11px;
   color: var(--muted);
 }
+
+/* List selection keeps the heading height and content alignment stable. */
+.list-heading {
+  min-height: 40px;
+}
+.list-heading.selecting {
+  gap: 4px;
+  margin-left: -4px;
+  margin-right: -4px;
+  padding: 2px 4px;
+  border-radius: 10px;
+  background: var(--selected);
+}
+.selection-count {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.list-select-button,
+.selection-all {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 8px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.list-select-button:hover,
+.selection-all:hover {
+  color: var(--accent);
+}
+.selection-check {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border: 1.5px solid color-mix(in srgb, var(--muted) 65%, transparent);
+  border-radius: 4px;
+  transition:
+    background 120ms,
+    border-color 120ms;
+}
+.selection-check.checked,
+.selection-all.checked .selection-check {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.note-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.note-card-body {
+  flex: 1;
+  min-width: 0;
+}
+.note-check {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+}
+.selection-trash:not(:disabled) {
+  color: var(--danger);
+}
+.selection-trash:hover:not(:disabled) {
+  background: var(--error-surface);
+}
+.trash-snackbar {
+  position: fixed;
+  z-index: 100;
+  bottom: 28px;
+  left: calc(50% + 30px);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  max-width: calc(100% - 96px);
+  padding: 10px 12px 10px 18px;
+  border-radius: 14px;
+  background: var(--ink);
+  color: var(--surface);
+  box-shadow: 0 8px 32px #0003;
+}
+.snackbar-message {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.snackbar-mark {
+  display: flex;
+  opacity: 0.75;
+}
+.trash-snackbar button {
+  color: inherit;
+  white-space: nowrap;
+  min-height: 36px;
+  border-radius: 8px;
+}
+.snackbar-undo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0 10px;
+  margin-left: 8px;
+  background: color-mix(in srgb, var(--surface) 12%, transparent);
+}
+.snackbar-dismiss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  padding: 0;
+  opacity: 0.7;
+}
+.trash-snackbar button:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--surface) 20%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .selection-check {
+    transition: none;
+  }
+}

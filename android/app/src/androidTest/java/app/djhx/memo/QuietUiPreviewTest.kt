@@ -216,8 +216,16 @@ class QuietUiPreviewTest {
                 capture("en-editor")
                 click("More")
                 click("Delete")
-                waitFor { findNode("Move to trash?") != null }
-                click("Move to trash")
+                waitFor { !model.editorOpen && !model.busy }
+                waitFor { findNode("Undo deletion") != null }
+                assertTrue(runBlocking { application.gateway.obj("get", "id" to ids.last()).getBoolean("deleted") })
+                click("Undo deletion")
+                waitFor { !model.busy && model.notes.any { it.optString("id") == ids.last() } }
+                assertFalse(runBlocking { application.gateway.obj("get", "id" to ids.last()).getBoolean("deleted") })
+                click("留白与日常")
+                waitFor { model.editorOpen && !model.busy }
+                click("More")
+                click("Delete")
                 waitFor { !model.editorOpen && !model.busy }
                 click("More")
                 click("Trash")
