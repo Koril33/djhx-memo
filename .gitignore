@@ -9,6 +9,7 @@
 *.keystore
 *.pem
 *.key
+*.key.dpapi
 *.p12
 *.pfx
 *.agekey

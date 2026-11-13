@@ -35,7 +35,8 @@
 ## 新开发者、AI 与公开发布
 
 - 公共工具链入口是 [docs/dev-setup.md](docs/dev-setup.md)，按任务选择 Linux/Windows；历史本机记录不是安装前提。AI 另读 [docs/ai-development.md](docs/ai-development.md)，仍以本文件和 spec 为约束。
-- 当前开发版本 0.1.4 增加单条彻底删除、Windows 托盘左右键及桌面列表折叠，同步协议升级为 2；既有 0.1.3 Release 不变。本轮发布的三端实际测试与同步/迁移交叉评审见 docs/releases/0.1.4-validation.md 和 docs/reviews/client-0.1.4-review.md；完整设备矩阵与连续 7 天试用仍须单独完成，不能把版本号当成 v1 发布。
+- 当前客户端开发版本 0.1.5 在 0.1.4 基础上增加 Windows/Android 自动更新，按 spec/automatic-updates.md 实施；core/server/协议与 schema 基线不变。正式目录尚未部署，Linux 更新安装仍暂缓，本轮使用维护者授权的 Ubuntu 虚拟机验证和打包 DEB。本轮安装屏障独立评审见 docs/reviews/client-0.1.5-core-review.md 和 docs/reviews/client-0.1.5-platform-review.md；三端实际发布与未验收项见 docs/releases/0.1.5-validation.md，完整矩阵仍须单独完成，不能把版本号当成 v1 发布。
+- 0.1.4 已公开发布，三端实际检查及独立同步/迁移评审见 docs/releases/0.1.4-validation.md 和 docs/reviews/client-0.1.4-review.md；不将该评审当作 0.1.5 安装屏障已复核。
 - 原创内容按根 [LICENSE](LICENSE) 的 MIT 授权；保留第三方许可与来源，见 [docs/licensing.md](docs/licensing.md)。提交者对代码来源和AI辅助内容的可贡献性负责。
 - 公共API注释说明行为、边界及错误；平台/并发修正解释原因，不堆砌逐行翻译。不得通过删除或弱化测试、宽泛屏蔽告警/密钥规则获得绿色结果。
 - 按 [SECURITY](SECURITY.md)检查待公开源码、可达历史与提交元信息，不扫描后就宣称绝对无漏洞。维护者明确选择保留既有作者身份与完整历史；不擅自重写/强推或改变仓库可见性。

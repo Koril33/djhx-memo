@@ -16,5 +16,6 @@
 - [ADR-0014：静态官网构建](0014-static-website.md)
 
 - [ADR-0015：单条彻底删除与同步协议 2](0015-permanent-deletion.md)
+- [ADR-0016：三端自动更新与静态签名发行目录（Windows/Android 已实现，Linux 待实现）](0016-automatic-updates.md)
 
 新增依赖前记录确切版本、理由、许可证与维护来源；工具探针的通过不能代替业务验收。

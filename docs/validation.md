@@ -1,5 +1,9 @@
 # 本地质量检查与 v1 验收
 
+2026-11-13 的 0.1.5 三端构建、独立评审、更新目录及 Android 待签名附件见[发布检查](releases/0.1.5-validation.md)，未来 0.1.6 规范不表示功能已实现。
+
+0.1.5 Windows/Android 自动更新的实际检查、签名与未验收边界见[增量验证](client-updates-0.1.5-validation.md)；不替代下列完整 v1 验收。
+
 2026-11-11 的 0.1.4 单条彻底删除、协议 2 与桌面控件增量，独立审查见[交叉评审](reviews/client-0.1.4-review.md)，三端构建、实际测试、修复和发布状态见[发布验证](releases/0.1.4-validation.md)。本轮结果不提前勾选下方完整 v1 矩阵或连续 7 天试用。
 
 0.1.4 本轮 Windows/Android 实际结果、协议升级与 Linux 交接见[增量验证](client-updates-0.1.4-validation.md)。

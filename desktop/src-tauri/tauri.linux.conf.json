@@ -1,6 +1,7 @@
 {
   "productName": "djhx-memo",
   "bundle": {
+    "createUpdaterArtifacts": false,
     "linux": {
       "deb": {
         "recommends": ["gnome-keyring"],

@@ -83,6 +83,7 @@ fun AccountSettings(model: MemoModel, initialTab: String = "display", onExport: 
                 ) {
                     when (tab) {
                         "display" -> item { PresentationSettings() }
+                        "updates" -> item { UpdateSettings(model) }
                         "spaces" -> {
                             item { SectionTitle(R.string.current_space_short) }
                             profiles.forEach { saved ->
@@ -306,7 +307,8 @@ private fun SettingsTabs(selected: String, onSelect: (String) -> Unit) {
         "display" to R.string.tab_display,
         "spaces" to R.string.tab_spaces,
         "devices" to R.string.tab_devices,
-        "data" to R.string.tab_data
+        "data" to R.string.tab_data,
+        "updates" to R.string.update_title
     )
     val index = tabs.indexOfFirst { it.first == selected }.coerceAtLeast(0)
     val content: @Composable () -> Unit = {
@@ -320,7 +322,7 @@ private fun SettingsTabs(selected: String, onSelect: (String) -> Unit) {
     }
     val configuration = LocalConfiguration.current
     // 四个等宽分组在窄屏或大字号时会拆开英文单词，改用原生可横向滚动的单行分组。
-    if (configuration.screenWidthDp < 360 || configuration.fontScale > 1.15f) {
+    if (configuration.screenWidthDp < 600 || configuration.fontScale > 1.15f) {
         ScrollableTabRow(index, containerColor = MaterialTheme.colorScheme.background, edgePadding = 8.dp) { content() }
     } else {
         TabRow(index, containerColor = MaterialTheme.colorScheme.background) { content() }

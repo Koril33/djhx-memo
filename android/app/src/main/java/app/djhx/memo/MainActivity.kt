@@ -63,8 +63,10 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         model.foreground(true)
+        (application as MemoApplication).updates.foreground(this, true)
     }
     override fun onStop() {
+        (application as MemoApplication).updates.foreground(this, false)
         model.foreground(false)
         super.onStop()
     }
@@ -288,7 +290,7 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     SourceEditor(
                         model.content,
-                        enabled = !model.busy && !readOnly,
+                        enabled = !model.busy && !readOnly && !model.updateLocked,
                         codeSpans = codeHighlights?.sourceSpans.orEmpty(),
                         visible = !preview && !readOnly,
                         modifier = Modifier.fillMaxSize(),

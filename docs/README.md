@@ -1,7 +1,11 @@
 # 项目文档
 
+- 下一版本：[0.1.6 列表交互与单文件 Markdown 导入](../spec/client-0.1.6.md)，已接受待实现；Web 暂缓。
+
 - [quick-start.md](quick-start.md)：候选版安装、离线使用与接入自有服务器。
 - [client-release.md](client-release.md)：GitHub/Gitea 发布流程；[0.1.4 三端验证与发布](releases/0.1.4-validation.md)、[0.1.4 同步/迁移交叉评审](reviews/client-0.1.4-review.md)；历史 0.1.3 构建：[Android](releases/0.1.3-android-validation.md)、[Linux](releases/0.1.3-linux-validation.md)。
+- [0.1.5 三端发布检查](releases/0.1.5-validation.md)：本轮构建、独立评审与 Android 待签名边界。
+- 自动更新：Windows/Android 的[发布与密钥说明](update-publishing.md)、[0.1.5 验证](client-updates-0.1.5-validation.md)；原[17 项调研](research/rust-gui-auto-update-survey.md)与[设计](automatic-update-design.md)，Linux 仍待实现。
 - [website-deployment.md](website-deployment.md)：官网、Nginx路由与双远程main的合并部署记录。
 - [brand-guidelines.md](brand-guidelines.md)：DJHX Memo 可编辑母版、设计板、多端尺寸与统一替换步骤。
 - [client-fixes-0.1.2-validation.md](client-fixes-0.1.2-validation.md)：0.1.2 下拉框文字与 Android 编辑滚动的复现、修正及实测。
@@ -15,7 +19,7 @@
 - 展示增量交叉评审：[国际化、主题与品牌](reviews/presentation-review.md)。
 - 0.1.1 界面预览：[桌面验证](desktop-ui-preview-validation.md)、[Android 验证](android-ui-preview-validation.md)、[独立复核](reviews/quiet-ui-review.md)。
 - [operations.md](operations.md)：部署、备份、恢复与发布要求。
-- [adr/](adr/README.md)：已接受的技术和产品取舍。
+- [adr/](adr/README.md)：技术和产品取舍；以各条目标明的接受/提议状态为准。
 
 产品行为和接口只在 [spec](../spec/README.md) 定义；路线图见 [项目计划](../djhx-memo-project-plan.md)。
 

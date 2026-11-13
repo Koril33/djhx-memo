@@ -3,6 +3,7 @@
   import { listen, type UnlistenFn } from '@tauri-apps/api/event';
   import Editor from './Editor.svelte';
   import Icon from './Icon.svelte';
+  import Updates from './Updates.svelte';
   import { call, native, errorText, coreErrorText } from './lib/bridge';
   import { EditorSession } from './lib/editor-session';
   import { renderMarkdown } from './lib/markdown';
@@ -120,7 +121,7 @@
   let notice: Message | null = null;
   let failure: unknown = null;
   let settings = false;
-  let settingsTab: 'account' | 'devices' | 'data' | 'appearance' = 'appearance';
+  let settingsTab: 'account' | 'devices' | 'data' | 'appearance' | 'updates' = 'appearance';
   let authMode: 'login' | 'register' = 'login';
   let serverUrl = DEFAULT_SERVER_URL;
   let username = '';
@@ -575,6 +576,17 @@
     settings = true;
     if (tab === 'devices' && state?.profile.kind === 'account')
       devices = await call<Device[]>({ action: 'devices' });
+  }
+  async function installUpdate(): Promise<void> {
+    if (busy || lifecyclePending) throw new Error('UPDATE_BUSY');
+    busy = true;
+    lifecyclePending = true;
+    try {
+      await editor.finishLifecycle(() => native('install_update'));
+    } finally {
+      busy = false;
+      lifecyclePending = false;
+    }
   }
   async function revoke(id: string): Promise<void> {
     await call({ action: 'revoke_device', id });
@@ -1224,6 +1236,10 @@
           class:chosen={settingsTab === 'data'}
           on:click={() => run(() => openSettings('data'))}>{t('dataTab')}</button
         >
+        <button
+          class:chosen={settingsTab === 'updates'}
+          on:click={() => run(() => openSettings('updates'))}>{t('updatesTab')}</button
+        >
       </nav>
       <div class="dialog-content">
         {#if failure}<div class="inline-error" role="alert">
@@ -1393,6 +1409,8 @@
                   >
                 </div>{/each}
             </div>{/if}
+        {:else if settingsTab === 'updates'}
+          <Updates {language} timeZone={preferences.timeZone} install={installUpdate} />
         {:else if settingsTab === 'appearance'}
           <label class="field"
             >{t('language')}<select bind:value={preferences.language} on:change={updatePreferences}>

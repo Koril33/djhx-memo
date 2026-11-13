@@ -377,6 +377,7 @@ impl Engine {
     }
 
     pub(crate) fn synchronize(&self, profile: &Profile) -> Result<()> {
+        let _activity = self.activity.enter()?;
         if profile.kind != "account" {
             return Ok(());
         }
@@ -679,6 +680,10 @@ impl Engine {
                     .header("Accept", "text/event-stream")
                     .send();
                 let Ok(response) = stream else {
+                    continue;
+                };
+                // Installing must also wait for the SSE credential/database path.
+                let Ok(_activity) = engine.activity.enter() else {
                     continue;
                 };
                 if response.status().as_u16() == 401 {

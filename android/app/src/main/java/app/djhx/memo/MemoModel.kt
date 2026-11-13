@@ -57,6 +57,17 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
     private var firstUncommittedAt = 0L
     private var revision = 0L
     private var compositionActive = false
+
+    /** Installation consent temporarily locks editing without dropping its durable buffer. */
+    val updateLocked: Boolean get() = (getApplication<Application>() as? MemoApplication)?.updates?.installing == true
+
+    /** Refuses handoff while composition or another UI operation is unresolved. */
+    suspend fun prepareUpdate(): Boolean {
+        if (busy || compositionActive || !flush()) return false
+        val native = gateway as? CoreGateway ?: return false
+        native.pauseForUpdate()
+        return true
+    }
     fun composing(active: Boolean) {
         compositionActive = active
         if (!active) lastEvent = ""
@@ -74,7 +85,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
     init {
         viewModelScope.launch {
             while (true) {
-                runCatching { refresh() }.onFailure { report(it) }
+                if (!updateLocked) runCatching { refresh() }.onFailure { report(it) }
                 delay(1000)
             }
         }
@@ -87,6 +98,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
     fun dismissMessage() { message = null }
 
     fun edit(text: String) {
+        if (updateLocked) return
         if (selected?.optBoolean("deleted") == true || state.optJSONObject("profile")?.optBoolean("read_only") == true) return
         if (text == content) return
         content = text.replace("\r\n", "\n").replace('\r', '\n')
@@ -428,6 +440,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
     }
 
     fun foreground(active: Boolean) {
+        if (updateLocked) return
         viewModelScope.launch {
             if (!active) flush()
             runCatching { gateway.call("foreground", "active" to active) }.onFailure { report(it) }
@@ -456,7 +469,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
     }
 
     private fun action(block: suspend () -> Unit) {
-        if (busy) return
+        if (busy || updateLocked) return
         viewModelScope.launch {
             busy = true
             try { block() } catch (error: kotlinx.coroutines.CancellationException) {

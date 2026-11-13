@@ -61,3 +61,9 @@ create 的同 request_id 重试返回该笔记当前 NoteView，可能与本次�
 笔记读写、列表、导入和导出请求同时携带 UI 已读取的 `profile_id`。当前空间已变化时返回 PROFILE_CHANGED，不把旧空间缓冲写入新账号。state 可返回 `redirects` 对象（原笔记 ID → 冲突副本 ID）；UI 在 event_seq 更新时消费一次映射并迁移焦点，不能因此覆盖未提交缓冲。
 
 state 的 event_seq 变化提示重新读取；前台可定期调用 state。不得在 UI 生成 base_rev/op_id、裁决冲突或从显示时间推导同步状态。导出 ZIP 的目标选择和原子落盘由平台完成。
+
+## 原生更新接口（0.1.5）
+
+更新独立于笔记 JSON action 和账号 HTTP 协议。`UpdateService(root,target,version,version_code,application_id)` 使用编译时公钥，公开 `snapshot/check/download/cancel/preferences/defer`；平台 UI 只能提交固定意图。`prepare_install` 返回路径/包身份仅供可信原生安装适配器，不作为 WebView 可调用动作。返回的更新状态与固定错误码见 [自动更新](automatic-updates.md)。
+
+`MemoApp.pause_for_update()` 在 UI 最终保存后阻止新调用、等待已有工作并 checkpoint；失败自动恢复并返回 Storage。`resume_after_update()` 释放取消/失败的屏障。暂停期间普通 JSON action 返回 `UPDATE_BUSY`，不读取或改写同步语义，不删除未发送操作。该接口由原生安装协调器使用，不能由 Markdown 触发。

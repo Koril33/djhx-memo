@@ -1,6 +1,8 @@
 # djhx-memo
 
-当前版本为 **0.1.4**，新增单条彻底删除、Windows 托盘左右键及桌面列表折叠。账号同步要求协议 2 服务端与相应客户端配套升级；既有 0.1.3 Release 不改变。三端实际测试、交叉评审、安装包和发布状态见[0.1.4 发布验证](docs/releases/0.1.4-validation.md)。
+当前客户端开发版本为 **0.1.5**（未发布），加入 Windows / Android 自动更新客户端及签名发行工具；0.1.4 的彻底删除、托盘和列表折叠保持。core/server/同步协议与数据库基线不变，正式更新目录尚未部署。实际结果及未验证项见[0.1.5 验证](docs/client-updates-0.1.5-validation.md)。
+
+0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](docs/releases/0.1.4-validation.md)。
 
 面向个人和少数朋友的 Markdown 备忘录，支持本地优先保存和多设备云同步。
 
@@ -53,6 +55,8 @@ djhx-memo/
 客户端首次打开即可离线记录，本机空间不会自动上传。候选服务默认地址为 `https://memo.djhx.site`，使用管理员生成的一次性邀请码注册；登录后可明确选择将本机笔记复制到账号空间。该域名根路径提供[产品官网](https://memo.djhx.site)，同步API仍在 `/v1`；当前没有独立Web笔记客户端。部署检查见 [云部署记录](docs/cloud-deployment.md)，备份恢复见 [operations](docs/operations.md)。
 
 安装包和校验值输出到本机忽略目录 `dist/`。发布时将安装包与校验值上传为 GitHub Release 附件，详见[客户端发布流程](docs/client-release.md)。
+
+Windows / Android 已接入自动更新，入口为设置中的“软件更新”；Linux 适配继续后续实施。启用、密钥主机边界与人工发布见[更新发布说明](docs/update-publishing.md)，原[17 项调研](docs/research/rust-gui-auto-update-survey.md)保留供参考。
 
 服务端独立打包入口为 `bash scripts/package-server.sh`，输出静态 Linux amd64 二进制及部署资料压缩包；不会部署到云服务器。
 
