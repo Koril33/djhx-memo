@@ -1,8 +1,6 @@
 # desktop
 
-0.1.8 候选已完成界面与更新操作协调修正，实际检查/发行状态见[本轮记录](../docs/releases/0.1.8-validation.md)；未发布前正式版本仍以下方记录为准。
-
-当前客户端 **0.1.7**，修复登录账号后实时同步阻塞更新安装。保留0.1.6列表选择、普通删除撤销和单Markdown导入；实际构建/升级结果及旧版切换本机空间步骤见[本轮记录](../docs/releases/0.1.7-validation.md)。Windows使用签名更新目录，Linux继续DEB系统包管理。
+当前客户端 **0.1.8** 已公开发布，整理多选/危险操作、账号入口和状态/更新排版；原生共享任务屏障覆盖后台检查、页面命令及安装。Windows原生预览由维护者确认正常，Linux实际DEB覆盖升级通过，详见[本轮记录](../docs/releases/0.1.8-validation.md)。Windows使用签名更新目录，Linux继续DEB系统包管理；旧版限制仍见[0.1.7记录](../docs/releases/0.1.7-validation.md)。
 
 0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](../docs/releases/0.1.4-validation.md)。
 

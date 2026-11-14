@@ -1,6 +1,8 @@
 # 本地质量检查与 v1 验收
 
-2026-11-13 的 0.1.5 三端构建、独立评审、更新目录及 Android 待签名附件见[发布检查](releases/0.1.5-validation.md)，未来 0.1.6 规范不表示功能已实现。
+2026-11-14的0.1.8七项UI/官网下载整理、三端构建与实际升级见[本次发布检查](releases/0.1.8-validation.md)，[独立账号/平台评审](reviews/client-0.1.8-review.md)已完成。0.1.6列表/导入及0.1.7安装屏障修正已发布；完整v1矩阵仍按下文单独验收。
+
+2026-11-13的0.1.5历史三端构建和Android原证书补齐见[发布检查](releases/0.1.5-validation.md)，debug/unsigned仅保留资料用途。
 
 0.1.5 Windows/Android 自动更新的实际检查、签名与未验收边界见[增量验证](client-updates-0.1.5-validation.md)；不替代下列完整 v1 验收。
 
