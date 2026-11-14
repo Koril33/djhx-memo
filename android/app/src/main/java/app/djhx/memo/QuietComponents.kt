@@ -1,7 +1,9 @@
 package app.djhx.memo
 
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -25,26 +27,58 @@ internal fun MemoIcon(
 /** 48dp 点击区域及统一长按提示；不以字符字形代替操作图标。 */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun MemoIconButton(@DrawableRes icon: Int, label: String, enabled: Boolean = true, onClick: () -> Unit) {
+internal fun MemoIconButton(
+    @DrawableRes icon: Int,
+    label: String,
+    enabled: Boolean = true,
+    danger: Boolean = false,
+    onClick: () -> Unit
+) {
     TooltipBox(
         positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
         tooltip = { PlainTooltip { Text(label) } },
         state = rememberTooltipState()
     ) {
-        IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(48.dp)) {
-            Icon(painterResource(icon), contentDescription = label, modifier = Modifier.size(24.dp))
+        IconButton(
+            onClick = onClick,
+            enabled = enabled,
+            modifier = Modifier.size(48.dp).background(
+                if (danger && enabled) MaterialTheme.colorScheme.errorContainer else Color.Transparent,
+                RoundedCornerShape(12.dp)
+            )
+        ) {
+            Icon(
+                painterResource(icon),
+                contentDescription = label,
+                modifier = Modifier.size(24.dp),
+                tint = if (danger && enabled) MaterialTheme.colorScheme.onErrorContainer else LocalContentColor.current
+            )
         }
     }
 }
 
 @Composable
-internal fun MemoMenuItem(@DrawableRes icon: Int, label: String, enabled: Boolean = true, onClick: () -> Unit) {
+internal fun MemoMenuItem(
+    @DrawableRes icon: Int,
+    label: String,
+    enabled: Boolean = true,
+    danger: Boolean = false,
+    onClick: () -> Unit
+) {
     DropdownMenuItem(
         text = { Text(label) },
-        leadingIcon = { MemoIcon(icon) },
+        leadingIcon = {
+            MemoIcon(
+                icon,
+                tint = if (danger && enabled) MaterialTheme.colorScheme.onErrorContainer else LocalContentColor.current
+            )
+        },
         enabled = enabled,
         onClick = onClick,
-        modifier = Modifier.heightIn(min = 48.dp)
+        modifier = Modifier.heightIn(min = 48.dp).background(
+            if (danger && enabled) MaterialTheme.colorScheme.errorContainer else Color.Transparent,
+            RoundedCornerShape(8.dp)
+        )
     )
 }
 

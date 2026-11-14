@@ -10,6 +10,7 @@ const I18N = {
     "hero.title": "随手记下。",
     "hero.sub": "本地优先，按需云同步。",
     "download.label": "下载",
+    "download.history": "发布说明 / 历史版本",
     "rail.offline": "离线可用",
     "rail.open": "开源",
   },
@@ -22,6 +23,7 @@ const I18N = {
     "hero.title": "Jot it down.",
     "hero.sub": "Local-first. Synced when you want.",
     "download.label": "Download",
+    "download.history": "Release notes / Previous versions",
     "rail.offline": "Offline",
     "rail.open": "Open source",
   },
@@ -34,6 +36,7 @@ const I18N = {
     "hero.title": "書き留める。",
     "hero.sub": "ローカルファースト、必要なときに同期。",
     "download.label": "ダウンロード",
+    "download.history": "リリースノート / 過去のバージョン",
     "rail.offline": "オフライン",
     "rail.open": "オープンソース",
   },
@@ -46,6 +49,7 @@ const I18N = {
     "hero.title": "바로 적어두기.",
     "hero.sub": "로컬 우선, 원할 때 동기화.",
     "download.label": "다운로드",
+    "download.history": "릴리스 노트 / 이전 버전",
     "rail.offline": "오프라인",
     "rail.open": "오픈 소스",
   },
@@ -195,6 +199,7 @@ function init() {
   });
 
   initParallax(document.querySelector(".preview"));
+  document.documentElement.dataset.memoReady = "true";
 }
 
 init();

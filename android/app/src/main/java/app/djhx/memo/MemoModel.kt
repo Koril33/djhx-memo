@@ -225,6 +225,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
     private var creationContent: String? = null
     private var lastEvent = ""
     private var listRequest = 0L
+    private var stateRequest = 0L
     private var editorProfileId = "local"
     private val observedRedirects = mutableMapOf<String, String>()
     private var pendingExport: JSONObject? = null
@@ -234,7 +235,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
     init {
         viewModelScope.launch {
             while (true) {
-                if (!updateLocked) runCatching { refresh() }.onFailure { report(it) }
+                if (!updateLocked && !busy) runCatching { refresh() }.onFailure { report(it) }
                 delay(1000)
             }
         }
@@ -331,7 +332,9 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
     private fun canRefreshEditor() = !pending && !compositionActive
 
     private suspend fun refresh() {
+        val request = ++stateRequest
         val next = gateway.obj("state")
+        if (request != stateRequest) return
         if (currentProfileId() != next.optJSONObject("profile")?.optString("id")) {
             cancelSelection()
             trashUndo = null
@@ -360,6 +363,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
                 if (currentId != source && currentId != target) return@withLock
                 val currentRevision = revision
                 val fresh = gateway.obj("get", "profile_id" to editorProfileId, "id" to target)
+                if (request != stateRequest) return@withLock
                 if (canRefreshEditor() && revision == currentRevision && selected?.optString("id") == currentId) {
                     selected = fresh
                     content = fresh.optString("content")
@@ -376,6 +380,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
     }
 
     private suspend fun refreshSelected() {
+        val request = stateRequest
         val currentId = selected?.optString("id") ?: return
         val profileId = editorProfileId
         if (currentProfileId() != profileId) return
@@ -383,6 +388,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         val fresh = gateway.obj("get", "profile_id" to profileId, "id" to currentId)
         // Equal note IDs in different profiles do not identify the same note.
         // A permanent deletion bypasses the input revision barrier, but never this ownership check.
+        if (request != stateRequest) return
         if (editorProfileId != profileId || currentProfileId() != profileId || selected?.optString("id") != currentId) return
         if (fresh.optString("purge_state") == "purged") {
             selected = fresh
@@ -536,43 +542,33 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         refreshAll()
     }
 
-    fun authenticate(register: Boolean, server: String, username: String, password: String, invite: String, device: String) = action {
-        if (!flush()) return@action
-        val result = gateway.obj(
-            if (register) "register" else "login",
-            "server_url" to server,
-            "username" to username,
-            "password" to password,
-            "invite_code" to invite,
-            "device_name" to device,
+    private val accounts =
+        AccountActions(
+            gateway,
+            ::flush,
+            ::refreshAll,
+            ::clearSelection,
+            { message = it },
+            { state },
+            ::currentProfileId
         )
-        clearSelection()
-        refreshAll()
-        message = if (result.optInt("import_count") > 0) {
-            UiText(R.string.login_import_available)
-        } else {
-            UiText(R.string.login_success)
-        }
+
+    /** Completes only after the auth receipt and refreshed target agree; failures keep the form. */
+    fun authenticate(
+        register: Boolean,
+        server: String,
+        username: String,
+        password: String,
+        invite: String,
+        device: String,
+        onSuccess: () -> Unit = {}
+    ) = action {
+        accounts.authenticate(register, server, username, password, invite, device, onSuccess)
     }
 
-    fun importLocal(sourceProfileId: String = "local") = action {
-        if (!flush()) return@action
-        val result = gateway.obj("import", "profile_id" to currentProfileId(), "source_profile_id" to sourceProfileId)
-        message = UiText(R.plurals.import_success, listOf(result.optInt("imported")), result.optInt("imported"))
-        refreshAll()
-    }
+    fun importLocal(sourceProfileId: String = "local") = action { accounts.importLocal(sourceProfileId) }
 
-    fun logout() = action {
-        if (!flush()) return@action
-        val result = gateway.obj("logout")
-        clearSelection()
-        refreshAll()
-        message = if (result.optBoolean("remote_revoked")) {
-            UiText(R.string.logout_success)
-        } else {
-            UiText(R.string.logout_remote_pending)
-        }
-    }
+    fun logout() = action { accounts.logout() }
 
     fun loadDevices() = action { devices = gateway.array("devices").objects() }
     fun revokeDevice(id: String) = action {
@@ -643,6 +639,8 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
     private fun action(block: suspend () -> Unit) {
         if (busy || updateLocked) return
         busy = true
+        stateRequest++
+        listRequest++
         viewModelScope.launch {
             try { block() } catch (error: kotlinx.coroutines.CancellationException) {
                 throw error

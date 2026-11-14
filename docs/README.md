@@ -1,6 +1,6 @@
 # 项目文档
 
-- 下一版本：[0.1.6 列表交互与单文件 Markdown 导入](../spec/client-0.1.6.md)，已接受待实现；Web 暂缓。
+- 本轮：[0.1.8 界面与官网下载](../spec/client-0.1.8.md)，[实际验证/发行状态](releases/0.1.8-validation.md)、[独立评审](reviews/client-0.1.8-review.md)。0.1.6列表/导入已实现并保留；Web 暂缓。
 
 - [quick-start.md](quick-start.md)：候选版安装、离线使用与接入自有服务器。
 - [client-release.md](client-release.md)：GitHub/Gitea 发布流程；[0.1.4 三端验证与发布](releases/0.1.4-validation.md)、[0.1.4 同步/迁移交叉评审](reviews/client-0.1.4-review.md)；历史 0.1.3 构建：[Android](releases/0.1.3-android-validation.md)、[Linux](releases/0.1.3-linux-validation.md)。

@@ -1,20 +1,24 @@
 package app.djhx.memo
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
+import java.util.Locale
 
-/** Native update progress. Untrusted release notes remain plain text. */
+/** Overview, release action and device preferences have distinct visual groups. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun UpdateSettings(model: MemoModel) {
     val updates = (LocalContext.current.applicationContext as MemoApplication).updates
-    val focus = LocalFocusManager.current
     LaunchedEffect(updates) {
         while (true) {
             updates.refresh()
@@ -24,92 +28,220 @@ fun UpdateSettings(model: MemoModel) {
     val state = updates.status
     val candidate = state.optJSONObject("candidate")
     val phase = state.optString("phase")
-    val working = phase in setOf("checking", "downloading", "preparing") || updates.installing
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(stringResource(R.string.update_title), style = MaterialTheme.typography.titleLarge)
-        Text(BuildConfig.VERSION_NAME)
+    val working = updates.operationPending || updates.installing || updates.preferencesPending ||
+        phase in setOf("checking", "downloading", "preparing")
+    val error = updates.installError ?: state.nullableString("error")?.takeUnless { it == "UPDATE_CANCELED" }
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.primaryContainer) {
+                Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                    MemoIcon(R.drawable.ic_ui_download, tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                }
+            }
+            Column(Modifier.weight(1f)) {
+                Text("DJHX Memo", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "v${BuildConfig.VERSION_NAME} · ${stringResource(R.string.update_stable)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = if (phase == "up_to_date") MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+        ) {
+            Text(
+                stringResource(updatePhase(phase)),
+                Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                style = MaterialTheme.typography.labelMedium
+            )
+        }
         if (state.optLong("last_checked") > 0) {
             Text(
                 stringResource(
                     R.string.update_last_check,
                     formattedTime(java.time.Instant.ofEpochSecond(state.optLong("last_checked")).toString())
-                )
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Text(stringResource(updatePhase(phase)))
-        if (candidate != null) {
-            Text(candidate.optString("version") + " · " + (candidate.optLong("size") / 1048576) + " MiB")
-            Text(candidate.optString("notes"))
-            if (phase == "downloading") {
+        UpdateCard {
+            if (candidate != null) {
+                Text(
+                    stringResource(R.string.update_candidate_version, candidate.optString("version")),
+                    style = MaterialTheme.typography.titleSmall
+                )
+                Text(
+                    mib(candidate.optLong("size")) + " MiB",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(candidate.optString("notes"), style = MaterialTheme.typography.bodyMedium)
+            } else {
+                Text(
+                    stringResource(if (phase == "up_to_date") R.string.update_current else R.string.update_maintain),
+                    style = MaterialTheme.typography.titleSmall
+                )
+            }
+            if (phase == "downloading" && candidate != null) {
                 LinearProgressIndicator(
                     progress = { state.optLong("downloaded").toFloat() / candidate.optLong("size").coerceAtLeast(1) },
                     modifier = Modifier.fillMaxWidth()
                 )
-            }
-        }
-        val error = updates.installError ?: state.nullableString("error")
-        if (error != null && error != "UPDATE_CANCELED") {
-            Text(stringResource(updateError(error)), color = MaterialTheme.colorScheme.error)
-        }
-        TextButton(
-            onClick = { updates.action("check") },
-            enabled = !working
-        ) { Text(stringResource(R.string.update_check)) }
-        if (phase == "ready" && !updates.installing) {
-            Button(
-                onClick = {
-                    focus.clearFocus()
-                    updates.install(model)
-                },
-                enabled = !working
-            ) { Text(stringResource(R.string.update_install)) }
-        } else if (candidate != null && phase != "downloading" && !updates.installing) {
-            Button(
-                onClick = { updates.action("download") },
-                enabled = !working
-            ) { Text(stringResource(R.string.update_download)) }
-        }
-        if (phase == "downloading") {
-            TextButton(onClick = { updates.action("cancel") }) { Text(stringResource(R.string.cancel)) }
-        }
-        if (candidate != null) {
-            TextButton(
-                onClick = { updates.action("defer") },
-                enabled = !working
-            ) { Text(stringResource(R.string.update_later)) }
-        }
-        if (updates.needsConfirmation) {
-            Button(onClick = updates::continueInstallation) { Text(stringResource(R.string.update_continue)) }
-        }
-        if (updates.canCancelInstallation) {
-            TextButton(onClick = updates::cancelInstallation) { Text(stringResource(R.string.cancel)) }
-        }
-        Row {
-            Switch(
-                checked = state.optBoolean("auto_check", true),
-                enabled = !updates.installing && !updates.preferencesPending,
-                onCheckedChange = { updates.preferences(it, state.optString("download_policy", "unmetered")) }
-            )
-            Text(stringResource(R.string.update_auto))
-        }
-        listOf(
-            "notify" to R.string.update_notify,
-            "unmetered" to R.string.update_unmetered,
-            "any" to R.string.update_any
-        ).forEach { (policy, label) ->
-            Row {
-                RadioButton(
-                    selected = state.optString("download_policy", "unmetered") == policy,
-                    enabled = !updates.installing && !updates.preferencesPending && state.optBoolean("auto_check", true),
-                    onClick = { updates.preferences(state.optBoolean("auto_check", true), policy) }
+                Text(
+                    "${mib(state.optLong("downloaded"))} / ${mib(candidate.optLong("size"))} MiB",
+                    style = MaterialTheme.typography.labelMedium
                 )
-                Text(stringResource(label))
             }
+            if (error != null) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.errorContainer
+                ) {
+                    Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        MemoIcon(R.drawable.ic_ui_circle_alert, tint = MaterialTheme.colorScheme.onErrorContainer)
+                        Text(
+                            stringResource(updateError(error)),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+            }
+            UpdateActions(model, updates, phase, working, candidate != null)
         }
-        Text(stringResource(R.string.update_privacy))
+        UpdateCard {
+            Text(stringResource(R.string.update_preferences), style = MaterialTheme.typography.titleSmall)
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.update_auto),
+                    Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Switch(
+                    checked = state.optBoolean("auto_check", true),
+                    enabled = !working && !updates.preferencesPending,
+                    onCheckedChange = { updates.preferences(it, state.optString("download_policy", "unmetered")) }
+                )
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            DownloadPreference(updates, !working && !updates.preferencesPending && state.optBoolean("auto_check", true))
+        }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun UpdateActions(
+    model: MemoModel,
+    updates: AppUpdates,
+    phase: String,
+    working: Boolean,
+    hasCandidate: Boolean
+) {
+    val focus = LocalFocusManager.current
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (phase == "downloading") {
+            OutlinedButton(
+                onClick = { updates.action("cancel") }
+            ) { Text(stringResource(R.string.cancel)) }
+        } else {
+            Button(onClick = {
+                when (phase) {
+                    "ready" -> {
+                        focus.clearFocus()
+                        updates.install(model)
+                    }
+                    "available" -> updates.action("download")
+                    else -> updates.action("check")
+                }
+            }, enabled = !working && !model.busy) {
+                if (working) {
+                    CircularProgressIndicator(
+                        Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(Modifier.width(8.dp))
+                }
+                Text(
+                    stringResource(
+                        when (phase) { "ready" -> R.string.update_install
+                            "available" -> R.string.update_download
+                            else -> R.string.update_check }
+                    )
+                )
+            }
+        }
+        if (hasCandidate && !working) {
+            TextButton(
+                onClick = { updates.action("defer") }
+            ) { Text(stringResource(R.string.update_later)) }
+        }
+        if (updates.needsConfirmation) {
+            Button(
+                onClick = updates::continueInstallation
+            ) { Text(stringResource(R.string.update_continue)) }
+        }
+        if (updates.canCancelInstallation) {
+            TextButton(
+                onClick = updates::cancelInstallation
+            ) { Text(stringResource(R.string.cancel)) }
+        }
+    }
+}
+
+@Composable
+private fun UpdateCard(content: @Composable ColumnScope.() -> Unit) {
+    Surface(
+        Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp), content = content)
+    }
+}
+
+@Composable
+private fun DownloadPreference(updates: AppUpdates, enabled: Boolean) {
+    var expanded by remember { mutableStateOf(false) }
+    LaunchedEffect(enabled) { if (!enabled) expanded = false }
+    val policy = updates.status.optString("download_policy", "unmetered")
+    val choices = listOf(
+        "notify" to R.string.update_notify,
+        "unmetered" to R.string.update_unmetered_short,
+        "any" to R.string.update_any
+    )
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            stringResource(R.string.automatic_downloads),
+            Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Box {
+            TextButton(onClick = { expanded = true }, enabled = enabled) {
+                Text(stringResource(choices.firstOrNull { it.first == policy }?.second ?: R.string.update_notify))
+                Spacer(Modifier.width(4.dp))
+                MemoIcon(R.drawable.ic_ui_chevron_down)
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                choices.forEach { (value, text) ->
+                    DropdownMenuItem(enabled = enabled, text = { Text(stringResource(text)) }, onClick = {
+                        expanded = false
+                        updates.preferences(updates.status.optBoolean("auto_check", true), value)
+                    }, trailingIcon = { if (policy == value) MemoIcon(R.drawable.ic_ui_check) })
+                }
+            }
+        }
+    }
+}
+
+private fun mib(bytes: Long) = String.format(Locale.ROOT, "%.1f", bytes / 1048576.0)
 private fun updatePhase(phase: String): Int = when (phase) {
     "checking" -> R.string.update_checking
     "available" -> R.string.update_available
@@ -118,6 +250,7 @@ private fun updatePhase(phase: String): Int = when (phase) {
     "up_to_date" -> R.string.update_current
     "completed" -> R.string.update_completed
     "failed" -> R.string.update_failed
+    "canceled" -> R.string.update_cancelled
     "preparing" -> R.string.update_preparing
     else -> R.string.update_idle
 }

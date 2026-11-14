@@ -7,6 +7,7 @@ import android.net.ConnectivityManager
 import android.net.Uri
 import android.provider.Settings
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CoroutineScope
@@ -46,6 +47,8 @@ class AppUpdates(private val app: MemoApplication) {
         private set
     var preferencesPending by mutableStateOf(false)
         private set
+    private var pendingCommands by mutableIntStateOf(0)
+    val operationPending: Boolean get() = pendingCommands > 0
     private var automaticReady = false
     private var started = false
     private var submissionActive = false
@@ -95,30 +98,35 @@ class AppUpdates(private val app: MemoApplication) {
 
     private suspend fun perform(name: String) {
         if (installing) return
-        status = withContext(Dispatchers.IO) {
-            JSONObject(
-                when (name) {
-                    "check" -> service.check(true)
-                    "automatic" -> {
-                        service.check(false)
-                        val cm = app.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-                        service.download(false, !cm.isActiveNetworkMetered)
+        if (name != "cancel" && (operationPending || preferencesPending)) return
+        if (name == "check" || name == "download") installError = null
+        pendingCommands++
+        try {
+            status = withContext(Dispatchers.IO) {
+                JSONObject(
+                    when (name) {
+                        "check" -> service.check(true)
+                        "automatic" -> {
+                            service.check(false)
+                            val cm = app.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                            service.download(false, !cm.isActiveNetworkMetered)
+                        }
+                        "download" -> service.download(true, false)
+                        "defer" -> service.defer()
+                        "cancel" -> {
+                            service.cancel()
+                            service.snapshot()
+                        }
+                        else -> service.snapshot()
                     }
-                    "download" -> service.download(true, false)
-                    "defer" -> service.defer()
-                    "cancel" -> {
-                        service.cancel()
-                        service.snapshot()
-                    }
-                    else -> service.snapshot()
-                }
-            )
-        }
+                )
+            }
+        } finally { pendingCommands-- }
     }
 
     /** Serializes preference edits so rapid controls cannot overwrite each other's fields. */
     fun preferences(autoCheck: Boolean, policy: String) {
-        if (preferencesPending || installing) return
+        if (preferencesPending || installing || operationPending) return
         preferencesPending = true
         scope.launch {
             try {
@@ -131,7 +139,7 @@ class AppUpdates(private val app: MemoApplication) {
 
     /** Revalidates the candidate, asks for source permission, and saves before a native handoff. */
     fun install(model: MemoModel) {
-        if (installing) return
+        if (installing || operationPending || preferencesPending) return
         val screen = activity.get() ?: return
         if (!app.packageManager.canRequestPackageInstalls()) {
             screen.startActivity(

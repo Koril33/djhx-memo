@@ -1338,3 +1338,70 @@ svg {
     transition: none;
   }
 }
+
+/* Navigation is neutral; destructive actions have a persistent, theme-aware surface. */
+.list-select-button {
+  width: 36px;
+  padding: 0;
+  flex-shrink: 0;
+}
+.selection-trash:not(:disabled),
+.menu-panel button.danger:not(:disabled) {
+  background: var(--error-surface);
+  color: var(--danger);
+  border-radius: 8px;
+}
+.selection-trash:hover:not(:disabled),
+.menu-panel button.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 20%, var(--surface));
+}
+.status-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.status-panel-heading h3 {
+  margin: 0;
+}
+.status-panel-actions,
+.account-entry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.status-panel-actions button {
+  flex: 1 0 auto;
+}
+.auth-form-panel {
+  margin-top: 20px;
+  padding: 20px;
+  background: var(--canvas);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.auth-form-panel fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.auth-form-panel input[readonly] {
+  color: var(--muted);
+  background: var(--hover);
+}
+
+.destructive-solid:not(:disabled) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #a43f35;
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px 16px;
+}
+.destructive-solid:hover:not(:disabled) {
+  background: #8d332b;
+}

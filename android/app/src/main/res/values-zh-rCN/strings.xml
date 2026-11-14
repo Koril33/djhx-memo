@@ -7,7 +7,7 @@
     <string name="done">完成</string>
     <string name="local_notes">本机笔记</string>
     <string name="sync">同步</string>
-    <string name="credential_volatile">安全存储不可用：凭据仅在本次进程有效，下次需重新登录。</string>
+    <string name="credential_volatile">凭据仅在本次会话有效，重启后需重新登录。</string>
     <string name="back_notes">返回笔记</string>
     <string name="trash">回收站</string>
     <string name="export_zip">导出 ZIP</string>
@@ -168,7 +168,7 @@
     <string name="tab_data">数据</string>
     <string name="current_space_short">本设备空间</string>
     <string name="logout_short">注销账号</string>
-    <string name="add_account">登录 / 注册</string>
+    <string name="add_account">添加账号</string>
     <string name="hide_account_form">收起账号表单</string>
     <string name="sign_in_for_devices">登录后管理设备</string>
     <string name="about_app">关于 DJHX Memo</string>
@@ -204,7 +204,6 @@
     <string name="update_incompatible">更新与此安装不兼容，请查看发布说明。</string>
     <string name="update_save">未能安全保存编辑内容，已暂停安装。</string>
     <string name="update_storage">请检查磁盘空间和更新文件权限。</string>
-    <string name="update_privacy">无需登录。更新检查不发送笔记或账号凭据。安装需要允许此应用安装更新，并在系统页面确认。</string>
     <string name="update_last_check">上次检查：%1$s</string>
     <string name="select_notes">选择笔记</string>
     <string name="select_all_results">全选当前结果</string>
@@ -223,4 +222,13 @@
     <string name="batch_result">已移入回收站 %1$d 条，失败 %2$d 条。</string>
     <string name="undo_result">已恢复 %1$d 条，失败 %2$d 条。</string>
     <string name="restored_count">已恢复 %1$d 条笔记</string>
+    <string name="close">关闭</string>
+    <string name="sign_in_again">重新登录</string>
+    <string name="update_stable">稳定版</string>
+    <string name="update_preferences">自动更新设置</string>
+    <string name="update_candidate_version">可用版本 %1$s</string>
+    <string name="update_maintain">保持更新</string>
+    <string name="update_unmetered_short">仅非计费网络</string>
+    <string name="update_cancelled">下载已取消</string>
+    <string name="automatic_downloads">自动下载</string>
 </resources>

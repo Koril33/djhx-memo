@@ -1,5 +1,7 @@
 # djhx-memo
 
+0.1.8 正在验收：整理多选/删除/导入导出图标、账号入口、保存同步和更新页面，并修正官网平台下载直链；见[本轮规范](spec/client-0.1.8.md)与[实际状态](docs/releases/0.1.8-validation.md)。尚未公开发行。
+
 当前客户端 **[0.1.7](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.7)** 已公开发布三端安装包，修复登录账号后的实时同步长连接占用更新屏障。保留0.1.6的三端多选、删除撤销、单个Markdown导入及Android左滑。实际检查与旧版升级步骤见[0.1.7验证](docs/releases/0.1.7-validation.md)，上一版记录见[0.1.6验证](docs/releases/0.1.6-validation.md)。server仍为0.1.4，协议/schema不变；完整设备矩阵和7天试用仍待完成。
 
 0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](docs/releases/0.1.4-validation.md)。

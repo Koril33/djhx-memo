@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { authenticationAccepted } from './lib/account-state';
   import { onMount, onDestroy } from 'svelte';
   import { listen, type UnlistenFn } from '@tauri-apps/api/event';
   import Editor from './Editor.svelte';
@@ -260,7 +261,28 @@
   let settings = false;
   let settingsTab: 'account' | 'devices' | 'data' | 'appearance' | 'updates' = 'appearance';
   let authMode: 'login' | 'register' = 'login';
-  let serverUrl = DEFAULT_SERVER_URL;
+  let authVisible = false;
+  let reauthProfile: Profile | null = null;
+  $: hasSavedAccounts = state?.profiles.some((profile) => profile.kind === 'account') ?? false;
+  $: showAuthForm = authVisible || (!!state && !hasSavedAccounts && state.profile.kind === 'local');
+  function openAuthForm(reauth = false): void {
+    reauthProfile = reauth && state?.profile.kind === 'account' ? { ...state.profile } : null;
+    authMode = 'login';
+    serverUrl = reauthProfile?.server_url ?? addServerDraft;
+    username = reauthProfile?.username ?? '';
+    password = '';
+    invite = '';
+    authVisible = true;
+  }
+  function closeAuthForm(): void {
+    authVisible = false;
+    reauthProfile = null;
+    password = '';
+    invite = '';
+  }
+
+  let addServerDraft = DEFAULT_SERVER_URL;
+  let serverUrl = addServerDraft;
   let username = '';
   let password = '';
   let invite = '';
@@ -557,6 +579,9 @@
     notify('profileSwitched');
   }
   async function authenticate(): Promise<void> {
+    const submittedMode = authMode;
+    if (reauthProfile && state?.profile.id !== reauthProfile.id)
+      throw new LocalizedError('authSpaceChanged');
     let url: URL;
     try {
       url = new URL(serverUrl);
@@ -580,8 +605,8 @@
     await editor.flush();
     stateRequestCounter++;
     try {
-      const result = await call<{ import_count: number }>({
-        action: authMode,
+      const result = await call<{ import_count: number; profile: Profile }>({
+        action: submittedMode,
         server_url: serverUrl,
         username,
         password,
@@ -597,9 +622,13 @@
       query = '';
       trash = false;
       await refreshState(true);
-      settings = false;
+      if (!authenticationAccepted(result.profile?.id, state))
+        throw new LocalizedError('authSpaceChanged');
+      closeAuthForm();
+      settings = result.import_count === 0;
+      settingsTab = 'account';
       showImport = result.import_count > 0;
-      notify(authMode === 'register' ? 'registered' : 'signedIn');
+      notify(submittedMode === 'register' ? 'registered' : 'signedIn');
     } finally {
       password = '';
       invite = '';
@@ -957,7 +986,7 @@
         aria-label={t('trash')}
         title={t('trash')}
         aria-pressed={trash}
-        on:click={() => run(() => changeSection(true))}><Icon name="trash-2" /></button
+        on:click={() => run(() => changeSection(true))}><Icon name="recycle" /></button
       >
     </div>
     <div class="rail-bottom">
@@ -990,7 +1019,7 @@
             <button
               disabled={!state || busy || state.profile.read_only}
               on:click={(event) => menuAction(event, importMarkdown)}
-              ><Icon name="download" />{t('importMarkdown')}</button
+              ><Icon name="file-input" />{t('importMarkdown')}</button
             >
             {#if pendingMarkdown}<button
                 on:click={() => {
@@ -1006,7 +1035,7 @@
                 }}>{t('selectNotes')}</button
               >{/if}
             <button disabled={!state || busy} on:click={(event) => menuAction(event, exportNotes)}
-              ><Icon name="download" />{t(trash ? 'exportTrash' : 'exportNotes')}</button
+              ><Icon name="file-output" />{t(trash ? 'exportTrash' : 'exportNotes')}</button
             >
             <button on:click={(event) => menuAction(event, () => openSettings('account'))}
               ><Icon name="user" />{t('accountTab')}</button
@@ -1063,7 +1092,8 @@
           <span>{t(query ? 'matches' : 'records', { count: notes.length })}</span>
           {#if !trash}
             <button
-              class="list-select-button"
+              class="icon-button list-select-button"
+              title={t('selectNotes')}
               disabled={busy || !state || state.profile.read_only}
               aria-label={t('selectNotes')}
               on:click={() => {
@@ -1071,8 +1101,7 @@
                 selection = new Set();
               }}
             >
-              <span class="selection-check" aria-hidden="true"><Icon name="check" size={12} /></span
-              >{t('selectShort')}
+              <Icon name="list-checks" size={18} />
             </button>
           {/if}
           <button
@@ -1239,12 +1268,12 @@
             <button
               disabled={busy || !editor.content}
               on:click={(event) => menuAction(event, () => rescue())}
-              ><Icon name="download" />{t('exportCurrent')}</button
+              ><Icon name="file-output" />{t('exportCurrent')}</button
             >
             {#if !listVisible}<button
                 disabled={!state || busy}
                 on:click={(event) => menuAction(event, exportNotes)}
-                ><Icon name="download" />{t(trash ? 'exportTrash' : 'exportNotes')}</button
+                ><Icon name="file-output" />{t(trash ? 'exportTrash' : 'exportNotes')}</button
               >{/if}
           </div>
         </details>
@@ -1256,14 +1285,18 @@
       >
         <Icon name="info" size={16} /><span>{t('closeToQuitHelp')}</span>
       </div>{/if}
-    {#if state && !state.credential_persistent && state.profile.kind === 'account'}<div
+    {#if state && !state.credential_persistent && state.profile.kind === 'account' && state.sync.state !== 'auth_required'}<div
         class="info-strip warning-strip"
       >
         {t('keyringUnavailable')}
       </div>{/if}
     {#if state?.sync.state === 'auth_required'}<div class="info-strip warning-strip">
-        {t('signInAgainHelp')}<button on:click={() => run(() => openSettings('account'))}
-          >{t('signInAgain')}</button
+        {t('signInAgainHelp')}<button
+          on:click={() =>
+            run(async () => {
+              openAuthForm(true);
+              await openSettings('account');
+            })}>{t('signInAgain')}</button
         >
       </div>{/if}
     {#if state?.sync.state === 'recovery_required'}<div class="info-strip warning-strip">
@@ -1412,7 +1445,21 @@
           ><Icon name="chevron-down" size={14} />
         </summary>
         <div class="status-panel">
-          <h3>{t('statusDetails')}</h3>
+          <div class="status-panel-heading">
+            <h3>{t('statusDetails')}</h3>
+            <button
+              class="icon-button"
+              aria-label={t('close')}
+              title={t('close')}
+              on:click={(event) => {
+                const menu = event.currentTarget.closest('details');
+                if (menu) {
+                  menu.open = false;
+                  menu.querySelector('summary')?.focus();
+                }
+              }}><Icon name="x" size={18} /></button
+            >
+          </div>
           <dl class="status-details">
             <dt>{t('localStatus')}</dt>
             <dd>{saveLabel}</dd>
@@ -1427,12 +1474,22 @@
           {#if state?.sync.error}<p class="inline-error">
               {coreErrorText(state.sync.error, language)}
             </p>{/if}
-          <button
-            class="secondary-button"
-            disabled={busy || state?.profile.kind !== 'account'}
-            on:click={(event) => menuAction(event, synchronize)}
-            ><Icon name="refresh-cw" size={16} />{t('syncNow')}</button
-          >
+          <div class="status-panel-actions">
+            <button
+              class="secondary-button"
+              disabled={busy}
+              on:click={(event) => menuAction(event, () => openSettings('account'))}
+            >
+              <Icon name="settings" size={16} />{t('spaceSettings')}
+            </button>
+            {#if state?.profile.kind === 'account'}<button
+                class="primary-button"
+                disabled={busy}
+                on:click={(event) => menuAction(event, synchronize)}
+              >
+                <Icon name="refresh-cw" size={16} />{t('syncNow')}
+              </button>{/if}
+          </div>
         </div>
       </details>
       <span class="character-count"
@@ -1551,75 +1608,112 @@
                 /></button
               >{/each}
           </div>
-          <div class="auth-heading">
-            <h3>{authMode === 'login' ? t('loginOther') : t('registerInvite')}</h3>
-            <button
-              class="text-button"
-              on:click={() => {
-                authMode = authMode === 'login' ? 'register' : 'login';
-              }}>{authMode === 'login' ? t('registerLink') : t('loginLink')}</button
-            >
-          </div>
-          <form novalidate on:submit|preventDefault={() => run(authenticate)}>
-            <label class="field"
-              >{t('serverAddress')}<input
-                type="url"
-                required
-                bind:value={serverUrl}
-                placeholder={DEFAULT_SERVER_URL}
-                autocomplete="url"
-              />{#if runtime?.debug_http}<small>{t('debugServerHelp')}</small>{/if}</label
-            >
-            <div class="field-row">
-              <label class="field"
-                >{t('username')}<input
-                  required
-                  bind:value={username}
-                  minlength="3"
-                  maxlength="32"
-                  pattern={'[a-z0-9][a-z0-9_-]{2,31}'}
-                  autocomplete="username"
-                  placeholder="your-name"
-                /></label
-              ><label class="field"
-                >{t('deviceName')}<input
-                  required
-                  bind:value={deviceName}
-                  maxlength="128"
-                  placeholder={t('devicePlaceholder')}
-                /></label
+          <div class="account-entry-actions">
+            {#if state?.profile.kind === 'account' && state.sync.state === 'auth_required'}
+              <button class="primary-button" disabled={busy} on:click={() => openAuthForm(true)}
+                >{t('signInAgain')}</button
               >
-            </div>
-            <label class="field"
-              >{t('password')}<input
-                type="password"
-                required
-                bind:value={password}
-                minlength="12"
-                maxlength="256"
-                autocomplete={authMode === 'register' ? 'new-password' : 'current-password'}
-                placeholder={t('passwordPlaceholder')}
-              /></label
-            >
-            {#if authMode === 'register'}<label class="field"
-                >{t('invite')}<input
-                  required
-                  bind:value={invite}
-                  autocomplete="off"
-                  placeholder={t('invitePlaceholder')}
-                /></label
+            {/if}
+            {#if hasSavedAccounts}<button
+                class="secondary-button"
+                disabled={busy}
+                on:click={() => openAuthForm()}
+                ><Icon name="plus" size={16} />{t('addAccount')}</button
               >{/if}
-            <p class="help-text">
-              {t('accountHelp')}
-            </p>
-            <button class="primary-button auth-submit" disabled={busy}
-              >{busy
-                ? t('processing')
-                : authMode === 'login'
-                  ? t('loginSubmit')
-                  : t('registerSubmit')}</button
-            >
-          </form>
+          </div>
+          {#if showAuthForm}<div class="auth-form-panel">
+              <div class="auth-heading">
+                <h3>
+                  {reauthProfile
+                    ? t('signInAgain')
+                    : authMode === 'login'
+                      ? t(hasSavedAccounts ? 'loginOther' : 'signInTitle')
+                      : t('registerInvite')}
+                </h3>
+                {#if !reauthProfile}<button
+                    class="text-button"
+                    disabled={busy}
+                    on:click={() => {
+                      authMode = authMode === 'login' ? 'register' : 'login';
+                    }}
+                  >
+                    {authMode === 'login' ? t('registerLink') : t('loginLink')}
+                  </button>{/if}
+                {#if hasSavedAccounts}<button
+                    class="icon-button"
+                    disabled={busy}
+                    aria-label={t('close')}
+                    on:click={closeAuthForm}><Icon name="x" size={18} /></button
+                  >{/if}
+              </div>
+              <form novalidate on:submit|preventDefault={() => run(authenticate)}>
+                <fieldset disabled={busy}>
+                  <label class="field"
+                    >{t('serverAddress')}<input
+                      type="url"
+                      required
+                      bind:value={serverUrl}
+                      on:input={(event) => {
+                        if (!reauthProfile) addServerDraft = event.currentTarget.value;
+                      }}
+                      readonly={!!reauthProfile}
+                      placeholder={DEFAULT_SERVER_URL}
+                      autocomplete="url"
+                    />{#if runtime?.debug_http}<small>{t('debugServerHelp')}</small>{/if}</label
+                  >
+                  <div class="field-row">
+                    <label class="field"
+                      >{t('username')}<input
+                        required
+                        bind:value={username}
+                        readonly={!!reauthProfile}
+                        minlength="3"
+                        maxlength="32"
+                        pattern={'[a-z0-9][a-z0-9_-]{2,31}'}
+                        autocomplete="username"
+                        placeholder="your-name"
+                      /></label
+                    ><label class="field"
+                      >{t('deviceName')}<input
+                        required
+                        bind:value={deviceName}
+                        maxlength="128"
+                        placeholder={t('devicePlaceholder')}
+                      /></label
+                    >
+                  </div>
+                  <label class="field"
+                    >{t('password')}<input
+                      type="password"
+                      required
+                      bind:value={password}
+                      minlength="12"
+                      maxlength="256"
+                      autocomplete={authMode === 'register' ? 'new-password' : 'current-password'}
+                      placeholder={t('passwordPlaceholder')}
+                    /></label
+                  >
+                  {#if authMode === 'register'}<label class="field"
+                      >{t('invite')}<input
+                        required
+                        bind:value={invite}
+                        autocomplete="off"
+                        placeholder={t('invitePlaceholder')}
+                      /></label
+                    >{/if}
+                  <p class="help-text">
+                    {t('accountHelp')}
+                  </p>
+                  <button class="primary-button auth-submit" disabled={busy}
+                    >{busy
+                      ? t('processing')
+                      : authMode === 'login'
+                        ? t('loginSubmit')
+                        : t('registerSubmit')}</button
+                  >
+                </fieldset>
+              </form>
+            </div>{/if}
         {:else if settingsTab === 'devices'}
           <h3>{t('devicesTab')}</h3>
           <p class="help-text">{t('devicesHelp')}</p>
@@ -1688,7 +1782,9 @@
             {t('exportHelp')}
           </p>
           <button class="secondary-button" disabled={busy} on:click={() => run(exportNotes)}
-            ><Icon name="download" size={18} />{t(trash ? 'exportDeleted' : 'exportActive')}</button
+            ><Icon name="file-output" size={18} />{t(
+              trash ? 'exportDeleted' : 'exportActive',
+            )}</button
           >
           <div class="settings-separator"></div>
           <h3>{t('copySpace')}</h3>
@@ -1787,7 +1883,7 @@
       aria-labelledby="markdown-heading"
       tabindex="-1"
     >
-      <span class="import-icon"><Icon name="download" size={24} /></span>
+      <span class="import-icon"><Icon name="file-input" size={24} /></span>
       <h2 id="markdown-heading">{t('importMarkdown')}</h2>
       <p>
         <strong>{profileLabel(markdownConfirmProfile, t, language, preferences.timeZone)}</strong>
@@ -1840,8 +1936,8 @@
             purgeConfirmation = null;
           }}>{t('cancel')}</button
         >
-        <button class="danger" disabled={busy} on:click={() => run(confirmPurge)}
-          >{t('purgeNote')}</button
+        <button class="danger destructive-solid" disabled={busy} on:click={() => run(confirmPurge)}
+          ><Icon name="trash-2" size={18} />{t('purgeNote')}</button
         >
       </div>
       {#if failure}<p class="inline-error">{errorText(failure, language)}</p>{/if}
