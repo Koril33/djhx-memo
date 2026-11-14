@@ -14,6 +14,10 @@ export async function call<T>(request: Request): Promise<T> {
   return result.data;
 }
 const errorKeys: Record<string, MessageKey> = {
+  IMPORT_INVALID_FILE: 'importInvalid',
+  IMPORT_INVALID_ENCODING: 'importInvalid',
+  IMPORT_EMPTY: 'importEmpty',
+  IMPORT_READ_FAILED: 'importReadFailed',
   NOTE_PURGED: 'notePurged',
   PURGE_PENDING: 'purgePending',
   PURGE_CONFLICT: 'purgeRejected',
@@ -42,6 +46,8 @@ const errorKeys: Record<string, MessageKey> = {
 // Native commands expose fixed safe messages. Translate the known surface and never display
 // arbitrary native/server error payloads, which could contain user data or untranslated text.
 const nativeErrorKeys: Record<string, MessageKey> = {
+  IMPORT_READ_FAILED: 'importReadFailed',
+  NOTE_TOO_LARGE: 'errorLarge',
   '回收站笔记需先恢复才能编辑。': 'errorDeleted',
   '目标文件已存在，请使用新的文件名；已有文件未改动。': 'errorFileExists',
   '没有权限写入所选目录，请重新选择。': 'errorPermission',

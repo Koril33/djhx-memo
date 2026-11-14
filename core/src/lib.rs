@@ -4,6 +4,7 @@
 
 mod db;
 mod highlight;
+mod list_actions;
 mod model;
 mod purge;
 mod sync;
@@ -160,7 +161,7 @@ impl Engine {
             .connect_timeout(Duration::from_secs(8))
             .timeout(Duration::from_secs(35))
             .redirect(reqwest::redirect::Policy::none())
-            .user_agent("djhx-memo/0.1.4")
+            .user_agent(concat!("djhx-memo/", env!("CARGO_PKG_VERSION")))
             .build()
             .map_err(|_| AppError::network())?;
         let this = Self {
@@ -377,6 +378,12 @@ impl Engine {
         }
         if action == "import" {
             return self.import(request, &profile);
+        }
+        if action == "batch_set_deleted" {
+            return self.batch_deleted(request, &profile);
+        }
+        if action == "import_markdown" {
+            return self.import_markdown(request, &profile);
         }
         let mut database = db::open(&self.path(&profile))?;
         match action.as_str() {

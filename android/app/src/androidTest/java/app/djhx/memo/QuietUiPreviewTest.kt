@@ -54,6 +54,24 @@ class QuietUiPreviewTest {
         assertTrue("Action must be available: $text", node.performAction(AccessibilityNodeInfo.ACTION_CLICK))
     }
 
+    private fun scrollBackTo(text: String) {
+        fun scrollable(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+            if (node.isScrollable && !node.isEditable) return node
+            for (index in 0 until node.childCount) node.getChild(
+                index
+            )?.let { scrollable(it)?.let { found -> return found } }
+            return null
+        }
+        repeat(8) {
+            if (findNode(text) != null) return
+            val list = instrumentation.uiAutomation.rootInActiveWindow?.let(::scrollable)
+            list?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD)
+            instrumentation.waitForIdleSync()
+            SystemClock.sleep(150)
+        }
+        waitFor { findNode(text) != null }
+    }
+
     private fun editor(view: View): EditText? {
         if (view is EditText) return view
         if (view is ViewGroup) for (index in 0 until view.childCount) editor(view.getChildAt(index))?.let { return it }
@@ -132,7 +150,10 @@ class QuietUiPreviewTest {
         }
         waitFor { !model.pending && model.content == original + "\n撤销验证" }
         click("预览")
-        waitFor { !input.isShown }
+        waitFor {
+            !input.isShown && !input.isEnabled &&
+                input.importantForAccessibility == View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+        }
         assertFalse(input.isEnabled)
         assertEquals(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS, input.importantForAccessibility)
         click("源码")
@@ -216,8 +237,20 @@ class QuietUiPreviewTest {
                 capture("en-editor")
                 click("More")
                 click("Delete")
-                waitFor { findNode("Move to trash?") != null }
-                click("Move to trash")
+                waitFor { !model.editorOpen && !model.busy }
+                waitFor { findNode("Undo deletion") != null }
+                assertTrue(runBlocking { application.gateway.obj("get", "id" to ids.last()).getBoolean("deleted") })
+                click("Undo deletion")
+                waitFor { !model.busy && model.notes.any { it.optString("id") == ids.last() } }
+                assertFalse(runBlocking { application.gateway.obj("get", "id" to ids.last()).getBoolean("deleted") })
+                assertEquals("留白与日常", model.notes.first { it.optString("id") == ids.last() }.getString("title"))
+                scrollBackTo("留白与日常")
+                capture("en-restored-list")
+                click("留白与日常")
+                waitFor { model.editorOpen && !model.busy }
+                assertEquals(ids.last(), model.selected!!.getString("id"))
+                click("More")
+                click("Delete")
                 waitFor { !model.editorOpen && !model.busy }
                 click("More")
                 click("Trash")

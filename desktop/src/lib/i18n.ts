@@ -1,6 +1,37 @@
 // Local presentation only. Never translate note content or user-provided names.
 export type Language = 'zh-CN' | 'en';
 export const messages = {
+  selectAllShort: { 'zh-CN': '全选', en: 'All' },
+  undoShort: { 'zh-CN': '撤销', en: 'Undo' },
+  trashNotice: { 'zh-CN': '已将 {total} 条笔记移入回收站', en: 'Moved {total} to trash' },
+  selectShort: { 'zh-CN': '选择', en: 'Select' },
+  selectNotes: { 'zh-CN': '选择笔记', en: 'Select notes' },
+  selectAll: { 'zh-CN': '全选当前结果', en: 'Select all results' },
+  selectedCount: { 'zh-CN': '已选择 {count} 条', en: '{count} selected' },
+  batchResult: {
+    'zh-CN': '已移入回收站 {count} 条 · 失败 {failed} 条',
+    en: '{count} moved to trash · {failed} failed',
+  },
+  undoTrash: { 'zh-CN': '撤销删除', en: 'Undo deletion' },
+  undoResult: {
+    'zh-CN': '已恢复 {count} 条 · 失败 {failed} 条',
+    en: '{count} restored · {failed} failed',
+  },
+  importMarkdown: { 'zh-CN': '导入 Markdown', en: 'Import Markdown' },
+  importedMarkdown: { 'zh-CN': '已导入到 {space}', en: 'Imported into {space}' },
+  importCloud: {
+    'zh-CN': '导入到当前账号后会同步到其他设备。继续？',
+    en: 'Imported notes will sync to your other devices. Continue?',
+  },
+  importInvalid: {
+    'zh-CN': '请选择有效的 UTF-8 Markdown 文件。',
+    en: 'Choose a valid UTF-8 Markdown file.',
+  },
+  importEmpty: { 'zh-CN': 'Markdown 文件内容为空。', en: 'The Markdown file is empty.' },
+  importReadFailed: {
+    'zh-CN': '无法读取文件，请检查权限并重新选择。',
+    en: 'Could not read the file. Check permissions and select it again.',
+  },
   updatesTab: { 'zh-CN': '软件更新', en: 'Updates' },
   cancel: { 'zh-CN': '取消', en: 'Cancel' },
   showNoteList: { 'zh-CN': '显示笔记列表', en: 'Show note list' },
@@ -911,6 +942,9 @@ export type CountMessageKey = {
 // Every count-bearing English message must explicitly define its singular form.
 // Keep the plural catalogue as the default, including zero and nonnumeric display values.
 export const englishSingularMessages = {
+  selectedCount: '{count} selected',
+  batchResult: '{count} moved to trash · {failed} failed',
+  undoResult: '{count} restored · {failed} failed',
   pending: 'Pending · {count}',
   imported: 'Copied {count} note. The original remains in the source space.',
   records: '{count} note',

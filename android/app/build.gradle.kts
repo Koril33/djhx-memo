@@ -14,8 +14,8 @@ android {
         minSdk = 29
         targetSdk = 36
         // Only isolated device fixtures can override identity for a real upgrade preflight.
-        versionCode = if (project.hasProperty("isolatedValidation")) providers.gradleProperty("updateTestVersionCode").orNull?.toInt() ?: 6 else 6
-        versionName = if (project.hasProperty("isolatedValidation")) providers.gradleProperty("updateTestVersionName").orNull ?: "0.1.5" else "0.1.5"
+        versionCode = if (project.hasProperty("isolatedValidation")) providers.gradleProperty("updateTestVersionCode").orNull?.toInt() ?: 7 else 7
+        versionName = if (project.hasProperty("isolatedValidation")) providers.gradleProperty("updateTestVersionName").orNull ?: "0.1.6" else "0.1.6"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         providers.environmentVariable("DJHX_ANDROID_TEST_SERVER_URL").orNull?.let {
             testInstrumentationRunnerArguments["serverUrl"] = it
@@ -54,6 +54,7 @@ android {
     }
     sourceSets["main"].java.srcDir("build/generated/uniffi")
     packaging { resources.excludes += listOf("META-INF/AL2.0", "META-INF/LGPL2.1", "META-INF/LICENSE*", "META-INF/NOTICE*") }
+    if (project.hasProperty("releaseValidation")) testBuildType = "release"
     testOptions { unitTests.isReturnDefaultValues = true }
 }
 dependencyLocking { lockAllConfigurations() }
@@ -87,3 +88,15 @@ val prepareNotices by tasks.registering(Copy::class) {
 }
 android.sourceSets["main"].assets.srcDir(layout.buildDirectory.dir("generated/notices"))
 tasks.named("preBuild") { dependsOn(prepareNotices) }
+
+// Optional fixture stays in build/ and is never packaged into the application release.
+providers.gradleProperty("updateFixtureApk").orNull?.let { fixture ->
+    val prepareUpdateFixture by tasks.registering(Copy::class) {
+        from(fixture) { rename { "update-candidate.apk" } }
+        into(layout.buildDirectory.dir("generated/update-test-assets"))
+    }
+    android.sourceSets["androidTest"].assets.srcDir(layout.buildDirectory.dir("generated/update-test-assets"))
+    tasks.matching { it.name in setOf("mergeDebugAndroidTestAssets", "mergeReleaseAndroidTestAssets") }.configureEach {
+        dependsOn(prepareUpdateFixture)
+    }
+}

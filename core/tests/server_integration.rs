@@ -16,6 +16,48 @@ fn uid() -> String {
     uuid::Uuid::new_v4().to_string()
 }
 
+/// File import, per-note partial trash and restore across two actual HTTP clients.
+#[test]
+#[ignore = "requires isolated DJHX_SERVER_BIN"]
+fn markdown_import_batch_trash_and_undo_converge() {
+    use base64::Engine as _;
+    let service = Service::new();
+    let a = Client::new();
+    let b = Client::new();
+    let name = format!("batch_{}", &uid()[..8]);
+    a.register(&service, &name, &service.url);
+    b.login(&name, &service.url);
+    let content = "# Imported 中文😀\n```rust\nlet x = 1;\n```";
+    let imported = call(
+        &a.app,
+        json!({"action":"import_markdown","profile_id":a.profile(),"filename":"fixture.Md","request_id":uid(),"bytes_base64":base64::prelude::BASE64_STANDARD.encode(content)}),
+    );
+    let id = imported["id"].as_str().unwrap();
+    a.sync();
+    b.sync();
+    assert_eq!(b.get(id)["content"], content);
+    let batch = call(
+        &a.app,
+        json!({"action":"batch_set_deleted","profile_id":a.profile(),"deleted":true,"items":[{"id":id,"expected_generation":a.get(id)["generation"]},{"id":uid(),"expected_generation":"1"}]}),
+    );
+    assert_eq!(batch["results"][0]["ok"], true);
+    assert_eq!(batch["results"][1]["ok"], false);
+    a.sync();
+    b.sync();
+    assert_eq!(b.get(id)["deleted"], true);
+    let restored = call(
+        &a.app,
+        json!({"action":"batch_set_deleted","profile_id":a.profile(),"deleted":false,"items":[{"id":id,"expected_generation":batch["results"][0]["note"]["generation"]}]}),
+    );
+    assert_eq!(restored["results"][0]["ok"], true);
+    a.sync();
+    b.sync();
+    assert_eq!(b.get(id)["deleted"], false);
+    assert_eq!(b.get(id)["content"], content);
+    let b = b.restart();
+    assert_eq!(b.get(id)["content"], content);
+}
+
 /// PURGE-02/03/05/06 through the actual Go HTTP handler, without a Unix CLI dependency.
 #[test]
 #[ignore = "requires isolated DJHX_PURGE_TEST_URL and DJHX_PURGE_TEST_INVITE"]

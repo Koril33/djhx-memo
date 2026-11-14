@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
 
@@ -52,6 +53,154 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         private set
     var devices by mutableStateOf(emptyList<JSONObject>())
         private set
+    var selecting by mutableStateOf(false)
+        private set
+    var selection by mutableStateOf(emptySet<String>())
+        private set
+    data class TrashUndo(val profile: String, val notes: List<JSONObject>, val serial: Long, val failed: Int = 0)
+    var trashUndo by mutableStateOf<TrashUndo?>(null)
+        private set
+    var actionNotice by mutableStateOf<UiText?>(null)
+        private set
+    fun dismissActionNotice(notice: UiText) { if (actionNotice == notice) actionNotice = null }
+    private var undoSerial = 0L
+    private val markdownImport = MarkdownImportSession(gateway)
+
+    fun cancelSelection() {
+        selecting = false
+        selection = emptySet()
+    }
+    fun toggleSelection(id: String) {
+        if (busy) return
+        if (trash || state.optJSONObject("profile")?.optBoolean("read_only") == true) return
+        selecting = true
+        selection = if (id in selection) selection - id else selection + id
+    }
+    fun selectAll() {
+        if (busy) return
+        selecting = true
+        selection = notes.map { it.getString("id") }.toSet()
+    }
+    fun toggleAllSelection() {
+        if (busy) return
+        val ids = notes.map { it.getString("id") }.toSet()
+        selection = if (selection == ids) emptySet() else ids
+    }
+    fun dismissTrashUndo() { trashUndo = null }
+
+    /** Every result carries the committed generation, used unchanged by undo. */
+    fun trashNotes(targets: List<JSONObject>, mergeUndo: Boolean = false) = action {
+        val profile = currentProfileId()
+        if (compositionActive) {
+            reportText(R.string.finish_composition)
+            return@action
+        }
+        if (!flush()) return@action
+        val items = targets.map { original ->
+            val note = selected?.takeIf { it.optString("id") == original.optString("id") } ?: original
+            JSONObject().put("id", note.getString("id")).put("expected_generation", note.getString("generation"))
+        }
+        val results = gateway.obj(
+            "batch_set_deleted",
+            "profile_id" to profile,
+            "deleted" to true,
+            "items" to JSONArray(items)
+        )
+            .getJSONArray("results").objects()
+        val saved = results.filter { it.optBoolean("ok") }.map { it.getJSONObject("note") }
+        if (currentProfileId() != profile) return@action
+        selection = results.filterNot { it.optBoolean("ok") }.map { it.getString("id") }.toSet()
+        selecting = selection.isNotEmpty()
+        if (saved.any { it.getString("id") == selected?.optString("id") }) {
+            selected = null
+            content = ""
+            editorOpen = false
+        }
+        if (saved.isNotEmpty()) {
+            val previous = trashUndo?.takeIf { mergeUndo && it.profile == profile }?.notes.orEmpty()
+            trashUndo = TrashUndo(
+                profile,
+                (previous + saved).associateBy {
+                    it.getString("id")
+                }.values.toList(),
+                ++undoSerial, results.size - saved.size
+            )
+        }
+        if (saved.isEmpty() && results.isNotEmpty()) {
+            actionNotice = UiText(R.string.batch_result, listOf(0, results.size))
+        }
+        loadNotes()
+    }
+
+    fun undoTrash() {
+        val group = trashUndo ?: return
+        trashUndo = null
+        viewModelScope.launch {
+            while (busy || updateLocked) delay(50)
+            if (group.profile == currentProfileId()) restoreTrashGroup(group)
+        }
+    }
+    private fun restoreTrashGroup(group: TrashUndo) = action {
+        if (group.profile != currentProfileId()) return@action
+        val items = group.notes.map {
+            JSONObject().put(
+                "id",
+                it.getString("id")
+            ).put("expected_generation", it.getString("generation"))
+        }
+        val results = gateway.obj(
+            "batch_set_deleted",
+            "profile_id" to group.profile,
+            "deleted" to false,
+            "items" to JSONArray(items)
+        ).getJSONArray("results").objects()
+        val restored = results.count { it.optBoolean("ok") }
+        actionNotice = if (restored == results.size) {
+            UiText(R.string.restored_count, listOf(restored))
+        } else {
+            UiText(R.string.undo_result, listOf(restored, results.size - restored))
+        }
+        loadNotes()
+    }
+
+    /** Picker ownership and unknown receipts survive rotation in the ViewModel session. */
+    fun beginMarkdownImport(): String? {
+        if (busy || updateLocked || state.optJSONObject("profile")?.optBoolean("read_only") == true) return null
+        markdownImport.pending?.takeIf { it.bytes != null }?.let {
+            completeMarkdownImport(it.id, null, null)
+            return null
+        }
+        return markdownImport.begin(currentProfileId())
+    }
+    fun cancelMarkdownImport(token: String? = null) = markdownImport.cancel(token)
+    fun completeMarkdownImport(token: String, filename: String?, bytes: ByteArray?) {
+        val ready = try {
+            markdownImport.accept(token, currentProfileId(), filename, bytes)
+        } catch (error: CoreFailure) {
+            report(error)
+            null
+        } ?: return
+        action {
+            if (compositionActive) {
+                reportText(R.string.finish_composition)
+                return@action
+            }
+            if (!flush()) return@action
+            val note = markdownImport.commit(ready)
+            if (currentProfileId() != ready.profile) return@action
+            selected = note
+            content = note.getString("content")
+            editorProfileId = ready.profile
+            editorOpen = true
+            trash = false
+            query = ""
+            revision++
+            cancelSelection()
+            localStatus = UiText(R.string.save_success)
+            actionNotice = UiText(R.string.markdown_imported)
+            loadNotes()
+        }
+    }
     private val saveMutex = Mutex()
     private var saveJob: Job? = null
     private var firstUncommittedAt = 0L
@@ -183,6 +332,12 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
 
     private suspend fun refresh() {
         val next = gateway.obj("state")
+        if (currentProfileId() != next.optJSONObject("profile")?.optString("id")) {
+            cancelSelection()
+            trashUndo = null
+            actionNotice = null
+            markdownImport.cancel()
+        }
         state = next
         val redirects = next.optJSONObject("redirects")
         redirects?.keys()?.forEach { source ->
@@ -253,16 +408,22 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
             "query" to query,
             "deleted" to trash
         ).objects()
-        if (request == listRequest) notes = found
+        if (request == listRequest) {
+            notes = found
+            selection = selection.intersect(found.map { it.getString("id") }.toSet())
+        }
     }
 
     fun search(value: String) {
+        if (busy) return
+        cancelSelection()
         query = value
         viewModelScope.launch { runCatching { loadNotes() }.onFailure { report(it) } }
     }
 
     fun showTrash(value: Boolean) = action {
         if (!flush()) return@action
+        cancelSelection()
         trash = value
         editorOpen = false
         selected = null
@@ -310,7 +471,14 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         loadNotes()
     }
 
-    fun setDeleted(deleted: Boolean) = action {
+    fun setDeleted(deleted: Boolean) {
+        if (deleted) {
+            selected?.let { trashNotes(listOf(it)) }
+            return
+        }
+        restoreSelected()
+    }
+    private fun restoreSelected() = action {
         if (!flush()) return@action
         val current = selected ?: return@action
         gateway.obj(
@@ -318,7 +486,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
             "profile_id" to editorProfileId,
             "id" to current.getString("id"),
             "expected_generation" to current.getString("generation"),
-            "deleted" to deleted,
+            "deleted" to false,
         )
         editorOpen = false
         selected = null
@@ -448,6 +616,10 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
     }
 
     private fun clearSelection() {
+        cancelSelection()
+        trashUndo = null
+        actionNotice = null
+        markdownImport.cancel()
         editorOpen = false
         selected = null
         content = ""
@@ -470,8 +642,8 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
 
     private fun action(block: suspend () -> Unit) {
         if (busy || updateLocked) return
+        busy = true
         viewModelScope.launch {
-            busy = true
             try { block() } catch (error: kotlinx.coroutines.CancellationException) {
                 throw error
             } catch (error: Exception) {

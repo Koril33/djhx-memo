@@ -6,7 +6,7 @@ use serde::Serialize;
 use serde_json::{Value, json};
 use std::{
     fs::{self, OpenOptions},
-    io::Write,
+    io::{Read, Write},
     path::{Path, PathBuf},
     sync::{
         Arc, Mutex,
@@ -343,6 +343,19 @@ async fn export_notes(
     }).await.map_err(|_| "导出任务未完成。".to_string())?
 }
 
+/// Reads only a user-selected local file, with a raw bound before JSON/base64 allocation.
+#[tauri::command]
+async fn pick_markdown(app: tauri::AppHandle) -> Result<Option<Value>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let Some(chosen) = app.dialog().file().add_filter("Markdown", &["md", "MD", "Md", "mD"]).blocking_pick_file() else { return Ok(None); };
+        let path = chosen.into_path().map_err(|_| "IMPORT_READ_FAILED")?;
+        let mut bytes = Vec::new();
+        fs::File::open(&path).map_err(|_| "IMPORT_READ_FAILED")?.take(2 * 1_048_576 + 4).read_to_end(&mut bytes).map_err(|_| "IMPORT_READ_FAILED")?;
+        if bytes.len() > 2 * 1_048_576 + 3 { return Err("NOTE_TOO_LARGE".into()); }
+        Ok(Some(json!({"filename":path.file_name().and_then(|n|n.to_str()).unwrap_or(""),"bytes_base64":BASE64_STANDARD.encode(bytes)})))
+    }).await.map_err(|_| "IMPORT_READ_FAILED".to_owned())?
+}
+
 #[tauri::command]
 async fn rescue_text(app: tauri::AppHandle, content: String) -> Result<Option<String>, String> {
     tauri::async_runtime::spawn_blocking(move || {
@@ -564,6 +577,7 @@ fn main() {
             open_external,
             export_notes,
             rescue_text,
+            pick_markdown,
             frontend_ready,
             set_presentation,
             system_appearance
