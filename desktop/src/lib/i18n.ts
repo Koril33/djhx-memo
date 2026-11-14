@@ -177,6 +177,10 @@ export const messages = {
     'zh-CN': '已导出 ZIP：{path}',
     en: 'ZIP exported: {path}',
   },
+  noteExported: {
+    'zh-CN': '笔记已导出为 Markdown：{path}',
+    en: 'Note exported as Markdown: {path}',
+  },
   rescued: {
     'zh-CN': '当前文字已保全为 Markdown：{path}',
     en: 'Current text saved as Markdown: {path}',
