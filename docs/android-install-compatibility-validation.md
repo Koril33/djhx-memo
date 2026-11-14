@@ -44,6 +44,10 @@ Build Tools36.1.0的apksigner验证通过：app.djhx.memo、versionName0.1.9、c
 
 密钥沿用仓库外原发布JKS，只在本次Gradle进程环境注入，使用`--no-daemon`并在结束后清除变量。未生成新Android证书或更新信任根。
 
+## 源码交付
+
+修复源码提交`1cd92286f2b7410691740d210cabd80fa4d23856`已推送独立分支`codex/android-installer-compatibility`，对应[Gitea PR #21](https://git.djhx.site/koril/djhx-memo/pulls/21)。候选在提交前按同一Android生产源码构建；其后仅追加本段交付记录，未重编或推广发行。Gitea main仍为`d1c60cd9507f0349038964e35f1353930fb07287`，未将私人修复分支批量公开到GitHub。
+
 ## 未验证范围
 
 - Civi新兼容入口尚未实测；用户目前已恢复到正式0.1.8。新源码不能直接修补已安装旧进程。
