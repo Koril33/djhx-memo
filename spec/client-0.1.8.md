@@ -1,6 +1,6 @@
 # 0.1.8 操作语义、设置与官网下载
 
-状态：2026-11-14实施中；实际检查与分发只见[发布验证](../docs/releases/0.1.8-validation.md)。Windows/Linux桌面与Android保持原安装身份；客户端0.1.8、Android code9，core0.1.7/server0.1.4/协议2及schema均不变。
+状态：2026-11-14已实现并公开发布；实际检查与分发只见[发布验证](../docs/releases/0.1.8-validation.md)。Windows/Linux桌面与Android保持原安装身份；客户端0.1.8、Android code9，core0.1.7/server0.1.4/协议2及schema均不变。
 
 ## 操作图标与危险操作
 

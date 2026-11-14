@@ -1,8 +1,6 @@
 # djhx-memo
 
-0.1.8 正在验收：整理多选/删除/导入导出图标、账号入口、保存同步和更新页面，并修正官网平台下载直链；见[本轮规范](spec/client-0.1.8.md)与[实际状态](docs/releases/0.1.8-validation.md)。尚未公开发行。
-
-当前客户端 **[0.1.7](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.7)** 已公开发布三端安装包，修复登录账号后的实时同步长连接占用更新屏障。保留0.1.6的三端多选、删除撤销、单个Markdown导入及Android左滑。实际检查与旧版升级步骤见[0.1.7验证](docs/releases/0.1.7-validation.md)，上一版记录见[0.1.6验证](docs/releases/0.1.6-validation.md)。server仍为0.1.4，协议/schema不变；完整设备矩阵和7天试用仍待完成。
+当前客户端 **[0.1.8](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.8)** 已公开发布Windows、Android、Linux三端正式包，统一操作图标与红底删除，整理账号入口、保存同步及更新页面，并修正官网下载直链。实际检查与升级结果见[0.1.8验证](docs/releases/0.1.8-validation.md)；保留[0.1.7安装屏障修正](docs/releases/0.1.7-validation.md)。core仍0.1.7、server仍0.1.4，协议/schema不变；完整设备矩阵与7天试用仍待完成。
 
 0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](docs/releases/0.1.4-validation.md)。
 
@@ -10,7 +8,7 @@
 
 **v1 目标：Windows、Android、Linux 三端可日常使用。** 桌面端包含托盘；允许未登录记笔记，提供邀请码注册、登录、同步、搜索、回收站和 Markdown 导出。Web、Apple、全局快捷键、系统分享以及 CI/Runner 暂缓。
 
-0.1.4～0.1.7 已公开发布，当前客户端保持其协议 2 与 schema 基线，core新增本地列表/文件入口。Windows/Linux/Android 客户端已实现，公开安装包以 Release 列出的平台为准。已执行核心/服务端联调及目标系统的部分实际使用验证；完整设备矩阵与连续 7 天日常试用仍待完成，完整产品 v1 尚未正式发布。实际结果和限制见各模块验证记录。
+0.1.4～0.1.8 已公开发布，当前客户端保持其协议 2 与 schema 基线，core新增本地列表/文件入口。Windows/Linux/Android 客户端已实现，公开安装包以 Release 列出的平台为准。已执行核心/服务端联调及目标系统的部分实际使用验证；完整设备矩阵与连续 7 天日常试用仍待完成，完整产品 v1 尚未正式发布。实际结果和限制见各模块验证记录。
 
 ## 从这里开始
 

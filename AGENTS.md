@@ -3,7 +3,7 @@
 ## 阅读顺序与当前状态
 
 - 阅读 [README](README.md)、[项目计划](djhx-memo-project-plan.md)、[spec 索引](spec/README.md) 及工作目录中的 `AGENTS.md`。
-- 当前0.1.6客户端扩展自0.1.5更新器与0.1.4数据基线；完整产品 v1 尚未发布。实际检查见各模块验证记录；同步、迁移、鉴权的交叉评审见 `docs/reviews/`，不得把未完成的三端验收或 7 天试用当作已通过。
+- 当前0.1.8客户端保留0.1.7安装屏障与0.1.4数据基线；完整产品 v1 尚未发布。实际检查见各模块验证记录；同步、迁移、鉴权的交叉评审见 `docs/reviews/`，不得把未完成的三端验收或 7 天试用当作已通过。
 - `spec/` 是产品与实现行为的唯一事实来源。改行为先改规范，规范与实现同批提交；不得把计划或占位内容当作已实现的能力。
 
 ## 工作方式
@@ -45,3 +45,5 @@
 0.1.6 依 spec/client-0.1.6.md 增加批量普通删除/严格代次撤销、Android左滑和单Markdown导入；core版本同步0.1.6，server/协议/schema不变。交叉评审见 docs/reviews/client-0.1.6-review.md；发布与三端升级结果只以 docs/releases/0.1.6-validation.md 为准。
 
 0.1.7 修复实时同步占用更新屏障，按 spec/automatic-updates.md 执行，不改变同步协议/schema。实际结果见 docs/releases/0.1.7-validation.md；旧0.1.5/0.1.6需在本机空间结束旧连接后才能自动安装，不以该临时步骤冒充旧版登录状态自动安装已通过。
+
+0.1.8整理七项UI/官网下载体验，行为见spec/client-0.1.8.md；core0.1.7/server0.1.4/协议与schema不变。账号与平台独立复核见docs/reviews/client-0.1.8-review.md，真实发布与三端升级状态见docs/releases/0.1.8-validation.md，不将Windows维护者验收或Android可访问树检查等同于完整设备/像素矩阵。

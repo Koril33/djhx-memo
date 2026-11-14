@@ -40,7 +40,7 @@ Tauri 配置启用 `createUpdaterArtifacts: true`，输出 NSIS `.exe` 和 `.exe
 
 原生更新器只从已验签的目录构造 `restore_update`，不调用插件的网络 `check`。Tauri builder 仍要求非空 `endpoints`，配置中保留静态目录地址满足初始化校验；JS updater 权限没有开放，不能把这个自定义信封当作普通 Tauri latest.json 直接调用。
 
-Android 先重编 JNI、执行本地检查，再用原 keystore 构建签名 APK。核对包名 `app.djhx.memo`、0.1.5 的 versionCode 6、两种 ABI、实际 minSdk/证书摘要，并用 Android build-tools 的 apksigner 验签。模拟器的 debug/validation APK 不能当作正式 APK 发布。
+Android 先重编 JNI、执行本地检查，再用原 keystore 构建签名 APK。核对包名 `app.djhx.memo`、本次版本对应的versionCode（0.1.5为6，0.1.8为9）、两种 ABI、实际 minSdk/证书摘要，并用 Android build-tools 的 apksigner 验签。模拟器的 debug/validation APK 不能当作正式 APK 发布。
 
 ## 4. 生成签名目录
 
