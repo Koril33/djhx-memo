@@ -8,17 +8,45 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.*
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.UUID
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 
 /** Opt-in end-to-end probe against the published signed feed on a disposable emulator. */
 @RunWith(AndroidJUnit4::class)
 class PublishedUpgradeTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
+    private suspend fun command(updates: AppUpdates, name: String, timeout: Long) = withTimeout(timeout) {
+        withContext(Dispatchers.Main) {
+            // Test-only bridge to the same suspend handler used by action(). It also works
+            // against released APKs, without adding a production API or trusting a stale snapshot.
+            suspendCoroutineUninterceptedOrReturn<Unit> { continuation ->
+                AppUpdates::class.java.getDeclaredMethod("perform", String::class.java, Continuation::class.java)
+                    .apply { isAccessible = true }.invoke(updates, name, continuation)
+            }
+        }
+    }
+    private fun report(updates: AppUpdates, stage: String) {
+        if (InstrumentationRegistry.getArguments().getString("reportUpdates") != "1") return
+        instrumentation.sendStatus(
+            2,
+            Bundle().apply {
+                putString("update_stage", stage)
+                putString("update_phase", updates.status.optString("phase"))
+                putLong("update_downloaded", updates.status.optLong("downloaded"))
+                putLong("update_size", updates.status.optJSONObject("candidate")?.optLong("size") ?: 0)
+                putString("update_error", updates.status.optString("error"))
+            }
+        )
+    }
     private fun waitFor(timeout: Long = 15000, condition: () -> Boolean) {
         val deadline = SystemClock.elapsedRealtime() + timeout
         while (!condition() && SystemClock.elapsedRealtime() < deadline) SystemClock.sleep(100)
@@ -64,21 +92,15 @@ class PublishedUpgradeTest {
             lateinit var model: MemoModel
             scenario.onActivity {
                 model = ViewModelProvider(it)[MemoModel::class.java]
-                updates.action("check")
             }
-            waitFor(60000) {
-                runBlocking { updates.refresh() }
-                val targetReady = updates.status.optJSONObject("candidate")?.optString("version") == targetVersion
-                targetReady && updates.status.optString("phase") in setOf("available", "ready")
-            }
+            command(updates, "check", 60000)
+            report(updates, "check_returned")
+            assertTrue(updates.status.optString("phase") in setOf("available", "ready"))
             assertEquals(sourceVersion, updates.status.getString("current_version"))
             assertEquals(targetVersion, updates.status.getJSONObject("candidate").getString("version"))
             assertNotEquals("failed", updates.status.optString("phase"))
-            scenario.onActivity { updates.action("download") }
-            waitFor(180000) {
-                runBlocking { updates.refresh() }
-                updates.status.optString("phase") in setOf("ready", "failed")
-            }
+            command(updates, "download", 180000)
+            report(updates, "download_returned")
             assertEquals("ready", updates.status.getString("phase"))
             scenario.onActivity { model.open(note) }
             waitFor { model.editorOpen && !model.busy }
