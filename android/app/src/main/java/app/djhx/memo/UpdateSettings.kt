@@ -28,9 +28,10 @@ fun UpdateSettings(model: MemoModel) {
     val state = updates.status
     val candidate = state.optJSONObject("candidate")
     val phase = state.optString("phase")
-    val working = updates.operationPending || updates.installing || updates.preferencesPending ||
+    val working = updates.operationPending || updates.installing || updates.preferencesPending || updates.recoveryRequired ||
         phase in setOf("checking", "downloading", "preparing")
     val error = updates.installError ?: state.nullableString("error")?.takeUnless { it == "UPDATE_CANCELED" }
+    val information = error in setOf("UPDATE_INSTALL_CANCELED", "UPDATE_INSTALL_WAIT_CANCELED", "UPDATE_INSTALL_UNKNOWN")
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.primaryContainer) {
@@ -52,7 +53,15 @@ fun UpdateSettings(model: MemoModel) {
             color = if (phase == "up_to_date") MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
         ) {
             Text(
-                stringResource(updatePhase(phase)),
+                stringResource(
+                    when {
+                        updates.recoveryRequired -> R.string.update_recovery_state
+                        updates.waitingForSystemInstaller -> R.string.update_external_wait
+                        error == "UPDATE_INSTALL_CANCELED" -> R.string.update_install_cancelled_state
+                        error == "UPDATE_INSTALL_WAIT_CANCELED" -> R.string.update_wait_cancelled_state
+                        else -> updatePhase(phase)
+                    }
+                ),
                 Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                 style = MaterialTheme.typography.labelMedium
             )
@@ -95,21 +104,7 @@ fun UpdateSettings(model: MemoModel) {
                     style = MaterialTheme.typography.labelMedium
                 )
             }
-            if (error != null) {
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = MaterialTheme.colorScheme.errorContainer
-                ) {
-                    Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        MemoIcon(R.drawable.ic_ui_circle_alert, tint = MaterialTheme.colorScheme.onErrorContainer)
-                        Text(
-                            stringResource(updateError(error)),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                    }
-                }
-            }
+            if (error != null) UpdateFailureNotice(error, information)
             UpdateActions(model, updates, phase, working, candidate != null)
         }
         UpdateCard {
@@ -178,6 +173,12 @@ private fun UpdateActions(
             }
         }
         if (hasCandidate && !working) {
+            if (phase == "ready" || updates.installError?.startsWith("UPDATE_INSTALL") == true) {
+                OutlinedButton(onClick = {
+                    focus.clearFocus()
+                    updates.installWithSystemInstaller(model)
+                }, enabled = !model.busy) { Text(stringResource(R.string.update_system_install)) }
+            }
             TextButton(
                 onClick = { updates.action("defer") }
             ) { Text(stringResource(R.string.update_later)) }
@@ -190,7 +191,28 @@ private fun UpdateActions(
         if (updates.canCancelInstallation) {
             TextButton(
                 onClick = updates::cancelInstallation
-            ) { Text(stringResource(R.string.cancel)) }
+            ) {
+                Text(
+                    stringResource(
+                        when { updates.recoveryRequired -> R.string.update_retry_recovery
+                            updates.waitingForSystemInstaller -> R.string.update_cancel_wait
+                            else -> R.string.cancel }
+                    )
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun UpdateFailureNotice(error: String, information: Boolean) {
+    val colors = MaterialTheme.colorScheme
+    val background = if (information) colors.surfaceVariant else colors.errorContainer
+    val content = if (information) colors.onSurfaceVariant else colors.onErrorContainer
+    Surface(shape = RoundedCornerShape(10.dp), color = background) {
+        Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            MemoIcon(R.drawable.ic_ui_circle_alert, tint = content)
+            Text(stringResource(updateError(error)), style = MaterialTheme.typography.bodySmall, color = content)
         }
     }
 }
@@ -256,6 +278,18 @@ private fun updatePhase(phase: String): Int = when (phase) {
 }
 
 internal fun updateError(code: String): Int = when (code) {
+    "UPDATE_INSTALL_RECOVERY" -> R.string.update_install_recovery
+    "UPDATE_INSTALL_BLOCKED" -> R.string.update_install_blocked
+    "UPDATE_INSTALL_CONFLICT" -> R.string.update_install_conflict
+    "UPDATE_INSTALL_INVALID" -> R.string.update_install_invalid
+    "UPDATE_INSTALL_INCOMPATIBLE" -> R.string.update_incompatible
+    "UPDATE_INSTALL_STORAGE" -> R.string.update_install_storage
+    "UPDATE_INSTALL_CANCELED" -> R.string.update_install_cancelled
+    "UPDATE_INSTALL_WAIT_CANCELED" -> R.string.update_wait_cancelled
+    "UPDATE_INSTALL_UNKNOWN" -> R.string.update_install_unknown
+    "UPDATE_INSTALL_TIMEOUT" -> R.string.update_install_timeout
+    "UPDATE_INSTALL_BACKGROUND" -> R.string.update_install_background
+    "UPDATE_INSTALL_UNAVAILABLE" -> R.string.update_install_unavailable
     "UPDATE_NETWORK" -> R.string.update_network
     "UPDATE_SIGNATURE", "UPDATE_PACKAGE", "UPDATE_CATALOG", "UPDATE_REPLAY" -> R.string.update_invalid
     "UPDATE_EXPIRED" -> R.string.update_expired

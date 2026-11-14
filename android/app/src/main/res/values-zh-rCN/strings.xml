@@ -231,4 +231,22 @@
     <string name="update_unmetered_short">仅非计费网络</string>
     <string name="update_cancelled">下载已取消</string>
     <string name="automatic_downloads">自动下载</string>
+    <string name="update_system_install">通过系统安装器安装</string>
+    <string name="update_external_wait">等待系统安装结果</string>
+    <string name="update_cancel_wait">取消等待</string>
+    <string name="update_install_blocked">系统阻止了安装。可尝试“通过系统安装器安装”，并查看系统提示。</string>
+    <string name="update_install_conflict">系统报告安装冲突。请核对现有应用来源，不要卸载或清除数据。</string>
+    <string name="update_install_invalid">系统未接受安装包。请重新检查更新，或使用官网正式APK覆盖安装。</string>
+    <string name="update_install_storage">系统安装空间不足。释放空间后可重试，勿清除笔记数据。</string>
+    <string name="update_install_cancelled">已取消安装，可继续使用或重试。</string>
+    <string name="update_wait_cancelled">已取消等待。外部安装是否完成以系统页面为准。</string>
+    <string name="update_install_unknown">系统未返回明确结果。请先查看或关闭系统安装页，再取消等待以恢复编辑。</string>
+    <string name="update_install_timeout">系统安装超时。请查看系统提示后重试。</string>
+    <string name="update_install_background">请保持应用在前台，再尝试安装。</string>
+    <string name="update_install_unavailable">无法打开系统安装或授权页面，请使用官网正式APK覆盖安装。</string>
+    <string name="update_install_recovery">安装状态清理未完成，请重试恢复更新状态。</string>
+    <string name="update_retry_recovery">恢复更新状态</string>
+    <string name="update_recovery_state">需要恢复更新状态</string>
+    <string name="update_install_cancelled_state">安装已取消</string>
+    <string name="update_wait_cancelled_state">已结束等待</string>
 </resources>

@@ -45,10 +45,20 @@ import org.json.JSONObject
 
 /** 原生主界面；退出到后台前请求本地提交，云端失败不阻止离线编辑。 */
 class MainActivity : ComponentActivity() {
+    private val updateInstallers = UpdateResultLaunchers(activityResultRegistry) { attempt ->
+        (application as MemoApplication).updates.systemInstallerReturned(attempt)
+    }
+    internal fun launchUpdateInstaller(staged: StagedUpdate) {
+        if (isFinishing || isDestroyed || !lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
+            updateFailure("UPDATE_INSTALL_BACKGROUND")
+        }
+        updateInstallers.launch(staged)
+    }
     private val model: MemoModel by viewModels()
     internal val presentation by lazy { PresentationStore(applicationContext) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        updateInstallers.restore((application as MemoApplication).updates.systemInstallerCallbacks)
         setContent {
             MemoPresentation(presentation) {
                 val dark = LocalDarkAppearance.current
@@ -73,6 +83,10 @@ class MainActivity : ComponentActivity() {
         (application as MemoApplication).updates.foreground(this, false)
         model.foreground(false)
         super.onStop()
+    }
+    override fun onDestroy() {
+        updateInstallers.clear()
+        super.onDestroy()
     }
     private fun openLink(url: String) {
         if (!MarkdownSafety.safeLink(url)) return
