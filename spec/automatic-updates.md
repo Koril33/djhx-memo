@@ -90,6 +90,8 @@
 
 除单元测试外需真实下载、签名和平台安装试验。所有测试使用合成笔记、隔离 profile/安装目录、测试签名与测试元数据；不能覆盖维护者日常安装或把测试钥当作生产钥。生产 Android 证书的最终覆盖安装由持钥者在备份后的测试设备确认。
 
+发行安装仪器驱动按平台异步命令的完成回执串行执行检查、下载和安装；原生中间快照的available/ready不表示当前命令已释放单任务门。不能因过早发出下一命令被忽略，就跳过下载、放宽验签或把阶段通知计为安装成功。
+
 ## U8. 0.1.5 的冻结格式与边界
 
 入口为 `https://memo.djhx.site/updates/stable/current.json`，静态信封字段严格为 `envelope_version: 1`、`key_id`、`payload_base64`、`signature`。原始 payload 用 UTF-8 JSON；Minisign 文本签名覆盖这些原始字节。客户端先验签再解析，不接受重复字段/重复目标键/未知结构字段。上限 1 MiB；信任根位于 [config/update-trust.json](../config/update-trust.json)，只存公开信息。

@@ -4,6 +4,10 @@ Gitea 保存开发分支和评审记录。审核通过后，以保留历史的�
 
 0.1.5 的 Windows/Android 更新器与[本地发行工具](update-publishing.md)已实现，Windows 正式目录已部署；Android 已补齐原证书正式 APK，debug/unsigned 保留资料用途，AppImage 仍待实现。本文既有 0.1.3 Release 记录不改变；SHA256SUMS 不能替代更新签名，推送源码不等于发布安装包。
 
+## 0.1.7 安装屏障补丁
+
+[0.1.7](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.7)修复登录账号后SSE长连接阻止安装屏障排空，三端继续使用原安装身份、更新信任根和Android证书（code8）。0.1.5/0.1.6旧进程需先切本机空间并等待旧流结束再安装，或正式安装包覆盖原目录。Linux仍手动DEB。实际源码/附件哈希、目录推广、测试及升级边界见[发布验证](releases/0.1.7-validation.md)。旧标签/资产保持不变。
+
 ## 0.1.6 客户端
 
 本版加入多选trash/撤销/单Markdown导入及Android左滑，沿用0.1.5更新信任根、原APK证书和协议/schema。发行附件为`djhx-memo-0.1.6-windows-x64-setup.exe`、`.exe.sig`、`djhx-memo-0.1.6-linux-amd64.deb`、`djhx-memo-0.1.6-android.apk`及SHA256SUMS。实际构建输入、哈希、分发和三端升级进度见[发布验证](releases/0.1.6-validation.md)；不能把候选附件或目录推广单独当完整升级已通过。

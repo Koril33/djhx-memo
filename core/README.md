@@ -1,10 +1,10 @@
 # core
 
-当前源码版本为 **0.1.6**，新增严格代次的批量普通删除/撤销及单个Markdown文件导入；发布检查见[0.1.6验证](../docs/releases/0.1.6-validation.md)。账号同步要求协议 2 服务端与相应客户端配套升级；既有 0.1.3 Release 不改变。三端实际测试、交叉评审、安装包和发布状态见[0.1.4 发布验证](../docs/releases/0.1.4-validation.md)。
+当前源码版本为 **0.1.7**，修复实时同步长连接占用安装屏障，实际检查和独立评审见[0.1.7验证](../docs/releases/0.1.7-validation.md)。保留0.1.6严格代次批量普通删除/撤销及单Markdown导入；账号协议2、local schema3保持不变。既有发布与设备边界见各版本记录。
 
 Rust 本地优先核心，负责 SQLite 存储与迁移、持久 outbox、客户端同步状态机、搜索、回收站、导出和空间隔离。Android 经 UniFFI 调用，Tauri Rust 后端直接链接。
 
-已实现可构建的 `djhx-memo-core` 0.1.6；依赖锁定于 Cargo.lock，SQLite 随库构建。平台入口为 `MemoApp`，JSON 调用见 [桥接契约](../spec/core-bridge.md)，不向 UI 返回 token。
+已实现可构建的 `djhx-memo-core` 0.1.7；依赖锁定于 Cargo.lock，SQLite 随库构建。平台入口为 `MemoApp`，JSON 调用见 [桥接契约](../spec/core-bridge.md)，不向 UI 返回 token。
 
 ```sh
 cargo fmt --check
