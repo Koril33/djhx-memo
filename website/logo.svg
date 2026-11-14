@@ -1,12 +1,1 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="DJHX Memo">
-<rect x="0" y="0" width="128" height="128" rx="28" fill="#3D7963" />
-  <g>
-    <rect x="29" y="22" width="70" height="84" rx="9" fill="#F6F4E9" />
-    <path d="M80 22V41H99Z" fill="#BED5BB" />
-    <rect x="42" y="51" width="38" height="4" rx="2" fill="#6B927A" />
-    <rect x="42" y="65" width="38" height="4" rx="2" fill="#6B927A" />
-    <rect x="42" y="79" width="27" height="4" rx="2" fill="#6B927A" />
-  </g>
-
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F2B45C"/><stop offset="1" stop-color="#E8734A"/></linearGradient></defs><rect x="0" y="0" width="64" height="64" rx="14.317" fill="url(#bg)"/><g transform="translate(4.839 4.839) scale(2.263)"><path d="M13.063 3.669A8.2 8.2 0 1 0 20.131 10.737A1 1 0 0 0 19.104 9.867A5 5 0 0 1 13.933 4.696A1 1 0 0 0 13.063 3.669Z" fill="#14161A"/><path d="M12 8C12.25 9.2 12.46 10.52 13.607 11.485A2.5 2.5 0 1 1 10.393 11.485C11.54 10.52 11.75 9.2 12 8Z" fill="#F6F1E7"/></g></svg>

@@ -25,7 +25,7 @@ npm run tauri dev
 
 原生检查在 `desktop/src-tauri/` 执行 `cargo fmt --check`、`cargo check --locked`、`cargo clippy --locked -- -D warnings` 和 `cargo test --locked --release --bin djhx-memo`。Linux 打包：`npm run tauri build -- --config src-tauri/tauri.linux.conf.json --bundles deb`；Windows 原生环境打包：`npm run tauri build -- --bundles nsis`。生成物在 Cargo target 的 `release/bundle/deb/` 或 `release/bundle/nsis/`。Windows 安装器嵌入 WebView2 引导程序，缺失运行时时需要网络下载微软运行库。
 
-Linux 包名为 `djhx-memo`，桌面显示“DJHX Memo”；GNOME 托盘需启用 AppIndicator 扩展。托盘宿主无法确认时，窗口明确提示“关闭后退出”，不会隐藏到无法恢复的位置。
+Linux 包名为 `djhx-memo`，桌面按系统语言显示“阳墨随记”或“DJHX MEMO”；GNOME 托盘需启用 AppIndicator 扩展。托盘宿主无法确认时，窗口明确提示“关闭后退出”，不会隐藏到无法恢复的位置。
 
 前端仅经 `core_invoke` 调用 [JSON 桥接](../spec/core-bridge.md)，不持有 token、数据库路径或同步状态机。系统 keyring 不可用时，账号凭据仅驻留进程并有提示。编辑缓冲在提交成功前保留，保存失败可复制或另行导出 Markdown 救援。
 
@@ -37,15 +37,15 @@ Linux 包名为 `djhx-memo`，桌面显示“DJHX Memo”；GNOME 托盘需启�
 
 设置 → 偏好设置提供“跟随系统 / 简体中文 / English”、外观“跟随系统 / 浅色 / 深色”与显示时区“上海 / UTC / 跟随系统”。默认语言和外观跟随系统，中文系统使用简体中文，其余语言回退英文；显示时区独立默认为 `Asia/Shanghai`。跟随系统动态响应语言和明暗变化。Linux GTK3/WebKit 对 GNOME 新外观设置的媒体查询可能不一致，因此原生层优先读取桌面 portal 的 `org.freedesktop.appearance/color-scheme`，无明确偏好时回退 GNOME `gsettings`；仅在跟随系统模式每 2 秒异步检查，与应用显式主题设置分离。其他平台采用系统 WebView 媒体查询。选择仅保存在此设备的 WebView 本地存储 `djhx-memo.presentation.v1`，重启有效，不加入账号同步或修改操作系统设置。
 
-注册/登录表单首次默认地址为 `https://memo.djhx.site`，可输入其他 HTTPS 地址；切换外观或语言不会覆盖正在填写的地址或已保存账号的归属。应用名和窗口标题统一为 **DJHX Memo**，数据目录、包标识、二进制名和 keyring 身份继续沿用原值；图标衍生资源及更换流程见[品牌设计说明](../docs/brand-guidelines.md)。
+注册/登录表单首次默认地址为 `https://memo.djhx.site`，可输入其他 HTTPS 地址；切换外观或语言不会覆盖正在填写的地址或已保存账号的归属。应用内中文名和窗口标题为 **阳墨随记**，英文为 **DJHX MEMO**，数据目录、包标识、二进制名和 keyring 身份继续沿用原值；图标衍生资源及更换流程见[品牌设计说明](../docs/brand-guidelines.md)。
 
 双语文案集中在 `src/lib/i18n.ts`，偏好解析与日期格式集中在 `src/lib/preferences.ts`；新增可见文案应补齐两个语言和相同插值参数。错误按 core 错误码及已知安全的外壳消息映射，不展示任意原始异常。账号与设备自定义名称、笔记内容和导出 UTC 时间保持原样。CodeMirror 通过 compartment 更新占位符和可访问名称，主题通过成对颜色变量更新，切换偏好不重建编辑器或清空撤销与组合输入。设置关闭使用固定 36×36 点击区域内的 20×20 SVG，避免不同平台字体基线和默认按钮内边距裁切图标。
 
-Windows 安装器使用 `src-tauri/windows/installer.nsi`，来自已锁定 `@tauri-apps/cli` 2.12.4 的[同版本官方模板](https://github.com/tauri-apps/tauri/blob/tauri-cli-v2.12.4/crates/tauri-bundler/src/bundle/windows/nsis/installer.nsi)（上游双许可，此处按 MIT 分发，原文随包附带）。仅为本次品牌改名固定旧候选版的安装注册表身份与默认目录“简记”，显示名、窗口名及新快捷方式仍为 DJHX Memo；旧快捷方式仅在目标确认为本安装目录的二进制时改名迁移，目标已存在或改名失败时保留旧入口；`/UPDATE` 和 `/NS` 下也不会先删掉所有入口。已有候选版可覆盖安装，避免因 Tauri 默认将卸载键绑定产品名而形成第二套安装。升级 CLI 时须同步上游模板并保留该差异，重新验证旧版升级、重装和卸载；模板内部旧名称不应当作用户可见品牌进行批量替换。
+Windows 安装器使用 `src-tauri/windows/installer.nsi`，来自已锁定 `@tauri-apps/cli` 2.12.4 的[同版本官方模板](https://github.com/tauri-apps/tauri/blob/tauri-cli-v2.12.4/crates/tauri-bundler/src/bundle/windows/nsis/installer.nsi)（上游双许可，此处按 MIT 分发，原文随包附带）。仅为本次品牌改名固定旧候选版的安装注册表身份与默认目录“简记”，显示名、窗口名及新快捷方式按安装语言显示阳墨随记或 DJHX MEMO；旧快捷方式仅在目标确认为本安装目录的二进制时改名迁移，目标已存在或改名失败时保留旧入口；`/UPDATE` 和 `/NS` 下也不会先删掉所有入口。已有候选版可覆盖安装，避免因 Tauri 默认将卸载键绑定产品名而形成第二套安装。升级 CLI 时须同步上游模板并保留该差异，重新验证旧版升级、重装和卸载；模板内部旧名称不应当作用户可见品牌进行批量替换。
 
 ## 0.1.1 界面预览
 
-界面采用共享的纸白/炭灰与品牌绿语义色、系统字体及 4/8 间距。60px 导航保留新建、笔记、回收站和设置；列表顶部显示 DJHX Memo，列表更多菜单提供当前空间导出和账号入口。编辑器更多菜单提供删除/恢复、复制与当前文字导出。底部紧凑状态可展开查看本地保存、云同步与最近同步时间，并保留手动同步入口；保存失败救援、凭据失效、冲突及恢复提示仍直接显示。
+界面采用共享的纸白/炭灰与品牌绿语义色、系统字体及 4/8 间距。60px 导航保留新建、笔记、回收站和设置；列表顶部显示当前语言的品牌名，列表更多菜单提供当前空间导出和账号入口。编辑器更多菜单提供删除/恢复、复制与当前文字导出。底部紧凑状态可展开查看本地保存、云同步与最近同步时间，并保留手动同步入口；保存失败救援、凭据失效、冲突及恢复提示仍直接显示。
 
 通用操作使用离线随包的 Lucide 线性图标，来源和许可见[共同界面设计说明](../docs/ui-design.md)；Markdown 任务标记也使用同一静态 `check` 图标，用户 Markdown 不能注入 SVG。普通图标目标至少 36px，具备双语可访问名称与悬停提示。源码、预览和对照切换只隐藏相应面板，保留 CodeMirror 实例及撤销/组合输入状态；切换笔记仍先保存。本轮仅修改展示，不改 core、同步、鉴权或数据目录。实际构建记录见[桌面界面预览验证](../docs/desktop-ui-preview-validation.md)。
 
@@ -62,3 +62,7 @@ Windows 安装器使用 `src-tauri/windows/installer.nsi`，来自已锁定 `@ta
 在本机忽略的配置文件中设置独立 `identifier`、`productName`，以 `npm run tauri build -- --debug --no-bundle --config <绝对配置路径>` 构建隔离实例。仅在该进程设置 `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9223` 后启动，再运行脚本。脚本默认连接回环 9223，可通过当前进程 `DJHX_WEBVIEW_TEST_URL` 指定其他回环端口；截图写入忽略的 `.local/version014/`。完成后退出隔离实例并撤销环境变量。不要给正式实例启用调试端口。
 
 该检查不代替任务栏/托盘的真实鼠标点击和中文输入法验收。
+
+## 0.1.10品牌与单笔记导出
+
+[版本契约](../spec/client-0.1.10.md)规定编辑页菜单导出点击时的UTF-8 Markdown正文，包含未保存编辑；列表/设置仍导出空间ZIP。文件名由core纯函数生成，原生文件对话框取消不提示成功。品牌配置/旧资源恢复遵循[固定流程](../docs/brand-change-workflow.md)。Windows可运行`python scripts/check-brand-installer.py --help`查看真实NSIS助手组件测试参数；正式覆盖安装仍需单独验收。

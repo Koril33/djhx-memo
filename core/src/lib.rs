@@ -5,11 +5,13 @@
 mod db;
 mod highlight;
 mod list_actions;
+mod markdown_export;
 mod model;
 mod purge;
 mod sync;
 mod update_barrier;
 mod update_catalog;
+pub use markdown_export::markdown_export_filename;
 pub use update_catalog::{
     AndroidRelease, Release, UpdateService, validate_published_asset, validate_published_catalog,
 };

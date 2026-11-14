@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <provider android:name="app.djhx.memo.ExportFixtureProvider"
+            android:authorities="${applicationId}.note-export-fixture" android:exported="true" />
+    </application>
+</manifest>

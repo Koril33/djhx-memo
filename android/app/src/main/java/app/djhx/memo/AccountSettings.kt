@@ -92,7 +92,10 @@ fun AccountSettings(model: MemoModel, initialTab: String = "display", onExport: 
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.weight(1f).padding(start = 8.dp)
                     )
-                    MemoIconButton(R.drawable.ic_ui_info, stringResource(R.string.about_app)) { about = true }
+                    MemoIconButton(
+                        R.drawable.ic_ui_info,
+                        stringResource(R.string.about_app, stringResource(R.string.app_name))
+                    ) { about = true }
                 }
                 SettingsTabs(tab, !model.busy) { tab = it }
                 LazyColumn(
@@ -361,8 +364,12 @@ fun AccountSettings(model: MemoModel, initialTab: String = "display", onExport: 
     if (about) {
         MemoAlertDialog(
             onDismissRequest = { about = false },
-            title = { Text("DJHX Memo") },
-            text = { Text(stringResource(R.string.about, BuildConfig.VERSION_NAME)) },
+            title = { Text(stringResource(R.string.app_name)) },
+            text = {
+                Text(
+                    stringResource(R.string.about, stringResource(R.string.app_name), BuildConfig.VERSION_NAME)
+                )
+            },
             confirmButton = { TextButton(onClick = { about = false }) { Text(stringResource(R.string.done)) } }
         )
     }

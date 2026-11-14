@@ -14,6 +14,7 @@ export async function call<T>(request: Request): Promise<T> {
   return result.data;
 }
 const errorKeys: Record<string, MessageKey> = {
+  IME_COMPOSING: 'finishComposition',
   IMPORT_INVALID_FILE: 'importInvalid',
   IMPORT_INVALID_ENCODING: 'importInvalid',
   IMPORT_EMPTY: 'importEmpty',

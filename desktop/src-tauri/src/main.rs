@@ -20,6 +20,8 @@ use tauri::{
 };
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
+mod brand;
+mod tray_brand;
 mod update;
 
 struct SystemCredentials;
@@ -113,6 +115,9 @@ fn set_presentation(
     }
     let chinese = language == "zh-CN";
     state.chinese.store(chinese, Ordering::Release);
+    if let Some(tray) = app.tray_by_id("memo") {
+        let _ = tray.set_tooltip(Some(brand::name(chinese)));
+    }
     let _ = state.open_item.set_text(if chinese {
         "打开主窗口"
     } else {
@@ -126,6 +131,7 @@ fn set_presentation(
         .set_text(if chinese { "退出" } else { "Quit" });
     update_sync_label(&state);
     if let Some(window) = app.get_webview_window("main") {
+        let _ = window.set_title(brand::name(chinese));
         let _ = window.set_theme(match theme.as_str() {
             "dark" => Some(tauri::Theme::Dark),
             "light" => Some(tauri::Theme::Light),
@@ -310,9 +316,9 @@ fn choose_and_save(
         .dialog()
         .file()
         .set_title(if app.state::<Backend>().chinese.load(Ordering::Acquire) {
-            "导出 · DJHX Memo"
+            brand::NAME_ZH
         } else {
-            "Export · DJHX Memo"
+            brand::NAME_EN
         })
         .set_file_name(name)
         .add_filter(extension, &[extension])
@@ -363,6 +369,17 @@ async fn rescue_text(app: tauri::AppHandle, content: String) -> Result<Option<St
     })
     .await
     .map_err(|_| "救援导出未完成。".to_string())?
+}
+
+/// Saves the captured Markdown bytes through the existing new-file safety boundary.
+#[tauri::command]
+async fn export_note(app: tauri::AppHandle, content: String) -> Result<Option<String>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let filename = djhx_memo_core::markdown_export_filename(content.clone());
+        choose_and_save(&app, &filename, "md", content.as_bytes())
+    })
+    .await
+    .map_err(|_| "导出任务未完成。".to_string())?
 }
 
 /// Read the desktop's preference, independently of our explicitly themed GTK/WebKit window.
@@ -506,7 +523,7 @@ fn main() {
             let menu = Menu::with_items(app, &[&open, &create, &sync, &quit])?;
             let mut tray = TrayIconBuilder::with_id("memo")
                 .menu(&menu)
-                .tooltip(app.config().product_name.as_deref().unwrap_or("DJHX Memo"))
+                .tooltip(app.config().product_name.as_deref().unwrap_or(brand::NAME_EN))
                 .show_menu_on_left_click(false)
                 .on_tray_icon_event(|tray, event| {
                     let app = tray.app_handle();
@@ -547,10 +564,11 @@ fn main() {
                     "quit" => request_lifecycle(app, Lifecycle::Quit),
                     _ => {}
                 });
-            if let Some(icon) = app.default_window_icon() {
-                tray = tray.icon(icon.clone());
+            if let Some(icon) = tray_brand::image(app.handle()) {
+                tray = tray.icon(icon);
             }
             let tray_available = tray.build(app).is_ok() && tray_host_available();
+            if tray_available { tray_brand::watch(app.handle().clone()); }
             app.manage(Backend {
                 last_left_click: Mutex::new(None),
                 core,
@@ -580,6 +598,7 @@ fn main() {
             open_external,
             export_notes,
             rescue_text,
+            export_note,
             pick_markdown,
             frontend_ready,
             set_presentation,

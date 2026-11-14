@@ -1,72 +1,36 @@
-# DJHX Memo 品牌与图标规范
+# 阳墨随记 / DJHX MEMO 品牌规范
 
-- 版本：1.0，2026-11-07。
-- 产品约束：[产品规范第 10 节](../spec/product-v1.md#10-品牌语言外观与时间显示)。
-- 设计依据：项目负责人认可的原桌面图标。保留绿色圆角方底、奶白纸张、右上折角和三条横线，将原 PNG 几何重建为矢量，补充抗锯齿与跨端适配。
-- 唯一母版：[master.svg](../assets/brand/master.svg)。可编辑双语设计板：[SVG](../assets/brand/design-sheet.svg)，查看用：[PNG](../assets/brand/design-sheet.png)。设计板本身是母版的派生物。
+版本2.0，2026-11-14；0.1.10实施中，实际原生显示以本轮验证为准。产品契约见[0.1.10](../spec/client-0.1.10.md)，每次更换必须执行[固定品牌更新流程](brand-change-workflow.md)。
 
-## 名称与使用
+## 唯一配置与输入
 
-应用名统一为 **DJHX Memo**，英文大小写和空格固定，不翻译。Windows/Linux 窗口、安装器及开始菜单、Android 启动器与应用内品牌使用同一名称。桌面左上角仅显示 `DJHX Memo`，不再放置“简”字徽标、“简记”或重复副标题。
+[profile.json](../assets/brand/profile.json)定义中文“阳墨随记”、英文“DJHX MEMO”及logo-pack-v1/sunrise。完整原包及SHA256保留，当前图形为墨盘、右上日蚀缺口和反色墨滴，朝暾底色为橙色渐变。包内已有针对小尺寸分别绘制的资源，不拿大PNG代替所有系统尺寸。
 
-图标用于启动器、窗口、任务栏、系统托盘和安装器等需要识别应用的系统位置。彩色图标在浅色与深色背景中保持四种原色，不随应用主题反相；系统要求单色时使用同源单色版。主题示意不代表要在桌面左上角重新加入图标。
+[master.svg](../assets/brand/master.svg)、[单色版](../assets/brand/monochrome.svg)、[设计板](../assets/brand/design-sheet.png)均由统一入口适配；当前设计板展示包内五套配色，活动主色仅sunrise。Logo不包含字标，中文/英文使用各平台现有字体排版，不增加字体运行依赖或启动动效。
 
-## 构图与颜色
+## 名称与身份
 
-母版以 `128 × 128` 单位绘制，坐标和色值是唯一输入。图形不含文字，缩小后仍以“纸张和短横线”识别。
+应用内页头、关于/更新页面、窗口/托盘提示、文件对话框与官网按当前语言显示；Android启动器和Linux desktop名称按系统语言，Windows安装入口按安装语言。切换应用语言不改动已有快捷方式。
 
-| 元素 | 规范 |
-| --- | --- |
-| 底形 | `(0, 0)` 起，128 × 128，圆角半径 28 |
-| 纸张 | `(29, 22)` 起，70 × 84，圆角半径 9，中心 `(64, 64)` |
-| 折角 | 三角形 `(80, 22)` → `(80, 41)` → `(99, 41)` |
-| 横线 | 起点 x=42；y=51、65、79；长度 38、38、27；高度 4，圆角 2 |
-| 绿色底 | `#3D7963`，RGB 61 / 121 / 99 |
-| 奶白纸张 | `#F6F4E9`，RGB 246 / 244 / 233 |
-| 浅绿折角 | `#BED5BB`，RGB 190 / 213 / 187 |
-| 横线 | `#6B927A`，RGB 107 / 146 / 122 |
+内部固定值为app.djhx.memo、djhx-memo可执行文件/Linux包名和Windows INSTALLIDENTITY“简记”。原安装目录、卸载键、凭据服务、数据目录、证书和更新信任根保持。禁止全局替换旧名称或通过改包名刷新图标缓存。Windows迁移仅处理确认属于本程序的旧快捷方式；同名其他程序入口保留。
 
-文档、宣传或手工排版中，在图标边界四周预留至少 **16/128 图标宽度**的空间。系统图标槽位由操作系统控制，不向 PNG 额外加入此留白。最小彩色尺寸为 16 px；16/24 px 直接从矢量渲染，禁止把已有小图放大。截图中的深灰背景不属于图标，圆角外侧必须透明。
+## 平台适配
 
-禁止拉伸、旋转、加投影、加文字、改画纸张，或仅替换某个平台的图标。不得在应用深色模式中将纸张改成深色。示例设计板中的辅助线和安全区不进入实际图标。
+- Windows使用包内专用七尺寸ICO；Tauri/Linux使用专用32、128、256及512px图标，系统槽位保持原身份。
+- Windows托盘读取SystemUsesLightTheme，独立于软件的强制浅深主题，采用包内黑白32px图形。读取失败时用彩色应用图标。
+- Linux面板没有统一可靠颜色接口，默认彩色兜底；可选本机环境变量`DJHX_MEMO_TRAY_THEME=dark`或`light`分别选白/黑版。该覆盖属于用户主机面板配置，不是其他开发者必须设置的项目参数；不能由GNOME名称猜测面板颜色。
+- Android包含五密度传统/圆形图标、自适应背景/前景及单色资源，v26和v33 XML分开。系统遮罩和主题着色保持系统行为；通知资源使用同源单色图形，不新增通知功能。
+- 官网logo和favicon使用同源SVG，文字由品牌定义注入构建和语言切换；更新必须部署完整静态构建。
 
-## 各平台资源
+## 生成、检查和恢复
 
-| 使用位置 | 自动生成的资源 |
-| --- | --- |
-| 通用 PNG | `assets/brand/png/icon-{16,24,32,48,64,128,256,512,1024}.png`，RGBA8、透明圆角 |
-| 官网品牌与 favicon | `website/logo.svg`，由同一母版生成，随统一清单验证；不得手工维护另一份Logo |
-| Windows 窗口、任务栏、NSIS 安装器 | `desktop/src-tauri/icons/icon.ico`，内含 16、24、32、48、64、128、256 px 的 32 位图像；PNG 帧适用于本项目 Windows 10+ 基线 |
-| Linux / Tauri | `32x32.png`、`128x128.png`、`128x128@2x.png`；后者为 256 px。Linux 包装工具由这些输入生成安装到 hicolor 的大小 |
-| Android 传统图标 | `mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_launcher.png`，48/72/96/144/192 px |
-| Android 传统圆形图标 | 同密度目录 `ic_launcher_round.png`，同一纸张与原色，绿色底变为完整圆形 |
-| Android 自适应图标 | `mipmap-anydpi-v26/ic_launcher{,_round}.xml`；同一前景矢量与纯色背景，形状交给系统遮罩 |
-| Android 系统主题图标 | `mipmap-anydpi-v33/ic_launcher{,_round}.xml` 加入 `monochrome` 层；使用 `drawable/ic_launcher_monochrome.xml`，由系统着色 |
-| 兼容旧应用内引用 | `drawable/ic_memo.xml`，完整彩色图标，直接由母版路径生成 |
+在仓库根使用Python3.11+：
 
-Android Manifest 应引用 `@mipmap/ic_launcher` 与 `@mipmap/ic_launcher_round`。API 26 和 API 33 分目录提供 XML，避免旧系统解析新增的 `monochrome` 元素。当前最低 Android 10 也会使用自适应图标；传统位图保留为兼容资源及未来导出输入。
-
-自适应图标的前景和背景均为 **108 × 108 dp**。背景为铺满画布的纯绿色，不预画圆角；前景仅含纸张、折角和横线，按母版原点坐标统一缩放 `0.64`，再平移 `(13.04, 13.04)`，中心保持 `(54, 54)`。纸张外框约为 44.8 × 53.76 dp，全部可见像素落在中央直径 66 dp 的安全圆内；外围交给系统作圆形、圆角方形和其他遮罩及动效。**不得把完整的圆角背景图再塞入前景层**，否则会出现两重背景和多余留白。系统遮罩因设备而异，跨端统一指的是图形、配色和比例关系一致，不要求系统外轮廓完全相同。依据见 [Android 官方自适应图标规范](https://developer.android.com/develop/ui/compose/system/icon_design_adaptive)。
-
-单色版用纸张作为实形，将折角与三条横线转为负形开口；不携带彩色背景。Android 可按壁纸与系统主题着色，不由应用浅色/深色设置强行决定启动器颜色。通用单色 SVG 同样由母版构造，保存在 [monochrome.svg](../assets/brand/monochrome.svg)。当前桌面托盘继续使用同源彩色应用图标；本轮不承诺额外的桌面托盘单色适配。
-
-## 统一更换与检查
-
-生成工具只在开发机运行，版本与许可证见 [ADR-0010](adr/0010-brand-assets.md)，不进入应用运行依赖。
-
-```bash
-# 在仓库根目录修改 assets/brand/master.svg 后：
-python3 scripts/generate-brand-assets.py
-python3 scripts/generate-brand-assets.py --check
+```sh
+python scripts/generate-brand-assets.py
+python scripts/generate-brand-assets.py --check
 ```
 
-母版中的 `background` 和 `symbol` 分层，以及 `paper`、`fold`、`line-one`、`line-two`、`line-three` ID 构成生成接口。路径和矩形均可编辑；色值从母版读取，不在平台适配器中维护另一份。彻底更换图案时仍只维护一份母版；若图层语义变化，同批调整生成器的前景/单色映射，不能另画一份 Android 图标。
+入口只用标准库消费已渲染文件，不执行素材包内脚本或安装sharp/Pillow；源包哈希、明确输出白名单、PNG/ICO、Android XML、生成文件及真实平台身份均被检查。所有文本显式UTF-8，不依赖Windows区域设置。归档、源包和profile不属于可删除的活动输出。
 
-生成器重新生成所有平台资源、设计板和 [哈希清单](../assets/brand/generated-manifest.json)。`--check` 在内存中重建，逐字节比较全部受管文件，并检查 PNG 尺寸、ICO 七个内嵌尺寸、Android XML 可解析性和自适应前景安全区。它不会修改文件。更换时按以下顺序提交：
-
-1. 更新母版及本规范中的构图、颜色和设计版本；运行生成命令。
-2. 打开设计板和 16/24/32 px PNG，确认三条线、小尺寸边缘、浅色和深色背景、Android 遮罩及单色负形。
-3. 运行 `--check`、文档链接检查及客户端构建。把母版、所有派生资源、清单和文档放入同一提交。
-4. 在实际 Windows/Linux 安装包与 Android APK 中检查窗口、任务栏、托盘和启动器。操作系统可能缓存旧图标；先重启目标应用或启动器后复核，不更改包标识或数据目录来“刷新”图标。
-
-`--check` 验证资源一致性，不能代替所有目标设备的系统遮罩与安装升级验收。生成器校验失败时先查看提示；不要手改派生 PNG、ICO、XML 或哈希清单使其通过。
+旧绿色纸张的35份受管输出、母版、原清单、原生成器和历史规范文本保存在[paper-v1归档](../assets/brand/archive/paper-v1/README.md)。在profile中把图形改为paper-v1，再运行相同入口即可恢复；名称可保持新名或独立恢复。已实际执行paper-v1→sunrise往返检查，原生系统图标缓存与安装效果仍须各平台复核。

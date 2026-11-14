@@ -9,7 +9,7 @@
 - [0.1.5 三端发布与部署](releases/0.1.5-validation.md)：本轮构建、独立评审与 Android 待签名边界。
 - 自动更新：Windows/Android 的[发布与密钥说明](update-publishing.md)、[0.1.5 验证](client-updates-0.1.5-validation.md)；原[17 项调研](research/rust-gui-auto-update-survey.md)与[设计](automatic-update-design.md)，Linux 仍待实现。
 - [website-deployment.md](website-deployment.md)：官网、Nginx路由与双远程main的合并部署记录。
-- [brand-guidelines.md](brand-guidelines.md)：DJHX Memo 可编辑母版、设计板、多端尺寸与统一替换步骤。
+- [brand-guidelines.md](brand-guidelines.md)：当前品牌素材、设计板、多端尺寸与平台适配。
 - [client-fixes-0.1.2-validation.md](client-fixes-0.1.2-validation.md)：0.1.2 下拉框文字与 Android 编辑滚动的复现、修正及实测。
 - [ui-design.md](ui-design.md)：0.1.1 界面预览的共同视觉与移动/桌面布局。
 - [architecture.md](architecture.md)：模块、数据流与跨端边界。
@@ -27,3 +27,6 @@
 
 - [AI 开发指南](ai-development.md)：任务入口、模块边界、注释、测试隔离与交付规则。
 - [许可证说明](licensing.md)、[安全政策](../SECURITY.md)、[开源准备检查](open-source-readiness.md)。
+
+- [brand-change-workflow.md](brand-change-workflow.md)：Logo与中英文名称的固定变更、归档、恢复及三端发布流程。
+- [0.1.10验证](releases/0.1.10-validation.md) / [独立评审](reviews/client-0.1.10-review.md)。

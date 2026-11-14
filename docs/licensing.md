@@ -6,6 +6,8 @@ MIT 只覆盖本项目有权授权的原创部分，不改写第三方许可、�
 
 ## 随包许可
 
+0.1.10品牌输入为维护者提供的`assets/brand/packs/logo-pack-v1.zip`，按其选择使用sunrise。原始包、固定SHA256和旧paper-v1图形分别保留在品牌目录；不执行包内脚本，不复制其安装依赖。品牌图形按本项目原创素材管理，MIT不授予他人商标权；维护者仍对素材的可贡献性负责。平台派生及后续替换见[固定流程](brand-change-workflow.md)。
+
 | 材料 | 管理与分发 |
 | --- | --- |
 | 本项目原创内容 | 根 LICENSE；桌面 licenses/djhx-memo.txt，Android DJHX_MEMO_LICENSE.txt，服务端包 LICENSE |

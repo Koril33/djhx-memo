@@ -212,7 +212,8 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
 
     /** Refuses handoff while composition or another UI operation is unresolved. */
     suspend fun prepareUpdate(): Boolean {
-        if (busy || compositionActive || !flush()) return false
+        if (busy || noteExport.writing) return false
+        if (compositionActive || !flush()) return false
         val native = gateway as? CoreGateway ?: return false
         native.pauseForUpdate()
         return true
@@ -229,6 +230,13 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
     private var editorProfileId = "local"
     private val observedRedirects = mutableMapOf<String, String>()
     private var pendingExport: JSONObject? = null
+    internal val noteExport = NoteExportCoordinator(
+        getApplication<Application>(),
+        viewModelScope,
+        { actionNotice = UiText(R.string.note_export_success) },
+        ::reportText
+    )
+    internal val composingText: Boolean get() = compositionActive
     fun takeExportData(): JSONObject? = pendingExport.also { pendingExport = null }
     private fun currentProfileId() = state.optJSONObject("profile")?.optString("id") ?: "local"
 

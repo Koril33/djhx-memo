@@ -397,6 +397,14 @@ export const messages = {
     'zh-CN': '导出当前文字',
     en: 'Export current text',
   },
+  exportCurrentNote: {
+    'zh-CN': '导出当前笔记',
+    en: 'Export current note',
+  },
+  finishComposition: {
+    'zh-CN': '请完成输入法组合后再导出，当前文字已保留。',
+    en: 'Finish composing before exporting. Your current text is kept.',
+  },
   staleDelete: {
     'zh-CN': '删除未执行，内容已保留为冲突副本。',
     en: 'Deletion was not applied. Content was kept as a conflict copy.',

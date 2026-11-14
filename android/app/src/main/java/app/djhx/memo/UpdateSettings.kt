@@ -40,7 +40,7 @@ fun UpdateSettings(model: MemoModel) {
                 }
             }
             Column(Modifier.weight(1f)) {
-                Text("DJHX Memo", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium)
                 Text(
                     "v${BuildConfig.VERSION_NAME} · ${stringResource(R.string.update_stable)}",
                     style = MaterialTheme.typography.bodySmall,

@@ -29,6 +29,29 @@ function setup(handler: (req: Request) => Promise<Note>) {
 afterEach(() => vi.useRealTimers());
 
 describe('edit commit buffer', () => {
+  it('exports the unsaved snapshot after storage failure without adopting later input', async () => {
+    const { editor } = setup(async () => {
+      throw new Error('fixture storage failure');
+    });
+    await editor.open(note());
+    const text = '# 导出😀\n\n```rust\nfn main() {}\n```\n- [ ] task\n';
+    editor.edit(text);
+    await expect(editor.flush()).rejects.toThrow('fixture storage failure');
+    const snapshot = editor.exportSnapshot();
+    editor.edit('later text');
+    expect(snapshot).toBe(text);
+    editor.setComposing(true);
+    expect(() => editor.exportSnapshot()).toThrow(InvokeError);
+    editor.setComposing(false);
+    expect(editor.exportSnapshot()).toBe('later text');
+    editor.dispose();
+  });
+  it('refuses ordinary export of a pending permanent deletion', async () => {
+    const { editor } = setup(async () => note());
+    await editor.open({ ...note('old'), purge_state: 'pending' });
+    expect(() => editor.exportSnapshot()).toThrow(InvokeError);
+    editor.dispose();
+  });
   it('keeps an input barrier through a delayed native close acknowledgement', async () => {
     const { editor } = setup(async (req) => note(req.content as string, '2'));
     await editor.open(note());

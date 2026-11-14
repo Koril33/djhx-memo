@@ -1,5 +1,6 @@
 <script lang="ts">
   import { authenticationAccepted } from './lib/account-state';
+  import { brandNames } from './lib/brand';
   import { onMount, onDestroy } from 'svelte';
   import { listen, type UnlistenFn } from '@tauri-apps/api/event';
   import Editor from './Editor.svelte';
@@ -92,6 +93,7 @@
   $: t = createTranslator(language);
   $: {
     document.documentElement.lang = language;
+    document.title = brandNames[language === 'zh-CN' ? 'zh-CN' : 'en'];
     document.documentElement.dataset.theme = activeTheme;
     document.documentElement.style.colorScheme = activeTheme;
     void native('set_presentation', {
@@ -734,6 +736,12 @@
     });
     if (path) notify('exported', { path });
   }
+  async function exportCurrentNote(): Promise<void> {
+    const content = editor.exportSnapshot();
+    if (!content.trim()) return;
+    const path = await native<string | null>('export_note', { content });
+    if (path) notify('exported', { path });
+  }
   async function rescue(andSwitch = false): Promise<void> {
     const path = await native<string | null>('rescue_text', { content: editor.content });
     if (!path) return;
@@ -1006,7 +1014,7 @@
   >
     <header class="list-header">
       <div class="brand-row">
-        <strong class="brand">DJHX Memo</strong>
+        <strong class="brand">{brandNames[language]}</strong>
         <details class="action-menu" data-menu>
           <!-- svelte-ignore a11y_no_redundant_roles (WebKitGTK exposes an unknown AT-SPI role without this explicit role.) -->
           <summary
@@ -1266,15 +1274,12 @@
               ><Icon name="copy" />{t('copyText')}</button
             >
             <button
-              disabled={busy || !editor.content}
-              on:click={(event) => menuAction(event, () => rescue())}
-              ><Icon name="file-output" />{t('exportCurrent')}</button
+              disabled={busy ||
+                !editor.content.trim() ||
+                ['pending', 'purged'].includes(editor.note?.purge_state ?? '')}
+              on:click={(event) => menuAction(event, exportCurrentNote)}
+              ><Icon name="file-output" />{t('exportCurrentNote')}</button
             >
-            {#if !listVisible}<button
-                disabled={!state || busy}
-                on:click={(event) => menuAction(event, exportNotes)}
-                ><Icon name="file-output" />{t(trash ? 'exportTrash' : 'exportNotes')}</button
-              >{/if}
           </div>
         </details>
       </div>
