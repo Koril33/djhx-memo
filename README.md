@@ -1,8 +1,8 @@
 # djhx-memo
 
-本轮准备单独发布 **Android0.1.9/code10** 安装兼容补丁，Windows/Linux继续0.1.8。修复与实际发行状态见[0.1.9记录](docs/releases/0.1.9-validation.md)；Civi新安装流程尚未完成真机验收。
+当前 **[Android0.1.9/code10](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.9)** 已发布安装兼容补丁，Windows/Linux继续0.1.8。修复与实际发行、模拟器正式升级结果见[0.1.9记录](docs/releases/0.1.9-validation.md)；Civi新安装流程尚未完成真机验收。
 
-当前客户端 **[0.1.8](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.8)** 已公开发布Windows、Android、Linux三端正式包，统一操作图标与红底删除，整理账号入口、保存同步及更新页面，并修正官网下载直链。实际检查与升级结果见[0.1.8验证](docs/releases/0.1.8-validation.md)；保留[0.1.7安装屏障修正](docs/releases/0.1.7-validation.md)。core仍0.1.7、server仍0.1.4，协议/schema不变；完整设备矩阵与7天试用仍待完成。
+**[0.1.8三端版](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.8)** 统一操作图标与红底删除，整理账号入口、保存同步及更新页面，并修正官网下载直链。实际检查与升级结果见[0.1.8验证](docs/releases/0.1.8-validation.md)；保留[0.1.7安装屏障修正](docs/releases/0.1.7-validation.md)。core仍0.1.7、server仍0.1.4，协议/schema不变；完整设备矩阵与7天试用仍待完成。
 
 0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](docs/releases/0.1.4-validation.md)。
 
