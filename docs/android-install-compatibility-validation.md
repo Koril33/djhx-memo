@@ -1,5 +1,7 @@
 # Android安装兼容修复验证
 
+本文件保留修复候选阶段的范围、结果和未发布边界；后续已按维护者授权发布Android0.1.9，实际公开资产、签名目录及API35正式升级结果见[0.1.9发行记录](releases/0.1.9-validation.md)，不追溯改写候选阶段的验收结论。
+
 日期：2026-11-14。行为见[规范](../spec/android-install-compatibility.md)，独立只读评审见[评审记录](reviews/android-install-compatibility-review.md)。Android候选0.1.9/code10，尚未发布；Windows/Linux继续0.1.8，core0.1.7/server0.1.4/协议/schema不变。不移动v0.1.8，不替换已发布附件或签名目录。
 
 ## 真实问题与已恢复状态
