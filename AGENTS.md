@@ -3,7 +3,7 @@
 ## 阅读顺序与当前状态
 
 - 阅读 [README](README.md)、[项目计划](djhx-memo-project-plan.md)、[spec 索引](spec/README.md) 及工作目录中的 `AGENTS.md`。
-- 当前Android0.1.9、Windows/Linux0.1.8保留0.1.7安装屏障与0.1.4数据基线；完整产品 v1 尚未发布。实际检查见各模块验证记录；同步、迁移、鉴权的交叉评审见 `docs/reviews/`，不得把未完成的三端验收或 7 天试用当作已通过。
+- 当前客户端/core源码0.1.10统一品牌和单笔记导出，保留0.1.9 Android安装兼容、0.1.7安装屏障与0.1.4数据基线；完整产品 v1 尚未发布。实际检查见各模块验证记录；同步、迁移、鉴权的交叉评审见 `docs/reviews/`，不得把未完成的三端验收或 7 天试用当作已通过。
 - `spec/` 是产品与实现行为的唯一事实来源。改行为先改规范，规范与实现同批提交；不得把计划或占位内容当作已实现的能力。
 
 ## 工作方式
@@ -49,3 +49,5 @@
 0.1.8整理七项UI/官网下载体验，行为见spec/client-0.1.8.md；core0.1.7/server0.1.4/协议与schema不变。账号与平台独立复核见docs/reviews/client-0.1.8-review.md，真实发布与三端升级状态见docs/releases/0.1.8-validation.md，不将Windows维护者验收或Android可访问树检查等同于完整设备/像素矩阵。
 
 0.1.9为Android单端安装兼容补丁，Windows/Linux继续0.1.8。PR #21已合并，行为、独立评审、模拟器检查和真实发行状态分别见spec/android-install-compatibility.md、docs/reviews/android-install-compatibility-review.md、docs/android-install-compatibility-validation.md、docs/releases/0.1.9-validation.md。Civi新流程尚未实测，不以浏览器手动覆盖或版本发布代替真机验收；core/server/协议/schema不变。
+
+- 0.1.10图形与名称调整按[固定流程](docs/brand-change-workflow.md)消费统一品牌配置，旧paper-v1与原包保留；不得通过改应用标识刷新图标。实际三端发行/测试见[0.1.10记录](docs/releases/0.1.10-validation.md)，评审见[独立记录](docs/reviews/client-0.1.10-review.md)。

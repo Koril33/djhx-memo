@@ -96,7 +96,20 @@ class NoteExportPickerTest {
                 }
                 waitFor { !model.busy && model.content == "Other export fixture" }
                 click("Save")
-                waitFor { model.message?.resolve(app) == app.getString(R.string.note_export_success) }
+                try {
+                    waitFor { model.actionNotice?.resource == R.string.note_export_success }
+                } catch (error: AssertionError) {
+                    instrumentation.sendStatus(
+                        2,
+                        Bundle().apply {
+                            putString("export_filename", "$title.md")
+                            putString("export_message", model.message?.resource?.toString())
+                            putString("export_expected", R.string.note_export_success.toString())
+                            putString("export_writing", model.noteExport.writing.toString())
+                        }
+                    )
+                    throw error
+                }
                 val receipt = Bundle().apply {
                     putString("export_filename", "$title.md")
                     putString(
