@@ -1,5 +1,7 @@
 # 客户端公开发布
 
+本轮授权仅发布Android0.1.9/code10安装兼容补丁，Windows/Linux继续使用已公开0.1.8；分平台官网下载清单和签名目录保留其原资产/来源提交。发行状态见[0.1.9记录](releases/0.1.9-validation.md)。旧0.1.8在安装补丁时仍用旧更新器，必要时浏览器下载同证书APK覆盖，不卸载或清数据。
+
 当前0.1.8三端正式包、Windows/Android签名更新目录与官网直链已推广，实际构建/安装和限制见[发布验证](releases/0.1.8-validation.md)。下文0.1.3～0.1.5章节保留各版当时的记录，不代表当前Android仍缺签名。官网下载数据由[静态清单](../website/downloads.json)统一生成，同批部署完整构建并执行浏览器JS检查，不能只改HTML版本号。
 
 Gitea 保存开发分支和评审记录。审核通过后，以保留历史的方式合并到 `main`，将同一主分支和发布标签推到 [GitHub 仓库](https://github.com/Koril33/djhx-memo)。发布者从同一发布提交分别构建各平台，GitHub Release 保存安装包、变更说明和 SHA-256 校验值。

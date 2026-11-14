@@ -110,7 +110,7 @@ Payload 为 `schema_version: 1`、`application_id: app.djhx.memo`、`channel: st
 
 Android 要求原应用包名/证书，递增 versionCode；当前 universal APK 同含 arm64-v8a、x86_64，安装前检查设备 ABI、实际 minSdk 和包内版本。Windows 继续现有 OS 基线，检查 NSIS PE 文件版本与签名版本。首期不通过目录提高 Windows 最低系统范围。新 OS 范围、协议/schema、更新器代次、桥接目录/双签轮换格式要另行实现，旧客户端拒绝不认识的格式并保留人工升级入口。
 
-Android待发布的系统安装器兼容入口、固定失败分类与恢复边界另见[安装兼容规范](android-install-compatibility.md)；它不改变已发布0.1.8能力，不绕过本节验签与保存约束。
+Android0.1.9的系统安装器兼容入口、固定失败分类与恢复边界另见[安装兼容规范](android-install-compatibility.md)；它不改变已发布0.1.8能力，不绕过本节验签与保存约束。
 
 原生更新器私有状态与笔记数据库分开，保存目录序号/摘要、偏好、上次检查、稍后版本与安装尝试。损坏状态不能通过修改偏好重置防回放记录；更新暂停，笔记仍可用。缓存不跨目标复用；下载失败不会进入可安装状态，重启后须重新检查目录并验证缓存。
 
