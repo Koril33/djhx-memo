@@ -36,14 +36,16 @@ class PublishedUpgradeTest {
 
     @Suppress("DEPRECATION") // getPackageInfo with integer flags supports API29.
     @Test
-    fun published015Downloads016AndRequestsSystemUpgrade() = runBlocking {
+    fun publishedUpdateDownloadsAndRequestsSystemUpgrade() = runBlocking {
         val args = InstrumentationRegistry.getArguments()
         assumeTrue(
             "Requires explicit publishedUpgrade=1 on the release emulator",
             args.getString("publishedUpgrade") == "1"
         )
+        val sourceVersion = args.getString("sourceVersion") ?: "0.1.5"
+        val targetVersion = args.getString("targetVersion") ?: "0.1.6"
         val app = ApplicationProvider.getApplicationContext<MemoApplication>()
-        assumeTrue(app.packageManager.getPackageInfo(app.packageName, 0).versionName == "0.1.5")
+        assumeTrue(app.packageManager.getPackageInfo(app.packageName, 0).versionName == sourceVersion)
         val proxyPort = args.getString("localProxyPort")?.toIntOrNull()
         if (proxyPort != null) {
             require(proxyPort in 1..65535)
@@ -66,11 +68,11 @@ class PublishedUpgradeTest {
             }
             waitFor(60000) {
                 runBlocking { updates.refresh() }
-                val targetReady = updates.status.optJSONObject("candidate")?.optString("version") == "0.1.6"
+                val targetReady = updates.status.optJSONObject("candidate")?.optString("version") == targetVersion
                 targetReady && updates.status.optString("phase") in setOf("available", "ready")
             }
-            assertEquals("0.1.5", updates.status.getString("current_version"))
-            assertEquals("0.1.6", updates.status.getJSONObject("candidate").getString("version"))
+            assertEquals(sourceVersion, updates.status.getString("current_version"))
+            assertEquals(targetVersion, updates.status.getJSONObject("candidate").getString("version"))
             assertNotEquals("failed", updates.status.optString("phase"))
             scenario.onActivity { updates.action("download") }
             waitFor(180000) {
@@ -98,7 +100,7 @@ class PublishedUpgradeTest {
                 }
             )
             assertTrue(button!!.performAction(AccessibilityNodeInfo.ACTION_CLICK))
-            // The OS replaces and terminates this old process. The host verifies versionCode7
+            // The OS replaces and terminates this old process. The host verifies the exact target version/code
             // and reruns UpdatePlatformTest.upgradedInstallationRetainsTheCommittedNote afterward.
             SystemClock.sleep(15000)
         }
