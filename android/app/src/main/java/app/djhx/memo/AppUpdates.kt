@@ -1,5 +1,6 @@
 package app.djhx.memo
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
@@ -24,7 +25,12 @@ import java.lang.ref.WeakReference
 
 /** Per-device updates; Rust owns catalog trust and bounded downloads. */
 @Suppress("TooGenericExceptionCaught") // UI boundary only exposes fixed error codes.
-class AppUpdates(private val app: MemoApplication) {
+class AppUpdates internal constructor(
+    private val app: MemoApplication,
+    private val compatibility: UpdateCompatibility,
+    private val recovery: InstallRecovery? = null
+) {
+    constructor(app: MemoApplication) : this(app, UpdateCompatibility(app))
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val service by lazy {
         UpdateService(
@@ -36,14 +42,17 @@ class AppUpdates(private val app: MemoApplication) {
         )
     }
     private val journal = app.getSharedPreferences("updates-install", Context.MODE_PRIVATE)
+    private var confirmationIntent: Intent? = null
     private var activity = WeakReference<MainActivity>(null)
     var status by mutableStateOf(JSONObject())
         private set
-    var installing by mutableStateOf(journal.getInt("session", -1) >= 0)
+    var installing by mutableStateOf(journal.getInt("session", -1) >= 0 || compatibility.pending)
         private set
-    var installError by mutableStateOf<String?>(null)
+    var installError by mutableStateOf(
+        journal.getString("last_failure", null)?.takeIf { it in persistentInstallErrors }
+    )
         private set
-    var needsConfirmation by mutableStateOf(journal.contains("continuation"))
+    var needsConfirmation by mutableStateOf(false)
         private set
     var preferencesPending by mutableStateOf(false)
         private set
@@ -53,9 +62,14 @@ class AppUpdates(private val app: MemoApplication) {
     private var started = false
     private var submissionActive = false
     private var finishing = false
+    var recoveryRequired by mutableStateOf(compatibility.needsCleanup)
+        private set
+    internal val systemInstallerCallbacks: Set<String> get() = compatibility.callbacks
+    val waitingForSystemInstaller: Boolean get() = installing && compatibility.pending
 
     /** A journaled session remains cancelable even if its confirmation callback was lost. */
-    val canCancelInstallation: Boolean get() = installing && !submissionActive && journal.getInt("session", -1) >= 0
+    val canCancelInstallation: Boolean get() = !submissionActive && !finishing &&
+        (recoveryRequired || installing && (journal.getInt("session", -1) >= 0 || compatibility.pending))
 
     /** Cancels unfinished background downloads and checks when the foreground deadline is due. */
     fun foreground(screen: MainActivity?, active: Boolean) {
@@ -82,6 +96,10 @@ class AppUpdates(private val app: MemoApplication) {
     /** Recovers a process death between journaling a session and committing it to Android. */
     internal fun reconcileInstallation() {
         if (!installing || submissionActive || finishing) return
+        if (compatibility.pending) {
+            if (compatibility.installedTarget()) finish(true)
+            return
+        }
         val id = journal.getInt("session", -1)
         val session = app.packageManager.packageInstaller.getSessionInfo(id)
         if (session == null || !session.isCommitted) {
@@ -97,9 +115,9 @@ class AppUpdates(private val app: MemoApplication) {
     fun action(name: String) { scope.launch { perform(name) } }
 
     private suspend fun perform(name: String) {
-        if (installing) return
+        if (installing || recoveryRequired) return
         if (name != "cancel" && (operationPending || preferencesPending)) return
-        if (name == "check" || name == "download") installError = null
+        if (name == "check" || name == "download") showInstallError(null)
         pendingCommands++
         try {
             status = withContext(Dispatchers.IO) {
@@ -138,35 +156,73 @@ class AppUpdates(private val app: MemoApplication) {
     }
 
     /** Revalidates the candidate, asks for source permission, and saves before a native handoff. */
-    fun install(model: MemoModel) {
-        if (installing || operationPending || preferencesPending) return
+    fun install(model: MemoModel) = startInstall(model, false)
+
+    /** Explicit compatibility route; it retains verification, save and source-permission gates. */
+    fun installWithSystemInstaller(model: MemoModel) = startInstall(model, true)
+
+    private fun startInstall(model: MemoModel, systemInstaller: Boolean) {
+        if (installing || recoveryRequired) return
+        if (operationPending || preferencesPending) return
         val screen = activity.get() ?: return
         if (!app.packageManager.canRequestPackageInstalls()) {
-            screen.startActivity(
-                Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${app.packageName}"))
-            )
+            try {
+                screen.startActivity(
+                    Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${app.packageName}"))
+                )
+            } catch (_: ActivityNotFoundException) { showInstallError("UPDATE_INSTALL_UNAVAILABLE") }
             return
         }
         scope.launch {
             installing = true
             submissionActive = true
-            installError = null
+            showInstallError(null)
+            var staged: StagedUpdate? = null
             try {
+                if (recoveryRequired) updateFailure("UPDATE_INSTALL_RECOVERY")
                 val prepared = withContext(Dispatchers.IO) { JSONObject(service.prepareInstall()) }
                 if (!prepared.optBoolean("ok")) updateFailure(prepared.optString("error", "UPDATE_INSTALL"))
                 val data = prepared.getJSONObject("data")
                 val file = File(data.getString("path"))
-                withContext(Dispatchers.IO) { UpdateInstaller(app).verify(file, data.getJSONObject("release")) }
+                val release = data.getJSONObject("release")
+                withContext(Dispatchers.IO) { UpdateInstaller(app).verify(file, release) }
+                staged = if (systemInstaller) withContext(Dispatchers.IO) { compatibility.stage(file, release) } else null
                 if (!model.prepareUpdate()) updateFailure("UPDATE_SAVE")
-                withContext(Dispatchers.IO) { UpdateInstaller(app).submit(file) }
+                val external = staged
+                if (external != null) {
+                    withContext(Dispatchers.IO) { compatibility.begin(external, release) }
+                    // Resolve after the journal write: rotation/backgrounding may replace the Activity.
+                    val active = activity.get() ?: updateFailure("UPDATE_INSTALL_BACKGROUND")
+                    active.launchUpdateInstaller(external)
+                } else {
+                    withContext(Dispatchers.IO) { UpdateInstaller(app).submit(file) }
+                }
             } catch (error: kotlinx.coroutines.CancellationException) {
                 finish(false)
                 throw error
             } catch (error: Exception) {
-                installError = (error as? UpdateFailure)?.code ?: "UPDATE_INSTALL"
+                showInstallError(
+                    when (error) {
+                        is UpdateFailure -> error.code
+                        is SecurityException -> "UPDATE_INSTALL_BLOCKED"
+                        is ActivityNotFoundException -> "UPDATE_INSTALL_UNAVAILABLE"
+                        else -> "UPDATE_INSTALL"
+                    }
+                )
                 finish(false)
             } finally {
                 submissionActive = false
+                staged?.takeIf { compatibility.attempt != it.attempt }?.let {
+                    if (!compatibility.discard(it)) {
+                        recoveryRequired = true
+                        try {
+                            compatibility.deferCleanup(
+                                it
+                            )
+                        } catch (_: Exception) { /* Keep the visible recovery state. */ }
+                        showInstallError("UPDATE_INSTALL_RECOVERY")
+                    }
+                }
             }
             refresh()
         }
@@ -181,14 +237,16 @@ class AppUpdates(private val app: MemoApplication) {
         if (result == PackageInstaller.STATUS_PENDING_USER_ACTION) {
             val confirmation = intent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
             if (confirmation == null) {
-                installError = "UPDATE_INSTALL"
+                showInstallError("UPDATE_INSTALL")
                 finish(false)
                 return
             }
-            journal.edit().putString("continuation", confirmation.toUri(Intent.URI_INTENT_SCHEME)).commit()
+            confirmationIntent = Intent(confirmation)
+            journal.edit().remove("continuation").putBoolean("confirmation_pending", true).commit()
             needsConfirmation = true
             continueInstallation()
         } else {
+            if (result != PackageInstaller.STATUS_SUCCESS) showInstallError(installFailureCode(result))
             finish(result == PackageInstaller.STATUS_SUCCESS)
         }
     }
@@ -196,31 +254,78 @@ class AppUpdates(private val app: MemoApplication) {
     /** Reopens a system-supplied confirmation only when the Activity is available. */
     fun continueInstallation() {
         val screen = activity.get() ?: return
-        val saved = journal.getString("continuation", null) ?: return
         try {
-            screen.startActivity(Intent.parseUri(saved, Intent.URI_INTENT_SCHEME))
+            val pending = confirmationIntent?.let(::Intent) ?: return
+            screen.startActivity(pending)
         } catch (_: Exception) {
-            installError = "UPDATE_INSTALL"
+            showInstallError("UPDATE_INSTALL")
         }
     }
 
-    /** Abandons the pending system session and releases the core installation barrier. */
+    /** Ends local waiting; only an owned PackageInstaller session can actually be abandoned. */
     fun cancelInstallation() {
         if (!canCancelInstallation) return
         val id = journal.getInt("session", -1)
         if (id >= 0) runCatching { app.packageManager.packageInstaller.abandonSession(id) }
+        showInstallError(if (compatibility.pending) "UPDATE_INSTALL_WAIT_CANCELED" else "UPDATE_INSTALL_CANCELED")
         finish(false)
     }
 
-    private fun finish(success: Boolean) {
-        if (finishing) return
+    /** Activity results alone are not success: the OS-installed package must reach the target. */
+    fun systemInstallerReturned(attempt: String) {
+        if (!compatibility.pending || compatibility.attempt != attempt || finishing) return
+        try {
+            compatibility.acknowledge(attempt)
+            if (compatibility.installedTarget()) finish(true, attempt) else showInstallError("UPDATE_INSTALL_UNKNOWN")
+        } catch (_: Exception) { showInstallError("UPDATE_INSTALL_UNKNOWN") }
+    }
+
+    private fun showInstallError(code: String?) {
+        installError = code
+        try {
+            val edit = journal.edit()
+            if (code in persistentInstallErrors) edit.putString("last_failure", code) else edit.remove("last_failure")
+            if (!edit.commit()) {
+                recoveryRequired = true
+                installError = "UPDATE_INSTALL_RECOVERY"
+            }
+        } catch (_: Exception) {
+            recoveryRequired = true
+            installError = "UPDATE_INSTALL_RECOVERY"
+        }
+    }
+
+    private fun finish(success: Boolean, expectedAttempt: String? = compatibility.attempt) {
+        if (finishing || expectedAttempt != compatibility.attempt) return
         finishing = true
-        journal.edit().remove("session").remove("continuation").commit()
+        if (success) showInstallError(null)
+        confirmationIntent = null
+        try {
+            recoveryRequired = !compatibility.clear(expectedAttempt)
+            if (!journal.edit().remove("session").remove("continuation").remove("confirmation_pending").commit()) {
+                recoveryRequired = true
+            }
+        } catch (_: Exception) { recoveryRequired = true }
+        if (recoveryRequired) showInstallError("UPDATE_INSTALL_RECOVERY")
         needsConfirmation = false
         scope.launch {
+            // Failure reporting is best effort and must never prevent releasing the core gate.
+            if (!success) {
+                try {
+                    if (recovery != null) {
+                        recovery.markFailed()
+                    } else {
+                        withContext(
+                            Dispatchers.IO
+                        ) { service.installationFailed() }
+                    }
+                } catch (_: Exception) {
+                    recoveryRequired = true
+                    showInstallError("UPDATE_INSTALL_RECOVERY")
+                }
+            }
             try {
-                if (!success) withContext(Dispatchers.IO) { service.installationFailed() }
-                app.gateway.resumeAfterUpdate()
+                if (recovery != null) recovery.resume() else app.gateway.resumeAfterUpdate()
                 // onStart may have been blocked while the restored installation journal locked UI.
                 var active: Boolean
                 do {
@@ -228,9 +333,14 @@ class AppUpdates(private val app: MemoApplication) {
                     app.gateway.call("foreground", "active" to active)
                 } while (active != (activity.get() != null))
             } catch (_: CoreException) {
-                installError = "UPDATE_SAVE"
+                recoveryRequired = true
+                showInstallError("UPDATE_SAVE")
             } catch (_: CoreFailure) {
-                installError = "UPDATE_SAVE"
+                recoveryRequired = true
+                showInstallError("UPDATE_SAVE")
+            } catch (_: Exception) {
+                recoveryRequired = true
+                showInstallError("UPDATE_SAVE")
             } finally {
                 // A new attempt must not race a delayed release from this installation.
                 installing = false
@@ -239,4 +349,10 @@ class AppUpdates(private val app: MemoApplication) {
             }
         }
     }
+}
+
+/** Separates the recoverable native bookkeeping and core-resume boundaries. */
+internal interface InstallRecovery {
+    suspend fun markFailed()
+    suspend fun resume()
 }

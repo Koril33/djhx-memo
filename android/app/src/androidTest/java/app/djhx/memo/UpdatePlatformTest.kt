@@ -1,8 +1,9 @@
 package app.djhx.memo
 
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
+import android.view.accessibility.AccessibilityNodeInfo
+import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -69,14 +70,18 @@ class UpdatePlatformTest {
         val id = UpdateInstaller(context).submit(file)
         val journal = context.getSharedPreferences("updates-install", Context.MODE_PRIVATE)
         val deadline = android.os.SystemClock.elapsedRealtime() + 15000
-        while (!journal.contains("continuation") && android.os.SystemClock.elapsedRealtime() < deadline) {
+        fun confirmationReady() = app.updates.needsConfirmation &&
+            (journal.getBoolean("confirmation_pending", false) || journal.contains("continuation"))
+        while (!confirmationReady() && android.os.SystemClock.elapsedRealtime() < deadline) {
             Thread.sleep(100)
         }
-        assertTrue("System must request user confirmation", journal.contains("continuation"))
+        assertTrue("System must request user confirmation", confirmationReady())
         assertEquals(id, journal.getInt("session", -1))
         if (args.getString("completeInstall") == "1") {
-            val intent = Intent.parseUri(journal.getString("continuation", null), Intent.URI_INTENT_SCHEME)
-            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+                scenario.onActivity { app.updates.continueInstallation() }
+                android.os.SystemClock.sleep(15000)
+            }
         } else {
             InstrumentationRegistry.getInstrumentation().runOnMainSync { app.updates.cancelInstallation() }
             var readable: JSONObject? = null
@@ -145,6 +150,80 @@ class UpdatePlatformTest {
         val file = candidateFile(context, candidate!!)
         assertTrue(file.exists())
         UpdateInstaller(context).verify(file, release(context, file))
+    }
+
+    /** Exercises the platform URI/Activity Result boundary with a known local APK fixture. */
+    @Test fun compatibilityUriOpensSystemConfirmationAndWaitingCanBeCanceled() = runBlocking {
+        val candidate = InstrumentationRegistry.getArguments().getString("updateApk")
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        assumeTrue(
+            "Supply a newer same-signer fixture and source permission",
+            candidate != null && context.packageManager.canRequestPackageInstalls()
+        )
+        val app = context.applicationContext as MemoApplication
+        val file = candidateFile(context, candidate!!)
+        val metadata = release(context, file).put("size", file.length()).put("sha256", sha256(file.readBytes()))
+        UpdateInstaller(context).verify(file, metadata)
+        val compatibility = UpdateCompatibility(context)
+        val staged = compatibility.stage(file, metadata)
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        lateinit var tracker: AppUpdates
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            val note = app.gateway.obj(
+                "create",
+                "profile_id" to "local",
+                "request_id" to UUID.randomUUID().toString(),
+                "content" to "系统安装器交接合成笔记😀"
+            )
+            app.gateway.pauseForUpdate()
+            compatibility.begin(staged, metadata)
+            instrumentation.runOnMainSync { tracker = AppUpdates(app) }
+            try {
+                scenario.onActivity { it.launchUpdateInstaller(staged) }
+                var cancel: AccessibilityNodeInfo? = null
+                val deadline = android.os.SystemClock.elapsedRealtime() + 15000
+                while (cancel == null && android.os.SystemClock.elapsedRealtime() < deadline) {
+                    val root = instrumentation.uiAutomation.rootInActiveWindow
+                    if (root?.packageName?.toString()?.contains("packageinstaller") == true) cancel = cancelButton(root)
+                    if (cancel == null) Thread.sleep(50)
+                }
+                assertNotNull("The system confirmation must open from the private content URI", cancel)
+                var button = checkNotNull(cancel)
+                while (!button.isClickable && button.parent != null) button = button.parent
+                assertTrue(button.performAction(AccessibilityNodeInfo.ACTION_CLICK))
+                instrumentation.runOnMainSync {
+                    tracker.systemInstallerReturned(staged.attempt)
+                    assertTrue(tracker.installing)
+                    assertEquals("UPDATE_INSTALL_UNKNOWN", tracker.installError)
+                    tracker.cancelInstallation()
+                }
+                val resumedBy = android.os.SystemClock.elapsedRealtime() + 5000
+                while (tracker.installing && android.os.SystemClock.elapsedRealtime() < resumedBy) Thread.sleep(25)
+                assertFalse(tracker.installing)
+                val saved = app.gateway.obj("get", "profile_id" to "local", "id" to note.getString("id"))
+                assertEquals("系统安装器交接合成笔记😀", saved.getString("content"))
+                app.gateway.obj(
+                    "set_deleted",
+                    "profile_id" to "local",
+                    "id" to saved.getString("id"),
+                    "expected_generation" to saved.getString("generation"),
+                    "deleted" to true
+                )
+            } finally {
+                instrumentation.runOnMainSync { tracker.cancelInstallation() }
+                app.gateway.resumeAfterUpdate()
+                compatibility.discard(staged)
+            }
+        }
+        Unit
+    }
+
+    private fun cancelButton(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+        if (node.text?.toString() in setOf("Cancel", "取消")) return node
+        for (index in 0 until node.childCount) node.getChild(
+            index
+        )?.let { cancelButton(it)?.let { found -> return found } }
+        return null
     }
 
     @Test fun nativeInstallBarrierPreservesCommittedChineseTextAndCanResume() {

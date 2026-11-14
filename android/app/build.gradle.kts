@@ -14,8 +14,8 @@ android {
         minSdk = 29
         targetSdk = 36
         // Only isolated device fixtures can override identity for a real upgrade preflight.
-        versionCode = if (project.hasProperty("isolatedValidation")) providers.gradleProperty("updateTestVersionCode").orNull?.toInt() ?: 9 else 9
-        versionName = if (project.hasProperty("isolatedValidation")) providers.gradleProperty("updateTestVersionName").orNull ?: "0.1.8" else "0.1.8"
+        versionCode = if (project.hasProperty("isolatedValidation")) providers.gradleProperty("updateTestVersionCode").orNull?.toInt() ?: 10 else 10
+        versionName = if (project.hasProperty("isolatedValidation")) providers.gradleProperty("updateTestVersionName").orNull ?: "0.1.9" else "0.1.9"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         providers.environmentVariable("DJHX_ANDROID_TEST_SERVER_URL").orNull?.let {
             testInstrumentationRunnerArguments["serverUrl"] = it
@@ -96,7 +96,13 @@ providers.gradleProperty("updateFixtureApk").orNull?.let { fixture ->
         into(layout.buildDirectory.dir("generated/update-test-assets"))
     }
     android.sourceSets["androidTest"].assets.srcDir(layout.buildDirectory.dir("generated/update-test-assets"))
-    tasks.matching { it.name in setOf("mergeDebugAndroidTestAssets", "mergeReleaseAndroidTestAssets") }.configureEach {
+    tasks.matching {
+        it.name in setOf(
+            "mergeDebugAndroidTestAssets", "mergeReleaseAndroidTestAssets",
+            "generateDebugAndroidTestLintModel", "generateReleaseAndroidTestLintModel",
+            "lintAnalyzeDebugAndroidTest", "lintAnalyzeReleaseAndroidTest"
+        )
+    }.configureEach {
         dependsOn(prepareUpdateFixture)
     }
 }

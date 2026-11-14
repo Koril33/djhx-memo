@@ -28,6 +28,8 @@ HTTP、Base64、JSON 和 SHA-256 复用现有依赖，匿名更新客户端不�
 
 ## 备选与代价
 
+2026-11-14兼容修正：维护者Civi（Android13/HyperOS）会话交接失败、浏览器打开相同APK可覆盖成功，因此在保留PackageInstaller默认路径的同时，增加明确的系统安装器兼容入口；契约见[安装兼容规范](../../spec/android-install-compatibility.md)。使用已锁定AndroidX Core1.13.1中的FileProvider和现有Activity Result，不新增依赖/安装SDK。Provider仅开放私有cache专用APK目录和单文件临时读授权，原目录/包/签名验证与保存屏障仍执行。具体厂商失败原因尚未取得，不把兼容设计等同于真机已通过。
+
 - **只读 GitHub latest 并打开下载页**：最省事，但达不到 Windows/AppImage/Android 自动下载与安装整合目标；保留为人工恢复入口。
 - **所有平台自写安装助手**：维护成本大，绕不过系统权限；不采用。
 - **仅 DEB + 签名 APT**：适合坚持系统包管理的 Linux 用户，但需维护仓库与系统配置；保留后续渠道，不把它冒充现有能力。

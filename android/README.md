@@ -1,5 +1,7 @@
 # Android 客户端
 
+当前分支另含 **0.1.9/code10修复候选，未发布**：增加显式系统安装器兼容入口、固定失败分类与按尝试恢复。来源见[安装兼容规范](../spec/android-install-compatibility.md)，实际结果见[验证记录](../docs/android-install-compatibility-validation.md)。Civi的浏览器覆盖成功属于0.1.8手动恢复，不等于新兼容入口已通过真机检查。
+
 当前客户端 **0.1.8**（code9）已公开发布原证书双ABI APK，整理红底删除/回收站、导入导出、账号入口和状态/更新页面。API35模拟器已完成原证书0.1.7→0.1.8线上安装与原ID合成笔记保留，实际测试及未完成矩阵见[本轮验证](../docs/releases/0.1.8-validation.md)。core仍0.1.7，签名与应用身份保持；0.1.5历史debug/unsigned仅保留资料用途。
 
 0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](../docs/releases/0.1.4-validation.md)。

@@ -231,4 +231,22 @@
     <string name="update_unmetered_short">Unmetered networks</string>
     <string name="update_cancelled">Download canceled</string>
     <string name="automatic_downloads">Automatic downloads</string>
+    <string name="update_system_install">Use system installer</string>
+    <string name="update_external_wait">Waiting for system installer</string>
+    <string name="update_cancel_wait">Stop waiting</string>
+    <string name="update_install_blocked">The system blocked installation. Try the system installer and review its prompt.</string>
+    <string name="update_install_conflict">The system reported an installation conflict. Check the installed app source; keep its data.</string>
+    <string name="update_install_invalid">The system rejected the APK. Check again or install the official APK from the website.</string>
+    <string name="update_install_storage">The system needs more installation space. Free space and retry without clearing notes.</string>
+    <string name="update_install_cancelled">Installation canceled. You can keep using the app or retry.</string>
+    <string name="update_wait_cancelled">Stopped waiting. Check the system installer for its actual result.</string>
+    <string name="update_install_unknown">The system did not return a definitive result. Review or close its installer, then stop waiting to resume editing.</string>
+    <string name="update_install_timeout">System installation timed out. Review its prompt and retry.</string>
+    <string name="update_install_background">Keep the app in the foreground and retry installation.</string>
+    <string name="update_install_unavailable">The system installation or permission screen is unavailable. Install the official APK from the website.</string>
+    <string name="update_install_recovery">Installer state needs cleanup. Retry restoring update state.</string>
+    <string name="update_retry_recovery">Restore update state</string>
+    <string name="update_recovery_state">Update recovery needed</string>
+    <string name="update_install_cancelled_state">Installation canceled</string>
+    <string name="update_wait_cancelled_state">Stopped waiting</string>
 </resources>
