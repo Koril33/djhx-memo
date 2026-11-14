@@ -40,6 +40,10 @@
     "lucide/copy.svg": "ea80e566c7a12628a447cb53179b19aea4f60b9143e2becd0d0f20bf260e5718",
     "lucide/rotate-ccw.svg": "622685386ab4017eabfde01cd74550a20b1924df233b353f73b6b155371f2afd",
     "lucide/user.svg": "eae3b3b2400031ddd5ec869327d127a96014e5f63aa6e06658dd5d4e90661aa8",
-    "LICENSE.txt": "b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57"
+    "LICENSE.txt": "b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57",
+    "lucide/list-checks.svg": "08d26ab05aaf724222c4c0cd5a19d5eae753b2a5fff0eb2d81759dde11bac6b6",
+    "lucide/recycle.svg": "21ce80a29ae558e16406dfb9143cf7b107c2d76b0174624328ff0e7abeaed7e2",
+    "lucide/file-input.svg": "8c654aca5f51c6c814c75c686324d6ab3ce1f6bacfc70e7f4a8473cb063f4321",
+    "lucide/file-output.svg": "94a0abe002d76ae0047b9a7e9ec2e2045381c4f4a81372da1d961d6bc14c5868"
   }
 }

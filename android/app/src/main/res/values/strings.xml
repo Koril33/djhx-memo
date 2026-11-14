@@ -7,7 +7,7 @@
     <string name="done">Done</string>
     <string name="local_notes">Local notes</string>
     <string name="sync">Sync</string>
-    <string name="credential_volatile">Secure storage is unavailable. Sign in again after restarting the app.</string>
+    <string name="credential_volatile">Credentials are kept for this session. Sign in again after restarting.</string>
     <string name="back_notes">Back to notes</string>
     <string name="trash">Trash</string>
     <string name="export_zip">Export ZIP</string>
@@ -168,7 +168,7 @@
     <string name="tab_data">Data</string>
     <string name="current_space_short">Spaces on this device</string>
     <string name="logout_short">Sign out</string>
-    <string name="add_account">Sign in / Register</string>
+    <string name="add_account">Add account</string>
     <string name="hide_account_form">Hide sign-in form</string>
     <string name="sign_in_for_devices">Sign in to manage devices</string>
     <string name="about_app">About DJHX Memo</string>
@@ -204,7 +204,6 @@
     <string name="update_incompatible">Update incompatible with this installation. Review release notes.</string>
     <string name="update_save">Could not safely save your notes. Installation paused.</string>
     <string name="update_storage">Check free space and update storage permissions.</string>
-    <string name="update_privacy">No sign-in needed. Checks send no notes or account credentials. Allow this app to install updates and confirm in the system installer.</string>
     <string name="update_last_check">Last checked: %1$s</string>
     <string name="select_notes">Select notes</string>
     <string name="select_all_results">Select all results</string>
@@ -223,4 +222,13 @@
     <string name="batch_result">%1$d moved to trash; %2$d failed.</string>
     <string name="undo_result">%1$d restored; %2$d failed.</string>
     <string name="restored_count">Restored %1$d</string>
+    <string name="close">Close</string>
+    <string name="sign_in_again">Sign in again</string>
+    <string name="update_stable">Stable</string>
+    <string name="update_preferences">Update preferences</string>
+    <string name="update_candidate_version">Available version %1$s</string>
+    <string name="update_maintain">Keep up to date</string>
+    <string name="update_unmetered_short">Unmetered networks</string>
+    <string name="update_cancelled">Download canceled</string>
+    <string name="automatic_downloads">Automatic downloads</string>
 </resources>

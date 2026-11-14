@@ -263,7 +263,8 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                             MemoIconButton(
                                 R.drawable.ic_ui_trash_2,
                                 stringResource(R.string.move_trash),
-                                !model.busy && model.selection.isNotEmpty()
+                                !model.busy && model.selection.isNotEmpty(),
+                                danger = true
                             ) {
                                 model.trashNotes(model.notes.filter { it.getString("id") in model.selection })
                             }
@@ -341,7 +342,8 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                                             if (deleted) R.drawable.ic_ui_rotate_ccw else R.drawable.ic_ui_trash_2,
                                             stringResource(if (deleted) R.string.restore else R.string.delete),
                                             !model.busy && purgeState !in setOf("pending", "purged") &&
-                                                profile?.optBoolean("read_only") != true
+                                                profile?.optBoolean("read_only") != true,
+                                            danger = !deleted
                                         ) {
                                             more = false
                                             model.setDeleted(!deleted)
@@ -350,7 +352,8 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                                             MemoMenuItem(
                                                 R.drawable.ic_ui_trash_2,
                                                 stringResource(R.string.purge_note),
-                                                !model.busy && purgeState != "pending" && profile?.optBoolean("read_only") != true
+                                                !model.busy && purgeState != "pending" && profile?.optBoolean("read_only") != true,
+                                                danger = true
                                             ) {
                                                 more = false
                                                 purgeTarget = org.json.JSONObject(model.selected.toString())
@@ -360,7 +363,7 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                                     }
                                     if (!model.editorOpen) {
                                         MemoMenuItem(
-                                            if (model.trash) R.drawable.ic_ui_arrow_left else R.drawable.ic_ui_trash_2,
+                                            if (model.trash) R.drawable.ic_ui_arrow_left else R.drawable.ic_ui_recycle,
                                             stringResource(if (model.trash) R.string.back_notes else R.string.trash)
                                         ) {
                                             more = false
@@ -368,7 +371,7 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                                         }
                                     }
                                     MemoMenuItem(
-                                        R.drawable.ic_ui_download,
+                                        R.drawable.ic_ui_file_input,
                                         stringResource(R.string.import_markdown),
                                         !model.busy && profile?.optBoolean("read_only") != true
                                     ) {
@@ -376,7 +379,7 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                                         if (profile?.optString("kind") == "account") importConfirm = true else launchImport()
                                     }
                                     MemoMenuItem(
-                                        R.drawable.ic_ui_download,
+                                        R.drawable.ic_ui_file_output,
                                         stringResource(
                                             if (model.trash) R.string.export_trash else R.string.export_space
                                         )
@@ -385,7 +388,7 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                                         export()
                                     }
                                     if (model.editorOpen) {
-                                        MemoMenuItem(R.drawable.ic_ui_info, statusLabel) {
+                                        MemoMenuItem(cloudIcon(model.state.optJSONObject("sync")), statusLabel) {
                                             more = false
                                             statusDetails = true
                                         }
@@ -486,10 +489,20 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
             title = { Text(stringResource(R.string.purge_confirm)) },
             text = { Text(stringResource(R.string.purge_help)) },
             confirmButton = {
-                TextButton(onClick = {
-                    purgeTarget = null
-                    model.purge(target)
-                }) { Text(stringResource(R.string.purge_note)) }
+                Button(
+                    onClick = {
+                        purgeTarget = null
+                        model.purge(target)
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    )
+                ) {
+                    MemoIcon(R.drawable.ic_ui_trash_2)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.purge_note))
+                }
             },
             dismissButton = { TextButton(onClick = { purgeTarget = null }) { Text(stringResource(R.string.cancel)) } }
         )
@@ -704,9 +717,9 @@ private fun AttentionBanner(model: MemoModel, onSettings: (String) -> Unit) {
     val volatile = model.state.has("credential_persistent") && !model.state.optBoolean("credential_persistent") &&
         model.state.optJSONObject("profile")?.optString("kind") == "account"
     val resource = when {
-        volatile -> R.string.credential_volatile
         sync == "auth_required" -> R.string.cloud_auth
         sync == "recovery_required" -> R.string.cloud_recovery
+        volatile -> R.string.credential_volatile
         sync == "error" -> R.string.cloud_error
         else -> null
     }
@@ -747,43 +760,64 @@ private fun cloudIcon(sync: JSONObject?): Int = when (sync?.optString("state")) 
     else -> R.drawable.ic_ui_cloud
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun StatusDetails(model: MemoModel, onSpace: () -> Unit, onClose: () -> Unit) {
     val context = LocalContext.current
     val sync = model.state.optJSONObject("sync")
-    MemoAlertDialog(onDismissRequest = onClose, title = { Text(stringResource(R.string.status_details)) }, text = {
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text(shortProfileLabel(model.state.optJSONObject("profile")), color = MaterialTheme.colorScheme.primary)
-            Column {
-                Text(stringResource(R.string.local_status), style = MaterialTheme.typography.labelMedium)
-                Text(
-                    model.localStatus.resolve(context),
-                    color = if (model.saveFailed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-                )
+    val account = model.state.optJSONObject("profile")?.optString("kind") == "account"
+    MemoAlertDialog(
+        onDismissRequest = onClose,
+        title = {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.status_details), modifier = Modifier.weight(1f))
+                MemoIconButton(R.drawable.ic_ui_x, stringResource(R.string.close), onClick = onClose)
             }
-            Column {
-                Text(stringResource(R.string.cloud_status), style = MaterialTheme.typography.labelMedium)
-                Text(cloudLabel(sync))
-            }
-            if (sync?.optString("state") != "local") {
-                Text(
-                    stringResource(R.string.last_sync, formattedTime(sync?.optString("last_success"))),
-                    style = MaterialTheme.typography.bodySmall
-                )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(shortProfileLabel(model.state.optJSONObject("profile")), color = MaterialTheme.colorScheme.primary)
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(stringResource(R.string.local_status), style = MaterialTheme.typography.labelMedium)
+                    Text(
+                        model.localStatus.resolve(context),
+                        color = if (model.saveFailed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(stringResource(R.string.cloud_status), style = MaterialTheme.typography.labelMedium)
+                    Text(cloudLabel(sync))
+                }
+                if (account) {
+                    Text(
+                        stringResource(R.string.last_sync, formattedTime(sync?.optString("last_success"))),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
                 sync?.optJSONObject("error")?.let {
                     Text(stringResource(errorResource(it.optString("code"))), color = MaterialTheme.colorScheme.error)
                 }
             }
-            TextButton(onClick = onSpace) { Text(stringResource(R.string.space_settings)) }
+        },
+        confirmButton = {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onSpace,
+                    enabled = !model.busy
+                ) { Text(stringResource(R.string.space_settings)) }
+                if (account) {
+                    Button(
+                        onClick = model::sync,
+                        enabled = !model.busy
+                    ) { Text(stringResource(R.string.sync)) }
+                }
+            }
         }
-    }, confirmButton = {
-        TextButton(
-            onClick = model::sync,
-            enabled = !model.busy && model.state.optJSONObject("profile")?.optString("kind") == "account"
-        ) {
-            Text(stringResource(R.string.sync))
-        }
-    }, dismissButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.done)) } })
+    )
 }
 
 @Composable

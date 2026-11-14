@@ -167,7 +167,7 @@ fn show_window(app: &tauri::AppHandle) {
 
 fn request_lifecycle(app: &tauri::AppHandle, desired: Lifecycle) {
     if app
-        .try_state::<update::Updates>()
+        .try_state::<Arc<update::Updates>>()
         .is_some_and(|u| u.installing.load(Ordering::Acquire))
     {
         return;
@@ -483,19 +483,22 @@ fn main() {
                 root.join("updates").to_string_lossy().into_owned(),
                 if cfg!(all(windows, target_arch = "x86_64")) { "windows-x86_64-nsis" } else { "system-managed" }.into(),
                 env!("CARGO_PKG_VERSION").into(), 0, "app.djhx.memo".into());
+            let updates = Arc::new(update::Updates { service: updates, installing: AtomicBool::new(false), operation: update::OperationGate::default() });
             if cfg!(all(windows, target_arch = "x86_64")) {
                 let scheduler = updates.clone();
                 std::thread::spawn(move || {
                     let jitter = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.subsec_millis() as u64 % 30);
                     std::thread::sleep(std::time::Duration::from_secs(30 + jitter));
                     loop {
-                        scheduler.check(false);
-                        scheduler.download(false, false);
+                        if let Some(_operation) = scheduler.operation.enter() {
+                            scheduler.service.check(false);
+                            scheduler.service.download(false, false);
+                        }
                         std::thread::sleep(std::time::Duration::from_secs(3600));
                     }
                 });
             }
-            app.manage(update::Updates { service: updates, installing: AtomicBool::new(false) });
+            app.manage(updates);
             let open = MenuItem::with_id(app, "open", "Open main window", true, None::<&str>)?;
             let create = MenuItem::with_id(app, "new", "New note", true, None::<&str>)?;
             let sync = MenuItem::with_id(app, "sync", "Sync now (local only)", false, None::<&str>)?;

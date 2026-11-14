@@ -1027,7 +1027,7 @@ dependencies = [
 
 [[package]]
 name = "djhx-memo-desktop"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "base64 0.23.1",
  "djhx-memo-core",

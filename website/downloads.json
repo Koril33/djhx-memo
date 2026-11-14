@@ -1,0 +1,8 @@
+{
+  "version": "0.1.8",
+  "platforms": {
+    "windows": { "version": "0.1.8", "asset": "djhx-memo-0.1.8-windows-x64-setup.exe" },
+    "android": { "version": "0.1.8", "asset": "djhx-memo-0.1.8-android.apk" },
+    "linux": { "version": "0.1.8", "asset": "djhx-memo-0.1.8-linux-amd64.deb" }
+  }
+}

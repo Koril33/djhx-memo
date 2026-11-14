@@ -1,6 +1,14 @@
 // Local presentation only. Never translate note content or user-provided names.
 export type Language = 'zh-CN' | 'en';
 export const messages = {
+  close: { 'zh-CN': '关闭', en: 'Close' },
+  spaceSettings: { 'zh-CN': '空间设置', en: 'Space settings' },
+  signInTitle: { 'zh-CN': '登录', en: 'Sign in' },
+  addAccount: { 'zh-CN': '添加账号', en: 'Add account' },
+  authSpaceChanged: {
+    'zh-CN': '空间已变化，请重新打开登录入口。',
+    en: 'Space changed. Reopen sign-in.',
+  },
   selectAllShort: { 'zh-CN': '全选', en: 'All' },
   undoShort: { 'zh-CN': '撤销', en: 'Undo' },
   trashNotice: { 'zh-CN': '已将 {total} 条笔记移入回收站', en: 'Moved {total} to trash' },
@@ -330,8 +338,8 @@ export const messages = {
     en: 'The system tray is unavailable. Closing saves and exits; reopen from your application menu.',
   },
   keyringUnavailable: {
-    'zh-CN': '系统密钥环不可用。凭据仅保留在本次进程，重启后需重新登录；笔记保存在本机。',
-    en: 'The system keyring is unavailable. Credentials last for this session only; sign in again after restarting. Notes are stored locally.',
+    'zh-CN': '凭据仅保留在本次会话，重启后需重新登录；笔记保存在本机。',
+    en: 'Credentials last for this session only; sign in again after restarting. Notes are stored locally.',
   },
   signInAgainHelp: {
     'zh-CN': '此设备需重新登录，本地编辑和导出继续可用。',

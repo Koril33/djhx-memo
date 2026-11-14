@@ -274,3 +274,6 @@ svg.icon { flex: none; width: 18px; height: 18px; fill: none; stroke: currentCol
   .platforms, .platforms li + li, .seg, .theme-toggle { border-color: ButtonText; }
   .seg label:has(input:checked) { outline: 1px solid Highlight; }
 }
+
+.release-link { display: inline-block; margin-top: 14px; font-size: 11px; color: var(--muted); text-decoration: none; border-bottom: 1px solid transparent; }
+.release-link:hover { color: var(--ink); border-bottom-color: currentColor; }

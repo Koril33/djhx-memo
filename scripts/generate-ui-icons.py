@@ -57,7 +57,7 @@ def path_data(tag: str, attrs: dict[str, str]) -> str:
 def generate() -> dict[Path, bytes]:
     upstream = json.loads((SOURCE / "UPSTREAM.json").read_text())
     actual_sources = {"LICENSE.txt"} | {
-        str(path.relative_to(SOURCE)) for path in (SOURCE / "lucide").glob("*.svg")
+        path.relative_to(SOURCE).as_posix() for path in (SOURCE / "lucide").glob("*.svg")
     }
     if actual_sources != set(upstream["files"]):
         raise ValueError("SVG source files must match the pinned upstream manifest")
@@ -134,10 +134,10 @@ def generate() -> dict[Path, bytes]:
     )
     # Use the existing locked formatter, never install a package while generating assets.
     import subprocess
-    formatter = ROOT / "desktop/node_modules/.bin/prettier"
+    formatter = ROOT / "desktop/node_modules/prettier/bin/prettier.cjs"
     result = subprocess.run(
-        [str(formatter), "--stdin-filepath", "src/lib/icons.ts"],
-        input=typescript, text=True, capture_output=True, cwd=ROOT / "desktop", check=True,
+        ["node", str(formatter), "--stdin-filepath", "src/lib/icons.ts"],
+        input=typescript, text=True, encoding="utf-8", capture_output=True, cwd=ROOT / "desktop", check=True,
     )
     outputs[ROOT / "desktop/src/lib/icons.ts"] = result.stdout.encode()
     outputs[ROOT / "android/app/src/main/assets/licenses/lucide.txt"] = (SOURCE / "LICENSE.txt").read_bytes()

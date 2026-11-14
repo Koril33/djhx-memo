@@ -39,6 +39,14 @@ fun AccountSettings(model: MemoModel, initialTab: String = "display", onExport: 
     var tab by remember { mutableStateOf(initialTab) }
     var register by remember { mutableStateOf(false) }
     var authVisible by remember { mutableStateOf(false) }
+    var reauth by remember { mutableStateOf(false) }
+    var reauthProfileId by remember { mutableStateOf<String?>(null) }
+    var authRequest by remember { mutableIntStateOf(0) }
+    val hasAccounts = model.state.optJSONArray(
+        "profiles"
+    )?.objects().orEmpty().any { it.optString("kind") == "account" }
+    val needsAuth = isAccount && model.state.optJSONObject("sync")?.optString("state") == "auth_required"
+
     var about by remember { mutableStateOf(false) }
     var draft by remember(profileId) {
         mutableStateOf(
@@ -52,6 +60,16 @@ fun AccountSettings(model: MemoModel, initialTab: String = "display", onExport: 
     var revoke by remember { mutableStateOf<JSONObject?>(null) }
     var deviceDetails by remember { mutableStateOf<JSONObject?>(null) }
     val profiles = model.state.optJSONArray("profiles")?.objects().orEmpty()
+    LaunchedEffect(profileId) {
+        // A saved form belongs to its original account; changing spaces abandons it.
+        if (reauthProfileId != null && reauthProfileId != profileId) {
+            authVisible = false
+            reauth = false
+            reauthProfileId = null
+            authRequest++
+            draft = AuthDraft(store.serverDraft)
+        }
+    }
     LaunchedEffect(tab, isAccount) { if (tab == "devices" && isAccount) model.loadDevices() }
     LocalizedDialog(
         onDismissRequest = onClose,
@@ -66,6 +84,7 @@ fun AccountSettings(model: MemoModel, initialTab: String = "display", onExport: 
                     MemoIconButton(
                         R.drawable.ic_ui_arrow_left,
                         stringResource(R.string.close_settings),
+                        enabled = !model.busy,
                         onClick = onClose
                     )
                     Text(
@@ -75,7 +94,7 @@ fun AccountSettings(model: MemoModel, initialTab: String = "display", onExport: 
                     )
                     MemoIconButton(R.drawable.ic_ui_info, stringResource(R.string.about_app)) { about = true }
                 }
-                SettingsTabs(tab) { tab = it }
+                SettingsTabs(tab, !model.busy) { tab = it }
                 LazyColumn(
                     Modifier.weight(1f),
                     contentPadding = PaddingValues(24.dp),
@@ -104,30 +123,72 @@ fun AccountSettings(model: MemoModel, initialTab: String = "display", onExport: 
                                     }
                                 }
                             }
-                            item {
-                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                                TextButton(onClick = { authVisible = !authVisible }) {
-                                    MemoIcon(R.drawable.ic_ui_user)
-                                    Spacer(Modifier.width(12.dp))
-                                    Text(
-                                        stringResource(
-                                            if (authVisible) R.string.hide_account_form else R.string.add_account
+                            if (needsAuth) {
+                                item {
+                                    Text(stringResource(R.string.cloud_auth), color = MaterialTheme.colorScheme.error)
+                                    Button(enabled = !model.busy, onClick = {
+                                        reauth = true
+                                        reauthProfileId = profileId
+                                        register = false
+                                        authVisible = true
+                                        authRequest++
+                                        draft = AuthDraft(
+                                            profile?.nullableString("server_url").orEmpty(),
+                                            profile?.nullableString("username").orEmpty()
                                         )
-                                    )
+                                    }) { Text(stringResource(R.string.sign_in_again)) }
                                 }
                             }
-                            if (authVisible) {
+                            if (hasAccounts) {
                                 item {
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                    TextButton(enabled = !model.busy, onClick = {
+                                        reauth = false
+                                        reauthProfileId = null
+                                        register = false
+                                        authVisible = true
+                                        authRequest++
+                                        draft = AuthDraft(store.serverDraft)
+                                    }) {
+                                        MemoIcon(R.drawable.ic_ui_plus)
+                                        Spacer(Modifier.width(12.dp))
+                                        Text(stringResource(R.string.add_account))
+                                    }
+                                }
+                            }
+                            if (authVisible || (!hasAccounts && profile?.optString("kind") == "local")) {
+                                item {
+                                    if (hasAccounts) {
+                                        Row(
+                                            Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.End
+                                        ) {
+                                            MemoIconButton(
+                                                R.drawable.ic_ui_x,
+                                                stringResource(R.string.close),
+                                                !model.busy
+                                            ) {
+                                                authVisible = false
+                                                reauth = false
+                                                reauthProfileId = null
+                                                authRequest++
+                                                draft = draft.copy(password = "", invite = "")
+                                            }
+                                        }
+                                    }
                                     AuthFields(
                                         draft,
                                         register,
                                         !model.busy,
+                                        reauth,
                                         onDraft = { next ->
                                             if (next.server != draft.server) store.serverDraft = next.server
                                             draft = next
                                         },
-                                        onRegister = { register = !register },
+                                        onRegister = { if (!model.busy) register = !register },
                                         onSubmit = {
+                                            if (reauth && reauthProfileId != profileId) return@AuthFields
+                                            val request = ++authRequest
                                             model.authenticate(
                                                 register,
                                                 draft.server.trim(),
@@ -135,7 +196,14 @@ fun AccountSettings(model: MemoModel, initialTab: String = "display", onExport: 
                                                 draft.password,
                                                 draft.invite,
                                                 draft.device.trim()
-                                            )
+                                            ) {
+                                                if (request == authRequest) {
+                                                    authVisible = false
+                                                    reauth = false
+                                                    reauthProfileId = null
+                                                    draft = draft.copy(password = "", invite = "")
+                                                }
+                                            }
                                             draft = draft.copy(password = "", invite = "")
                                         }
                                     )
@@ -159,7 +227,7 @@ fun AccountSettings(model: MemoModel, initialTab: String = "display", onExport: 
                                             R.drawable.ic_ui_refresh_cw,
                                             stringResource(R.string.refresh_devices),
                                             !model.busy,
-                                            model::loadDevices
+                                            onClick = model::loadDevices
                                         )
                                     }
                                 }
@@ -206,7 +274,7 @@ fun AccountSettings(model: MemoModel, initialTab: String = "display", onExport: 
                             item {
                                 SectionTitle(R.string.export_short)
                                 TextButton(onClick = onExport, enabled = !model.busy) {
-                                    MemoIcon(R.drawable.ic_ui_download)
+                                    MemoIcon(R.drawable.ic_ui_file_output)
                                     Spacer(Modifier.width(12.dp))
                                     Text(
                                         stringResource(
@@ -302,7 +370,7 @@ fun AccountSettings(model: MemoModel, initialTab: String = "display", onExport: 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SettingsTabs(selected: String, onSelect: (String) -> Unit) {
+private fun SettingsTabs(selected: String, enabled: Boolean, onSelect: (String) -> Unit) {
     val tabs = listOf(
         "display" to R.string.tab_display,
         "spaces" to R.string.tab_spaces,
@@ -315,6 +383,7 @@ private fun SettingsTabs(selected: String, onSelect: (String) -> Unit) {
         tabs.forEach { (value, label) ->
             Tab(
                 selected = selected == value,
+                enabled = enabled,
                 onClick = { onSelect(value) },
                 text = { Text(stringResource(label), maxLines = 1) }
             )
@@ -334,13 +403,16 @@ private fun AuthFields(
     draft: AuthDraft,
     register: Boolean,
     enabled: Boolean,
+    reauth: Boolean,
     onDraft: (AuthDraft) -> Unit,
     onRegister: () -> Unit,
     onSubmit: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
-            stringResource(if (register) R.string.register_title else R.string.login_title),
+            stringResource(
+                if (reauth) R.string.sign_in_again else if (register) R.string.register_title else R.string.login_title
+            ),
             style = MaterialTheme.typography.titleMedium
         )
         OutlinedTextField(draft.server, {
@@ -349,19 +421,27 @@ private fun AuthFields(
             Text(
                 stringResource(R.string.server_address)
             )
-        }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        }, enabled = enabled, readOnly = reauth, singleLine = true, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(draft.username, {
             onDraft(draft.copy(username = it))
-        }, label = { Text(stringResource(R.string.username)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        }, label = {
+            Text(
+                stringResource(R.string.username)
+            )
+        }, enabled = enabled, readOnly = reauth, singleLine = true, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(draft.password, {
             onDraft(draft.copy(password = it))
         }, label = {
             Text(stringResource(R.string.password))
-        }, visualTransformation = PasswordVisualTransformation(), singleLine = true, modifier = Modifier.fillMaxWidth())
+        }, enabled = enabled, visualTransformation = PasswordVisualTransformation(), singleLine = true, modifier = Modifier.fillMaxWidth())
         if (register) {
             OutlinedTextField(draft.invite, {
                 onDraft(draft.copy(invite = it))
-            }, label = { Text(stringResource(R.string.invite)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            }, label = {
+                Text(
+                    stringResource(R.string.invite)
+                )
+            }, enabled = enabled, singleLine = true, modifier = Modifier.fillMaxWidth())
         }
         OutlinedTextField(draft.device, {
             onDraft(draft.copy(device = it))
@@ -369,7 +449,7 @@ private fun AuthFields(
             Text(
                 stringResource(R.string.device_name)
             )
-        }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        }, enabled = enabled, singleLine = true, modifier = Modifier.fillMaxWidth())
         Column(Modifier.fillMaxWidth()) {
             Button(
                 onClick = onSubmit,
@@ -377,8 +457,10 @@ private fun AuthFields(
                 enabled = enabled && draft.server.isNotBlank() && draft.username.isNotBlank() &&
                     draft.password.isNotBlank() && (!register || draft.invite.isNotBlank())
             ) { Text(stringResource(if (register) R.string.register_sign_in else R.string.sign_in)) }
-            TextButton(onClick = onRegister) {
-                Text(stringResource(if (register) R.string.existing_account else R.string.register_title))
+            if (!reauth) {
+                TextButton(onClick = onRegister, enabled = enabled) {
+                    Text(stringResource(if (register) R.string.existing_account else R.string.register_title))
+                }
             }
         }
     }

@@ -1,5 +1,7 @@
 # Android 客户端
 
+0.1.8（code9）候选整理账号/危险操作及更新页面，沿用原发布签名；实际检查和未完成项见[本轮记录](../docs/releases/0.1.8-validation.md)。
+
 当前客户端 **0.1.7**（code8），修复账号实时同步连接占用安装屏障，保留0.1.6长按多选、左滑移入回收站、普通删除撤销和单Markdown导入；见[本轮验证](../docs/releases/0.1.7-validation.md)。原证书APK与签名更新目录已公开；0.1.5历史debug/unsigned仅保留资料用途。
 
 0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](../docs/releases/0.1.4-validation.md)。

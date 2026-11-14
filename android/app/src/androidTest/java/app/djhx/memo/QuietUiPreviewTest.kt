@@ -211,7 +211,7 @@ class QuietUiPreviewTest {
                 click("保存与同步状态")
                 waitFor { findNode("本机保存") != null && findNode("云同步") != null }
                 capture("zh-status")
-                click("完成")
+                click("关闭")
                 click("更多")
                 click("设置")
                 waitFor { findNode("显示") != null && findNode("空间") != null && findNode("设备") != null && findNode("数据") != null }
@@ -227,6 +227,13 @@ class QuietUiPreviewTest {
                     "Current space must be announced as selected",
                     currentSpace.isSelected || currentSpace.isChecked
                 )
+                click("软件更新")
+                waitFor { findNode("自动检查更新") != null }
+                capture("zh-updates")
+                scenario.onActivity { it.presentation.update(DisplayPreferences("en", "dark", "Asia/Shanghai")) }
+                waitFor { findNode("Check for updates") != null }
+                capture("en-updates-dark")
+                scenario.onActivity { it.presentation.update(DisplayPreferences("zh-CN", "light", "Asia/Shanghai")) }
                 click("关闭设置")
                 waitFor { findNode("预览") != null }
                 scenario.onActivity { it.presentation.update(DisplayPreferences("zh-CN", "dark", "Asia/Shanghai")) }
