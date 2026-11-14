@@ -422,7 +422,7 @@ svg {
   min-width: 196px;
   max-width: 320px;
   z-index: 8;
-  padding: 4px;
+  padding: 8px;
   border: 1px solid var(--border);
   border-radius: 8px;
   box-shadow: 0 8px 24px var(--shadow);

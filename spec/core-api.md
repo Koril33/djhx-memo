@@ -42,3 +42,8 @@ NoteView 同时带 generation、正文、删除/冲突元数据、本地保存�
 ## 0.1.6 列表与文件入口
 
 `batch_set_deleted` 逐条以原 ID、原 generation 提交普通删除或恢复，返回各项成功的 NoteView 或稳定错误。不重定向冲突副本，不修改冻结 outbox；撤销也是新代次。`import_markdown` 在 core 校验单文件扩展名、UTF-8/BOM、规范化行尾及有界大小，再用 request_id 幂等创建。平台选择器携带原空间和请求令牌；重复回调不重建，空间变化停止。参数见[桥接接口](core-bridge.md)，交互见[0.1.6 规范](client-0.1.6.md)。
+
+
+## 单篇导出文件名（0.1.10）
+
+`markdown_export_filename(source: String) -> String`为公开UniFFI纯函数，供三端复用首行标题与文件名清理：过滤路径分隔符/控制字符和Windows保留名，stem最多180个UTF-8字节，保证单个`.md`后缀。函数不读写笔记、凭据或文件，不改变正文；平台捕获编辑快照后通过系统保存对话框写入完整UTF-8。取消/写入失败不表示导出完成；新接口不改变协议/schema。

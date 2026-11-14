@@ -1,5 +1,7 @@
 # ADR-0010：统一品牌母版与开发期图标生成工具
 
+0.1.10补充（2026-11-14）：维护者选择logo-pack-v1/sunrise与阳墨随记 / DJHX MEMO。原纸张母版、已渲染输出及原生成器完整归档，旧决策保留历史。活动入口改为版本化profile加Python标准库的确定性资源适配，直接消费包中专用小尺寸/ICO/Android层；不执行其依赖未锁定的sharp/Pillow脚本，不引入客户端或开发期新依赖。名称和图形独立选择；全部触点由同一配置生成。固定流程见[品牌更新流程](../brand-change-workflow.md)，后续原生实际效果仍须单独验收。
+
 - 状态：已接受实现；平台安装效果按实际验证另记。
 - 日期：2026-11-07。
 - 范围：`assets/brand/`、`scripts/generate-brand-assets.py`、桌面和 Android 的图标资源。

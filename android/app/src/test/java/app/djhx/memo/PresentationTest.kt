@@ -55,7 +55,18 @@ class PresentationTest {
                     "${group.getAttribute("name")}.${quantity.getAttribute("quantity")}" to quantity.textContent
                 }
             }.toMap()
-            return strings + plurals
+            val brandDocument = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+                .parse(File(resources, "$folder/brand.xml"))
+            val brandNodes = brandDocument.getElementsByTagName("string")
+            val brand = (0 until brandNodes.length).associate { index ->
+                val node = brandNodes.item(index)
+                node.attributes.getNamedItem("name").nodeValue to node.textContent
+            }
+            assertTrue(
+                "Generated brand keys must not duplicate ordinary strings",
+                (strings.keys intersect brand.keys).isEmpty()
+            )
+            return strings + plurals + brand
         }
         val english = strings("values")
         val chinese = strings("values-zh-rCN")
@@ -70,8 +81,8 @@ class PresentationTest {
         }
         assertEquals("搜索笔记", chinese.getValue("search_notes"))
         assertEquals("Search notes", english.getValue("search_notes"))
-        assertEquals("DJHX Memo", chinese.getValue("app_name"))
-        assertEquals("DJHX Memo", english.getValue("app_name"))
+        assertEquals("阳墨随记", chinese.getValue("app_name"))
+        assertEquals("DJHX MEMO", english.getValue("app_name"))
         // spec/auth.md: hyphens are valid; the first character must be a letter or digit.
         assertTrue(english.getValue("error_request").contains("underscores or hyphens"))
         assertTrue(english.getValue("error_request").contains("starting with a letter or digit"))

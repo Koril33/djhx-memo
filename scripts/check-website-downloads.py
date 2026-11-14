@@ -23,6 +23,8 @@ class Page(HTMLParser):
         self.main_version = ""
         self.platform = None
         self.eyebrow = False
+        self.brands = []
+        self.brand_text = None
 
     def handle_starttag(self, tag, pairs):
         attrs = dict(pairs)
@@ -37,18 +39,25 @@ class Page(HTMLParser):
             self.versions[platform] = ""
         if tag == "p" and "eyebrow" in attrs.get("class", "").split():
             self.eyebrow = True
+        if tag == "span" and "data-brand-name" in attrs:
+            self.brand_text = ""
 
     def handle_endtag(self, tag):
         if tag == "a":
             self.platform = None
         if tag == "p":
             self.eyebrow = False
+        if tag == "span" and self.brand_text is not None:
+            self.brands.append(self.brand_text.strip())
+            self.brand_text = None
 
     def handle_data(self, value):
         if self.platform:
             self.versions[self.platform] += value
         if self.eyebrow:
             self.main_version += value
+        if self.brand_text is not None:
+            self.brand_text += value
 
 
 class QuietHandler(SimpleHTTPRequestHandler):
@@ -145,6 +154,10 @@ def main():
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(result.stdout, encoding="utf-8")
     errors = []
+    brand = json.loads((ROOT / "website/brand.json").read_text(encoding="utf-8"))
+    expected_brand = brand["zh-CN" if page.attributes.get("lang") == "zh-CN" else "en"]
+    if not page.brands or any(name != expected_brand for name in page.brands):
+        errors.append("rendered brand differs from the configured display name")
     if result.returncode or page.attributes.get("data-memo-ready") != "true":
         errors.append("current site JavaScript did not finish")
     for platform, expected_url in expected.items():

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "DJHX Memo",
+  "productName": "DJHX MEMO",
   "mainBinaryName": "djhx-memo",
-  "version": "0.1.8",
+  "version": "0.1.10",
   "identifier": "app.djhx.memo",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "DJHX Memo",
+        "title": "DJHX MEMO",
         "width": 1220,
         "height": 800,
         "minWidth": 800,
@@ -59,7 +59,7 @@
         "languages": ["SimpChinese", "English"],
         "displayLanguageSelector": true,
         "installMode": "currentUser",
-        "startMenuFolder": "DJHX Memo",
+        "startMenuFolder": "DJHX MEMO",
         "installerIcon": "icons/icon.ico",
         "template": "windows/installer.nsi"
       }

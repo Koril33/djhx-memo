@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="title description">
+  <title id="title">DJHX Memo</title>
+  <desc id="description">绿色圆角底、奶白折角纸张和三条横线；所有平台图标的唯一可编辑母版。</desc>
+  <!-- Shape IDs form the input contract of scripts/generate-brand-assets.py. -->
+  <rect id="background" x="0" y="0" width="128" height="128" rx="28" fill="#3D7963"/>
+  <g id="symbol">
+    <rect id="paper" x="29" y="22" width="70" height="84" rx="9" fill="#F6F4E9"/>
+    <path id="fold" d="M80 22V41H99Z" fill="#BED5BB"/>
+    <rect id="line-one" x="42" y="51" width="38" height="4" rx="2" fill="#6B927A"/>
+    <rect id="line-two" x="42" y="65" width="38" height="4" rx="2" fill="#6B927A"/>
+    <rect id="line-three" x="42" y="79" width="27" height="4" rx="2" fill="#6B927A"/>
+  </g>
+</svg>

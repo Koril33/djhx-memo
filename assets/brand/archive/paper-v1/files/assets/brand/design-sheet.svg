@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="2000" viewBox="0 0 1600 2000">
+<title>DJHX Memo — 品牌视觉规范 / identity system v1</title>
+<desc>可编辑双语设计板，由 master.svg 自动生成。完整规范及统一换版步骤见 docs/brand-guidelines.md。</desc>
+<defs>
+<clipPath id="circle"><circle cx="54" cy="54" r="36"/></clipPath>
+<clipPath id="square"><rect x="18" y="18" width="72" height="72" rx="16"/></clipPath>
+<clipPath id="squircle"><path d="M54 18C85 18 90 23 90 54S85 90 54 90 18 85 18 54 23 18 54 18Z"/></clipPath>
+</defs>
+<rect width="1600" height="2000" fill="#F7F8F4"/>
+<g font-family="Liberation Sans, sans-serif">
+<text x="72" y="82" font-size="48" fill="#213E32" font-weight="700">DJHX Memo</text>
+<text x="72" y="119" font-size="16" fill="#52645D" font-weight="400" font-family="Noto Sans CJK SC">品牌视觉规范 / IDENTITY SYSTEM / V1.0 / 2026-11-07</text>
+<rect x="72" y="150" width="1456" height="1" fill="#CAD6CC"/>
+<text x="72" y="194" font-size="18" fill="#213E32" font-weight="700" font-family="Noto Sans CJK SC">01  主图标 / PRIMARY MARK</text>
+<g transform="translate(100 237) scale(2.25)"><rect x="0" y="0" width="128" height="128" rx="28" fill="#3D7963" />
+  <g>
+    <rect x="29" y="22" width="70" height="84" rx="9" fill="#F6F4E9" />
+    <path d="M80 22V41H99Z" fill="#BED5BB" />
+    <rect x="42" y="51" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="65" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="79" width="27" height="4" rx="2" fill="#6B927A" />
+  </g>
+</g>
+<text x="464" y="288" font-size="34" fill="#213E32" font-weight="700">A quiet page, ready for your words.</text>
+<text x="464" y="335" font-size="22" fill="#52645D" font-weight="400" font-family="Noto Sans CJK SC">所有平台共用一份母版，保留纸张轮廓与四种原色。</text>
+<text x="464" y="374" font-size="22" fill="#52645D" font-weight="400" font-family="Noto Sans CJK SC">绿色底 / 奶白纸张 / 右上折角 / 三条横线</text>
+<text x="464" y="413" font-size="22" fill="#52645D" font-weight="400" font-family="Noto Sans CJK SC">图标不含文字；界面品牌仅使用 DJHX Memo。</text>
+<text x="464" y="485" font-size="14" fill="#52645D" font-weight="400" font-family="Noto Sans CJK SC">应用、窗口和启动器名称 / APP NAME</text>
+<text x="464" y="524" font-size="30" fill="#213E32" font-weight="700">DJHX Memo</text>
+<rect x="72" y="572" width="1456" height="1" fill="#CAD6CC"/>
+<text x="72" y="616" font-size="18" fill="#213E32" font-weight="700" font-family="Noto Sans CJK SC">02  构图与安全留白 / CONSTRUCTION + CLEAR SPACE</text>
+<path d="M74 624h320v320h-320ZM75 625h318v318h-318Z" fill="#C4D3C7" fill-rule="evenodd"/>
+<g transform="translate(106 656) scale(2)"><rect x="0" y="0" width="128" height="128" rx="28" fill="#3D7963" />
+  <g>
+    <rect x="29" y="22" width="70" height="84" rx="9" fill="#F6F4E9" />
+    <path d="M80 22V41H99Z" fill="#BED5BB" />
+    <rect x="42" y="51" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="65" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="79" width="27" height="4" rx="2" fill="#6B927A" />
+  </g>
+</g>
+<rect x="233.6" y="656" width=".8" height="256" fill="#DCEADC"/>
+<rect x="106" y="783.6" width="256" height=".8" fill="#DCEADC"/>
+<text x="96" y="977" font-size="17" fill="#52645D" font-weight="400" font-family="Noto Sans CJK SC">128 单位网格 / 四周留白 16 单位</text>
+<text x="452" y="694" font-size="14" fill="#52645D" font-weight="400" font-family="Noto Sans CJK SC">底形 / BACKGROUND</text>
+<text x="452" y="727" font-size="22" fill="#213E32" font-weight="400">128 x 128 / corner radius 28</text>
+<text x="452" y="778" font-size="14" fill="#52645D" font-weight="400" font-family="Noto Sans CJK SC">纸张 / PAPER</text>
+<text x="452" y="811" font-size="22" fill="#213E32" font-weight="400">70 x 84 / origin 29,22 / radius 9</text>
+<text x="452" y="862" font-size="14" fill="#52645D" font-weight="400" font-family="Noto Sans CJK SC">横线 / LINES</text>
+<text x="452" y="895" font-size="22" fill="#213E32" font-weight="400">38 / 38 / 27 units; 4-unit thickness</text>
+<rect x="1020" y="654" width="210" height="94" rx="14" fill="#3D7963" stroke="#CCD7CD"/>
+<text x="1020" y="773" font-size="16" fill="#52645D" font-weight="400">GREEN  #3D7963</text>
+<rect x="1280" y="654" width="210" height="94" rx="14" fill="#F6F4E9" stroke="#CCD7CD"/>
+<text x="1280" y="773" font-size="16" fill="#52645D" font-weight="400">PAPER  #F6F4E9</text>
+<rect x="1020" y="820" width="210" height="94" rx="14" fill="#BED5BB" stroke="#CCD7CD"/>
+<text x="1020" y="939" font-size="16" fill="#52645D" font-weight="400">FOLD  #BED5BB</text>
+<rect x="1280" y="820" width="210" height="94" rx="14" fill="#6B927A" stroke="#CCD7CD"/>
+<text x="1280" y="939" font-size="16" fill="#52645D" font-weight="400">INK  #6B927A</text>
+<rect x="72" y="1018" width="1456" height="1" fill="#CAD6CC"/>
+<text x="72" y="1062" font-size="18" fill="#213E32" font-weight="700" font-family="Noto Sans CJK SC">03  尺寸阶梯 / SIZE LADDER</text>
+<text x="72" y="1095" font-size="17" fill="#52645D" font-weight="400" font-family="Noto Sans CJK SC">16～128 px 按实际尺寸展示；256～1024 px 缩放展示，原尺寸文件均已提供。</text>
+<g transform="translate(144 1236) scale(0.125)"><rect x="0" y="0" width="128" height="128" rx="28" fill="#3D7963" />
+  <g>
+    <rect x="29" y="22" width="70" height="84" rx="9" fill="#F6F4E9" />
+    <path d="M80 22V41H99Z" fill="#BED5BB" />
+    <rect x="42" y="51" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="65" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="79" width="27" height="4" rx="2" fill="#6B927A" />
+  </g>
+</g>
+<text x="126" y="1287" font-size="17" fill="#52645D" font-weight="400">16</text>
+<g transform="translate(300 1228) scale(0.1875)"><rect x="0" y="0" width="128" height="128" rx="28" fill="#3D7963" />
+  <g>
+    <rect x="29" y="22" width="70" height="84" rx="9" fill="#F6F4E9" />
+    <path d="M80 22V41H99Z" fill="#BED5BB" />
+    <rect x="42" y="51" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="65" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="79" width="27" height="4" rx="2" fill="#6B927A" />
+  </g>
+</g>
+<text x="286" y="1287" font-size="17" fill="#52645D" font-weight="400">24</text>
+<g transform="translate(456 1220) scale(0.25)"><rect x="0" y="0" width="128" height="128" rx="28" fill="#3D7963" />
+  <g>
+    <rect x="29" y="22" width="70" height="84" rx="9" fill="#F6F4E9" />
+    <path d="M80 22V41H99Z" fill="#BED5BB" />
+    <rect x="42" y="51" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="65" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="79" width="27" height="4" rx="2" fill="#6B927A" />
+  </g>
+</g>
+<text x="446" y="1287" font-size="17" fill="#52645D" font-weight="400">32</text>
+<g transform="translate(608 1204) scale(0.375)"><rect x="0" y="0" width="128" height="128" rx="28" fill="#3D7963" />
+  <g>
+    <rect x="29" y="22" width="70" height="84" rx="9" fill="#F6F4E9" />
+    <path d="M80 22V41H99Z" fill="#BED5BB" />
+    <rect x="42" y="51" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="65" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="79" width="27" height="4" rx="2" fill="#6B927A" />
+  </g>
+</g>
+<text x="606" y="1287" font-size="17" fill="#52645D" font-weight="400">48</text>
+<g transform="translate(760 1188) scale(0.5)"><rect x="0" y="0" width="128" height="128" rx="28" fill="#3D7963" />
+  <g>
+    <rect x="29" y="22" width="70" height="84" rx="9" fill="#F6F4E9" />
+    <path d="M80 22V41H99Z" fill="#BED5BB" />
+    <rect x="42" y="51" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="65" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="79" width="27" height="4" rx="2" fill="#6B927A" />
+  </g>
+</g>
+<text x="766" y="1287" font-size="17" fill="#52645D" font-weight="400">64</text>
+<g transform="translate(888 1124) scale(1)"><rect x="0" y="0" width="128" height="128" rx="28" fill="#3D7963" />
+  <g>
+    <rect x="29" y="22" width="70" height="84" rx="9" fill="#F6F4E9" />
+    <path d="M80 22V41H99Z" fill="#BED5BB" />
+    <rect x="42" y="51" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="65" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="79" width="27" height="4" rx="2" fill="#6B927A" />
+  </g>
+</g>
+<text x="926" y="1287" font-size="17" fill="#52645D" font-weight="400">128</text>
+<g transform="translate(1048 1124) scale(1)"><rect x="0" y="0" width="128" height="128" rx="28" fill="#3D7963" />
+  <g>
+    <rect x="29" y="22" width="70" height="84" rx="9" fill="#F6F4E9" />
+    <path d="M80 22V41H99Z" fill="#BED5BB" />
+    <rect x="42" y="51" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="65" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="79" width="27" height="4" rx="2" fill="#6B927A" />
+  </g>
+</g>
+<text x="1086" y="1287" font-size="17" fill="#52645D" font-weight="400">256</text>
+<g transform="translate(1208 1124) scale(1)"><rect x="0" y="0" width="128" height="128" rx="28" fill="#3D7963" />
+  <g>
+    <rect x="29" y="22" width="70" height="84" rx="9" fill="#F6F4E9" />
+    <path d="M80 22V41H99Z" fill="#BED5BB" />
+    <rect x="42" y="51" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="65" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="79" width="27" height="4" rx="2" fill="#6B927A" />
+  </g>
+</g>
+<text x="1246" y="1287" font-size="17" fill="#52645D" font-weight="400">512</text>
+<g transform="translate(1368 1124) scale(1)"><rect x="0" y="0" width="128" height="128" rx="28" fill="#3D7963" />
+  <g>
+    <rect x="29" y="22" width="70" height="84" rx="9" fill="#F6F4E9" />
+    <path d="M80 22V41H99Z" fill="#BED5BB" />
+    <rect x="42" y="51" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="65" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="79" width="27" height="4" rx="2" fill="#6B927A" />
+  </g>
+</g>
+<text x="1406" y="1287" font-size="17" fill="#52645D" font-weight="400">1024</text>
+<rect x="72" y="1325" width="1456" height="1" fill="#CAD6CC"/>
+<text x="72" y="1370" font-size="18" fill="#213E32" font-weight="700" font-family="Noto Sans CJK SC">04  平台遮罩与单色 / PLATFORM MASKS</text>
+<g transform="translate(72 1400) scale(2.185185)">
+<rect width="108" height="108" fill="#3D7963"/><g transform="translate(13.04 13.04) scale(0.64)"><rect x="29" y="22" width="70" height="84" rx="9" fill="#F6F4E9" />
+    <path d="M80 22V41H99Z" fill="#BED5BB" />
+    <rect x="42" y="51" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="65" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="79" width="27" height="4" rx="2" fill="#6B927A" />
+  </g>
+<path d="M21 21h66v66h-66ZM21.6 21.6h64.8v64.8h-64.8Z" fill="#FFFFFF" fill-rule="evenodd"/>
+<path d="M21 54a33 33 0 1 0 66 0a33 33 0 1 0 -66 0ZM21.6 54a32.4 32.4 0 1 0 64.8 0a32.4 32.4 0 1 0 -64.8 0Z" fill="#FFFFFF" fill-rule="evenodd"/>
+</g>
+<text x="72" y="1672" font-size="17" fill="#52645D" font-weight="400" font-family="Noto Sans CJK SC">108 dp / 中央 66 dp 安全区</text>
+<g transform="translate(400 1400) scale(2.185185)"><g clip-path="url(#circle)"><rect width="108" height="108" fill="#3D7963"/><g transform="translate(13.04 13.04) scale(0.64)"><rect x="29" y="22" width="70" height="84" rx="9" fill="#F6F4E9" />
+    <path d="M80 22V41H99Z" fill="#BED5BB" />
+    <rect x="42" y="51" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="65" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="79" width="27" height="4" rx="2" fill="#6B927A" />
+  </g></g></g>
+<text x="420" y="1672" font-size="17" fill="#52645D" font-weight="400" font-family="Noto Sans CJK SC">圆形 / Circle</text>
+<g transform="translate(700 1400) scale(2.185185)"><g clip-path="url(#square)"><rect width="108" height="108" fill="#3D7963"/><g transform="translate(13.04 13.04) scale(0.64)"><rect x="29" y="22" width="70" height="84" rx="9" fill="#F6F4E9" />
+    <path d="M80 22V41H99Z" fill="#BED5BB" />
+    <rect x="42" y="51" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="65" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="79" width="27" height="4" rx="2" fill="#6B927A" />
+  </g></g></g>
+<text x="720" y="1672" font-size="17" fill="#52645D" font-weight="400" font-family="Noto Sans CJK SC">圆角方形 / Rounded square</text>
+<g transform="translate(1000 1400) scale(2.185185)"><g clip-path="url(#squircle)"><rect width="108" height="108" fill="#3D7963"/><g transform="translate(13.04 13.04) scale(0.64)"><rect x="29" y="22" width="70" height="84" rx="9" fill="#F6F4E9" />
+    <path d="M80 22V41H99Z" fill="#BED5BB" />
+    <rect x="42" y="51" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="65" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="79" width="27" height="4" rx="2" fill="#6B927A" />
+  </g></g></g>
+<text x="1020" y="1672" font-size="17" fill="#52645D" font-weight="400" font-family="Noto Sans CJK SC">超椭圆 / Squircle</text>
+<rect x="1320" y="1424" width="160" height="160" rx="40" fill="#DCEADC"/>
+<g color="#294E3B"><g transform="translate(1336 1440) scale(1)"><path d="M38 22H90A9 9 0 0 1 99 31V97A9 9 0 0 1 90 106H38A9 9 0 0 1 29 97V31A9 9 0 0 1 38 22Z M80 22V41H99Z M44 51H78A2 2 0 0 1 80 53V53A2 2 0 0 1 78 55H44A2 2 0 0 1 42 53V53A2 2 0 0 1 44 51Z M44 65H78A2 2 0 0 1 80 67V67A2 2 0 0 1 78 69H44A2 2 0 0 1 42 67V67A2 2 0 0 1 44 65Z M44 79H67A2 2 0 0 1 69 81V81A2 2 0 0 1 67 83H44A2 2 0 0 1 42 81V81A2 2 0 0 1 44 79Z" fill="#294E3B" fill-rule="evenodd"/></g></g>
+<text x="1310" y="1672" font-size="17" fill="#52645D" font-weight="400" font-family="Noto Sans CJK SC">系统主题 / Monochrome</text>
+<rect x="72" y="1710" width="1456" height="1" fill="#CAD6CC"/>
+<text x="72" y="1756" font-size="18" fill="#213E32" font-weight="700" font-family="Noto Sans CJK SC">05  浅色与深色背景 / LIGHT + DARK</text>
+<rect x="72" y="1780" width="700" height="132" rx="18" fill="#FFFFFF" stroke="#D9E1D9"/>
+<g transform="translate(104 1806) scale(0.625)"><rect x="0" y="0" width="128" height="128" rx="28" fill="#3D7963" />
+  <g>
+    <rect x="29" y="22" width="70" height="84" rx="9" fill="#F6F4E9" />
+    <path d="M80 22V41H99Z" fill="#BED5BB" />
+    <rect x="42" y="51" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="65" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="79" width="27" height="4" rx="2" fill="#6B927A" />
+  </g>
+</g>
+<text x="216" y="1858" font-size="28" fill="#213E32" font-weight="700">DJHX Memo</text>
+<rect x="804" y="1780" width="724" height="132" rx="18" fill="#18251F"/>
+<g transform="translate(836 1806) scale(0.625)"><rect x="0" y="0" width="128" height="128" rx="28" fill="#3D7963" />
+  <g>
+    <rect x="29" y="22" width="70" height="84" rx="9" fill="#F6F4E9" />
+    <path d="M80 22V41H99Z" fill="#BED5BB" />
+    <rect x="42" y="51" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="65" width="38" height="4" rx="2" fill="#6B927A" />
+    <rect x="42" y="79" width="27" height="4" rx="2" fill="#6B927A" />
+  </g>
+</g>
+<text x="948" y="1858" font-size="28" fill="#F6F4E9" font-weight="700">DJHX Memo</text>
+<text x="72" y="1964" font-size="16" fill="#52645D" font-weight="400">SOURCE  assets/brand/master.svg   |   BUILD  python3 scripts/generate-brand-assets.py   |   CHECK  --check</text>
+</g></svg>

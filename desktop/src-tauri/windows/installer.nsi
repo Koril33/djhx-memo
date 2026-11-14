@@ -44,6 +44,10 @@ ${StrLoc}
 
 !define MANUFACTURER "{{manufacturer}}"
 !define PRODUCTNAME "{{product_name}}"
+; BEGIN GENERATED BRAND
+!define BRAND_EN "DJHX MEMO"
+!define BRAND_ZH "阳墨随记"
+; END GENERATED BRAND
 ; The 0.1.0 candidate shipped under this installation identity. Display names may change.
 !define INSTALLIDENTITY "简记"
 !define VERSION "{{version}}"
@@ -77,13 +81,20 @@ ${StrLoc}
 !define ESTIMATEDSIZE "{{estimated_size}}"
 !define STARTMENUFOLDER "{{start_menu_folder}}"
 
+Var PreviousStartShortcut
+Var PreviousDesktopShortcut
+Var DiscoveredStartShortcut
+Var BrandSearchBudget
+Var BrandSearchDepth
+Var PreviousBrandName
+Var PreviousBrandFolder
 Var PassiveMode
 Var UpdateMode
 Var NoShortcutMode
 Var WixMode
 Var OldMainBinaryName
 
-Name "${PRODUCTNAME}"
+Name "$(MemoBrandName)"
 BrandingText "${COPYRIGHT}"
 OutFile "${OUTFILE}"
 
@@ -508,6 +519,8 @@ FunctionEnd
 !insertmacro MUI_LANGUAGE "{{this}}"
 LangString choowHowToInstall 0 ""
 {{/each}}
+LangString MemoBrandName ${LANG_SIMPCHINESE} "${BRAND_ZH}"
+LangString MemoBrandName ${LANG_ENGLISH} "${BRAND_EN}"
 !insertmacro MUI_RESERVEFILE_LANGDLL
 {{#each language_files}}
   !include "{{this}}"
@@ -748,8 +761,19 @@ Section Install
   ; Save current MAINBINARYNAME for future updates
   WriteRegStr SHCTX "${UNINSTKEY}" "MainBinaryName" "${MAINBINARYNAME}.exe"
 
+  ReadRegStr $PreviousStartShortcut SHCTX "${UNINSTKEY}" "StartMenuShortcut"
+  ReadRegStr $PreviousDesktopShortcut SHCTX "${UNINSTKEY}" "DesktopShortcut"
+  ReadRegStr $PreviousBrandName SHCTX "${UNINSTKEY}" "ShortcutBrand"
+  ReadRegStr $PreviousBrandFolder SHCTX "${UNINSTKEY}" "ShortcutFolder"
+  ${If} $PreviousBrandName == ""
+    StrCpy $PreviousBrandName "DJHX Memo"
+  ${EndIf}
+  ${If} $PreviousBrandFolder == ""
+    StrCpy $PreviousBrandFolder "DJHX Memo"
+  ${EndIf}
+
   ; Registry information for add/remove programs
-  WriteRegStr SHCTX "${UNINSTKEY}" "DisplayName" "${PRODUCTNAME}"
+  WriteRegStr SHCTX "${UNINSTKEY}" "DisplayName" "$(MemoBrandName)"
   WriteRegStr SHCTX "${UNINSTKEY}" "DisplayIcon" "$\"$INSTDIR\${MAINBINARYNAME}.exe$\""
   WriteRegStr SHCTX "${UNINSTKEY}" "DisplayVersion" "${VERSION}"
   WriteRegStr SHCTX "${UNINSTKEY}" "Publisher" "${MANUFACTURER}"
@@ -769,33 +793,46 @@ Section Install
     WriteRegStr SHCTX "${UNINSTKEY}" "HelpLink" "${HOMEPAGE}"
   !endif
 
-  ; Brand-only upgrade: move verified existing entry points, including /UPDATE and /NS.
-  ; Rename never overwrites an existing destination; leave the old link if the move fails.
-  !insertmacro IsShortcutTarget "$SMPROGRAMS\简记\简记.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
-  Pop $0
-  ${If} $0 = 1
-    !if "${STARTMENUFOLDER}" != ""
-      CreateDirectory "$SMPROGRAMS\${STARTMENUFOLDER}"
-      Rename "$SMPROGRAMS\简记\简记.lnk" "$SMPROGRAMS\${STARTMENUFOLDER}\${PRODUCTNAME}.lnk"
-    !else
-      Rename "$SMPROGRAMS\简记\简记.lnk" "$SMPROGRAMS\${PRODUCTNAME}.lnk"
-    !endif
-    ClearErrors
+  ; Discover legacy custom folders only within Start Menu, with bounded recursion and ownership checks.
+  ${If} $AppStartMenuFolder == ""
+    StrCpy $AppStartMenuFolder $PreviousBrandFolder
   ${EndIf}
-  !insertmacro IsShortcutTarget "$SMPROGRAMS\简记.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
-  Pop $0
-  ${If} $0 = 1
-    Rename "$SMPROGRAMS\简记.lnk" "$SMPROGRAMS\${PRODUCTNAME}.lnk"
-    ClearErrors
+  ${If} $AppStartMenuFolder == ""
+    StrCpy $AppStartMenuFolder "${STARTMENUFOLDER}"
   ${EndIf}
-  !insertmacro IsShortcutTarget "$DESKTOP\简记.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
+  !insertmacro IsShortcutTarget "$PreviousStartShortcut" "$INSTDIR\${MAINBINARYNAME}.exe"
   Pop $0
-  ${If} $0 = 1
-    Rename "$DESKTOP\简记.lnk" "$DESKTOP\${PRODUCTNAME}.lnk"
-    ClearErrors
+  ${If} $0 != 1
+    StrCpy $DiscoveredStartShortcut ""
+    StrCpy $BrandSearchBudget 4096
+    StrCpy $BrandSearchDepth 0
+    Push "$SMPROGRAMS"
+    Call DiscoverOwnedStartShortcut
+    StrCpy $PreviousStartShortcut $DiscoveredStartShortcut
   ${EndIf}
-  RMDir "$SMPROGRAMS\简记"
-  ClearErrors
+  CreateDirectory "$SMPROGRAMS\$AppStartMenuFolder"
+  Push "$PreviousStartShortcut"
+  Push "$SMPROGRAMS\$AppStartMenuFolder\$(MemoBrandName).lnk"
+  Push "StartMenuShortcut"
+  Call MigrateOwnedBrandShortcut
+  Push "$PreviousDesktopShortcut"
+  Push "$DESKTOP\$(MemoBrandName).lnk"
+  Push "DesktopShortcut"
+  Call MigrateOwnedBrandShortcut
+  Push "$DESKTOP\DJHX Memo.lnk"
+  Push "$DESKTOP\$(MemoBrandName).lnk"
+  Push "DesktopShortcut"
+  Call MigrateOwnedBrandShortcut
+  Push "$DESKTOP\简记.lnk"
+  Push "$DESKTOP\$(MemoBrandName).lnk"
+  Push "DesktopShortcut"
+  Call MigrateOwnedBrandShortcut
+  Push "$SMPROGRAMS\$AppStartMenuFolder\$(MemoBrandName).lnk"
+  Push "StartMenuShortcut"
+  Call RecordOwnedBrandShortcut
+  Push "$DESKTOP\$(MemoBrandName).lnk"
+  Push "DesktopShortcut"
+  Call RecordOwnedBrandShortcut
 
   ; Create start menu shortcut
   !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
@@ -854,6 +891,7 @@ FunctionEnd
 
 Section Uninstall
 
+
   !ifmacrodef NSIS_HOOK_PREUNINSTALL
     !insertmacro NSIS_HOOK_PREUNINSTALL
   !endif
@@ -900,33 +938,49 @@ Section Uninstall
 
   ; Remove shortcuts if not updating
   ${If} $UpdateMode <> 1
+  ; Exact paths survive display-name/language changes and failed shortcut migrations.
+  ReadRegStr $R2 SHCTX "${UNINSTKEY}" "StartMenuShortcut"
+  !insertmacro IsShortcutTarget "$R2" "$INSTDIR\${MAINBINARYNAME}.exe"
+  Pop $0
+  ${If} $0 = 1
+    !insertmacro UnpinShortcut "$R2"
+    Delete "$R2"
+  ${EndIf}
+  ReadRegStr $R2 SHCTX "${UNINSTKEY}" "DesktopShortcut"
+  !insertmacro IsShortcutTarget "$R2" "$INSTDIR\${MAINBINARYNAME}.exe"
+  Pop $0
+  ${If} $0 = 1
+    !insertmacro UnpinShortcut "$R2"
+    Delete "$R2"
+  ${EndIf}
     !insertmacro DeleteAppUserModelId
 
     ; Remove start menu shortcut
     !insertmacro MUI_STARTMENU_GETFOLDER Application $AppStartMenuFolder
-    !insertmacro IsShortcutTarget "$SMPROGRAMS\$AppStartMenuFolder\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
+    !insertmacro IsShortcutTarget "$SMPROGRAMS\$AppStartMenuFolder\$(MemoBrandName).lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
     Pop $0
     ${If} $0 = 1
-      !insertmacro UnpinShortcut "$SMPROGRAMS\$AppStartMenuFolder\${PRODUCTNAME}.lnk"
-      Delete "$SMPROGRAMS\$AppStartMenuFolder\${PRODUCTNAME}.lnk"
+      !insertmacro UnpinShortcut "$SMPROGRAMS\$AppStartMenuFolder\$(MemoBrandName).lnk"
+      Delete "$SMPROGRAMS\$AppStartMenuFolder\$(MemoBrandName).lnk"
       RMDir "$SMPROGRAMS\$AppStartMenuFolder"
     ${EndIf}
-    !insertmacro IsShortcutTarget "$SMPROGRAMS\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
+    !insertmacro IsShortcutTarget "$SMPROGRAMS\$(MemoBrandName).lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
     Pop $0
     ${If} $0 = 1
-      !insertmacro UnpinShortcut "$SMPROGRAMS\${PRODUCTNAME}.lnk"
-      Delete "$SMPROGRAMS\${PRODUCTNAME}.lnk"
+      !insertmacro UnpinShortcut "$SMPROGRAMS\$(MemoBrandName).lnk"
+      Delete "$SMPROGRAMS\$(MemoBrandName).lnk"
     ${EndIf}
 
     ; Remove desktop shortcuts
-    !insertmacro IsShortcutTarget "$DESKTOP\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
+    !insertmacro IsShortcutTarget "$DESKTOP\$(MemoBrandName).lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
     Pop $0
     ${If} $0 = 1
-      !insertmacro UnpinShortcut "$DESKTOP\${PRODUCTNAME}.lnk"
-      Delete "$DESKTOP\${PRODUCTNAME}.lnk"
+      !insertmacro UnpinShortcut "$DESKTOP\$(MemoBrandName).lnk"
+      Delete "$DESKTOP\$(MemoBrandName).lnk"
     ${EndIf}
   ${EndIf}
 
+  ${If} $UpdateMode <> 1
   ; Remove registry information for add/remove programs
   !if "${INSTALLMODE}" == "both"
     DeleteRegKey SHCTX "${UNINSTKEY}"
@@ -935,6 +989,8 @@ Section Uninstall
   !else
     DeleteRegKey HKCU "${UNINSTKEY}"
   !endif
+
+  ${EndIf}
 
   ; Removes the Autostart entry for ${PRODUCTNAME} from the HKCU Run key if it exists.
   ; This ensures the program does not launch automatically after uninstallation if it exists.
@@ -995,17 +1051,17 @@ Function CreateOrUpdateStartMenuShortcut
   ; migrate old shortcuts to target the new MAINBINARYNAME
   StrCpy $R0 0
 
-  !insertmacro IsShortcutTarget "$SMPROGRAMS\$AppStartMenuFolder\${PRODUCTNAME}.lnk" "$INSTDIR\$OldMainBinaryName"
+  !insertmacro IsShortcutTarget "$SMPROGRAMS\$AppStartMenuFolder\$(MemoBrandName).lnk" "$INSTDIR\$OldMainBinaryName"
   Pop $0
   ${If} $0 = 1
-    !insertmacro SetShortcutTarget "$SMPROGRAMS\$AppStartMenuFolder\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
+    !insertmacro SetShortcutTarget "$SMPROGRAMS\$AppStartMenuFolder\$(MemoBrandName).lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
     StrCpy $R0 1
   ${EndIf}
 
-  !insertmacro IsShortcutTarget "$SMPROGRAMS\${PRODUCTNAME}.lnk" "$INSTDIR\$OldMainBinaryName"
+  !insertmacro IsShortcutTarget "$SMPROGRAMS\$(MemoBrandName).lnk" "$INSTDIR\$OldMainBinaryName"
   Pop $0
   ${If} $0 = 1
-    !insertmacro SetShortcutTarget "$SMPROGRAMS\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
+    !insertmacro SetShortcutTarget "$SMPROGRAMS\$(MemoBrandName).lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
     StrCpy $R0 1
   ${EndIf}
 
@@ -1024,21 +1080,41 @@ Function CreateOrUpdateStartMenuShortcut
 
   !if "${STARTMENUFOLDER}" != ""
     CreateDirectory "$SMPROGRAMS\$AppStartMenuFolder"
-    CreateShortcut "$SMPROGRAMS\$AppStartMenuFolder\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
-    !insertmacro SetLnkAppUserModelId "$SMPROGRAMS\$AppStartMenuFolder\${PRODUCTNAME}.lnk"
+    ${If} ${FileExists} "$SMPROGRAMS\$AppStartMenuFolder\$(MemoBrandName).lnk"
+      !insertmacro IsShortcutTarget "$SMPROGRAMS\$AppStartMenuFolder\$(MemoBrandName).lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
+      Pop $0
+      ${If} $0 != 1
+        Return
+      ${EndIf}
+    ${EndIf}
+    CreateShortcut "$SMPROGRAMS\$AppStartMenuFolder\$(MemoBrandName).lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
+    !insertmacro SetLnkAppUserModelId "$SMPROGRAMS\$AppStartMenuFolder\$(MemoBrandName).lnk"
+    Push "$SMPROGRAMS\$AppStartMenuFolder\$(MemoBrandName).lnk"
+    Push "StartMenuShortcut"
+    Call RecordOwnedBrandShortcut
   !else
-    CreateShortcut "$SMPROGRAMS\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
-    !insertmacro SetLnkAppUserModelId "$SMPROGRAMS\${PRODUCTNAME}.lnk"
+    ${If} ${FileExists} "$SMPROGRAMS\$(MemoBrandName).lnk"
+      !insertmacro IsShortcutTarget "$SMPROGRAMS\$(MemoBrandName).lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
+      Pop $0
+      ${If} $0 != 1
+        Return
+      ${EndIf}
+    ${EndIf}
+    CreateShortcut "$SMPROGRAMS\$(MemoBrandName).lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
+    !insertmacro SetLnkAppUserModelId "$SMPROGRAMS\$(MemoBrandName).lnk"
+    Push "$SMPROGRAMS\$(MemoBrandName).lnk"
+    Push "StartMenuShortcut"
+    Call RecordOwnedBrandShortcut
   !endif
 FunctionEnd
 
 Function CreateOrUpdateDesktopShortcut
   ; We used to use product name as MAINBINARYNAME
   ; migrate old shortcuts to target the new MAINBINARYNAME
-  !insertmacro IsShortcutTarget "$DESKTOP\${PRODUCTNAME}.lnk" "$INSTDIR\$OldMainBinaryName"
+  !insertmacro IsShortcutTarget "$DESKTOP\$(MemoBrandName).lnk" "$INSTDIR\$OldMainBinaryName"
   Pop $0
   ${If} $0 = 1
-    !insertmacro SetShortcutTarget "$DESKTOP\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
+    !insertmacro SetShortcutTarget "$DESKTOP\$(MemoBrandName).lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
     Return
   ${EndIf}
 
@@ -1051,6 +1127,129 @@ Function CreateOrUpdateDesktopShortcut
     ${EndIf}
   ${EndIf}
 
-  CreateShortcut "$DESKTOP\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
-  !insertmacro SetLnkAppUserModelId "$DESKTOP\${PRODUCTNAME}.lnk"
+  ${If} ${FileExists} "$DESKTOP\$(MemoBrandName).lnk"
+    !insertmacro IsShortcutTarget "$DESKTOP\$(MemoBrandName).lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
+    Pop $0
+    ${If} $0 != 1
+      Return
+    ${EndIf}
+  ${EndIf}
+  CreateShortcut "$DESKTOP\$(MemoBrandName).lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
+  !insertmacro SetLnkAppUserModelId "$DESKTOP\$(MemoBrandName).lnk"
+  Push "$DESKTOP\$(MemoBrandName).lnk"
+  Push "DesktopShortcut"
+  Call RecordOwnedBrandShortcut
+FunctionEnd
+
+; Store only a shortcut actually owned by this installation.
+Function RecordOwnedBrandShortcut
+  Pop $R4
+  Pop $R3
+  Push $R3
+  Push $R4
+  !insertmacro IsShortcutTarget "$R3" "$INSTDIR\${MAINBINARYNAME}.exe"
+  Pop $0
+  Pop $R4
+  Pop $R3
+  ${If} $0 = 1
+    WriteRegStr SHCTX "${UNINSTKEY}" "$R4" "$R3"
+    ${GetFileName} "$R3" $R5
+    StrCpy $R5 $R5 -4
+    WriteRegStr SHCTX "${UNINSTKEY}" "ShortcutBrand" "$R5"
+    ${If} $R4 == "StartMenuShortcut"
+      ${GetParent} "$R3" $R5
+      StrLen $R6 "$SMPROGRAMS\"
+      StrCpy $R5 $R5 "" $R6
+      WriteRegStr SHCTX "${UNINSTKEY}" "ShortcutFolder" "$R5"
+    ${EndIf}
+  ${EndIf}
+FunctionEnd
+
+Function MigrateOwnedBrandShortcut
+  Pop $R4
+  Pop $R3
+  Pop $R2
+  Push $R2
+  Push $R3
+  Push $R4
+  !insertmacro IsShortcutTarget "$R2" "$INSTDIR\${MAINBINARYNAME}.exe"
+  Pop $0
+  Pop $R4
+  Pop $R3
+  Pop $R2
+  ${If} $0 = 1
+    Rename "$R2" "$R3"
+    ClearErrors
+    Push $R2
+    Push $R3
+    Push $R4
+    !insertmacro IsShortcutTarget "$R3" "$INSTDIR\${MAINBINARYNAME}.exe"
+    Pop $0
+    Pop $R4
+    Pop $R3
+    Pop $R2
+    ${If} $0 = 1
+      Push "$R3"
+    ${Else}
+      ; A conflicting destination stays untouched; keep tracking the original entry.
+      Push "$R2"
+    ${EndIf}
+    Push "$R4"
+    Call RecordOwnedBrandShortcut
+  ${EndIf}
+FunctionEnd
+
+Function DiscoverOwnedStartShortcut
+  Exch $R0
+  Push $R1
+  Push $R2
+  Push $R3
+  IntOp $BrandSearchDepth $BrandSearchDepth + 1
+  FindFirst $R1 $R2 "$R0\*"
+  ${DoWhile} $R2 != ""
+    ${If} $BrandSearchBudget <= 0
+    ${OrIf} $DiscoveredStartShortcut != ""
+      ${ExitDo}
+    ${EndIf}
+    IntOp $BrandSearchBudget $BrandSearchBudget - 1
+    ${If} $R2 != "."
+    ${AndIf} $R2 != ".."
+      System::Call 'kernel32::GetFileAttributesW(w "$R0\$R2") i .R3'
+      ${If} $R3 != -1
+      IntOp $R3 $R3 & 0x410
+      ${If} $R3 = 16
+      ${AndIf} $BrandSearchDepth < 8
+        Push "$R0\$R2"
+        Call DiscoverOwnedStartShortcut
+      ${ElseIf} $R3 = 0
+        ${If} $R2 == "$PreviousBrandName.lnk"
+        ${OrIf} $R2 == "DJHX Memo.lnk"
+        ${OrIf} $R2 == "简记.lnk"
+          Push $R0
+          Push $R1
+          Push $R2
+          Push $R3
+          !insertmacro IsShortcutTarget "$R0\$R2" "$INSTDIR\${MAINBINARYNAME}.exe"
+          Pop $0
+          Pop $R3
+          Pop $R2
+          Pop $R1
+          Pop $R0
+          ${If} $0 = 1
+            StrCpy $DiscoveredStartShortcut "$R0\$R2"
+          ${EndIf}
+        ${EndIf}
+      ${EndIf}
+      ${EndIf}
+    ${EndIf}
+    FindNext $R1 $R2
+  ${Loop}
+  ${If} $R1 != ""
+    FindClose $R1
+  ${EndIf}
+  IntOp $BrandSearchDepth $BrandSearchDepth - 1
+  Pop $R3
+  Pop $R2
+  Pop $R1
+  Pop $R0
 FunctionEnd

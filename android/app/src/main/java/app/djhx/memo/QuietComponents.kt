@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
@@ -42,17 +43,22 @@ internal fun MemoIconButton(
         IconButton(
             onClick = onClick,
             enabled = enabled,
-            modifier = Modifier.size(48.dp).background(
-                if (danger && enabled) MaterialTheme.colorScheme.errorContainer else Color.Transparent,
-                RoundedCornerShape(12.dp)
-            )
+            modifier = Modifier.size(48.dp)
         ) {
-            Icon(
-                painterResource(icon),
-                contentDescription = label,
-                modifier = Modifier.size(24.dp),
-                tint = if (danger && enabled) MaterialTheme.colorScheme.onErrorContainer else LocalContentColor.current
-            )
+            Box(
+                Modifier.size(40.dp).background(
+                    if (danger && enabled) MaterialTheme.colorScheme.errorContainer else Color.Transparent,
+                    RoundedCornerShape(10.dp)
+                ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painterResource(icon),
+                    contentDescription = label,
+                    modifier = Modifier.size(24.dp),
+                    tint = if (danger && enabled) MaterialTheme.colorScheme.onErrorContainer else LocalContentColor.current
+                )
+            }
         }
     }
 }
@@ -75,7 +81,7 @@ internal fun MemoMenuItem(
         },
         enabled = enabled,
         onClick = onClick,
-        modifier = Modifier.heightIn(min = 48.dp).background(
+        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp).heightIn(min = 48.dp).background(
             if (danger && enabled) MaterialTheme.colorScheme.errorContainer else Color.Transparent,
             RoundedCornerShape(8.dp)
         )

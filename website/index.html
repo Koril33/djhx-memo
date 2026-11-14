@@ -3,11 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="DJHX Memo 是一款本地优先、支持云同步的 Markdown 笔记应用。离线写作，按需同步，可在 Windows、Linux 和 Android 设备间使用。" />
+    <meta name="description" content="%BRAND_NAME_ZH% 是一款本地优先、支持云同步的 Markdown 笔记应用。离线写作，按需同步，可在 Windows、Linux 和 Android 设备间使用。" />
     <meta name="theme-color" content="#f3f0e8" />
-    <meta property="og:title" content="DJHX Memo · 写下日常，留住想法" />
+    <meta property="og:title" content="%BRAND_NAME_ZH% · 写下日常，留住想法" />
     <meta property="og:description" content="本地优先、支持云同步的开源 Markdown 笔记应用。" />
-    <title>DJHX Memo · 写下日常，留住想法</title>
+    <title>%BRAND_NAME_ZH% · 写下日常，留住想法</title>
     <script>
       try {
         var t = localStorage.getItem("djhx-memo:theme");
@@ -44,9 +44,9 @@
 
     <header class="site-header">
       <div class="wrap header-inner">
-        <a class="brand" href="./" aria-label="DJHX Memo">
+        <a class="brand" href="./" data-brand-aria aria-label="%BRAND_NAME_ZH%">
           <img src="./logo.svg" alt="" width="26" height="26" />
-          <span>DJHX Memo</span>
+          <span data-brand-name>%BRAND_NAME_ZH%</span>
         </a>
         <nav class="nav" aria-label="工具">
           <div class="seg" id="lang-switch" role="radiogroup" aria-label="切换语言" data-i18n-aria="nav.lang">
@@ -122,7 +122,7 @@
             <div class="mock mock-desktop">
               <div class="mock-top">
                 <div class="dots"><i></i><i></i><i></i></div>
-                <span>DJHX Memo</span>
+                <span data-brand-name>%BRAND_NAME_ZH%</span>
                 <svg class="icon"><use href="#window-icon"/></svg>
               </div>
               <div class="mock-body">
@@ -172,7 +172,7 @@
 
     <footer class="footer">
       <div class="wrap footer-inner">
-        <span>© 2026 DJHX Memo</span>
+        <span>© 2026 <span data-brand-name>%BRAND_NAME_ZH%</span></span>
         <span class="footer-meta">Windows / Linux / Android<i></i>MIT</span>
       </div>
     </footer>

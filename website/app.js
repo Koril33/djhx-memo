@@ -1,8 +1,9 @@
+import brand from './brand.json';
 // DJHX Memo 官网 · 交互层（i18n / 主题 / 下载动效 / 指针视差）
 
 const I18N = {
   zh: {
-    title: "DJHX Memo · 写下日常，留住想法",
+    title: `${brand["zh-CN"]} · 写下日常，留住想法`,
     skip: "跳到主要内容",
     "nav.lang": "切换语言",
     "nav.theme": "切换深浅模式",
@@ -15,7 +16,7 @@ const I18N = {
     "rail.open": "开源",
   },
   en: {
-    title: "DJHX Memo · Note the day. Keep the thought.",
+    title: `${brand.en} · Note the day. Keep the thought.`,
     skip: "Skip to main content",
     "nav.lang": "Switch language",
     "nav.theme": "Toggle theme",
@@ -28,7 +29,7 @@ const I18N = {
     "rail.open": "Open source",
   },
   ja: {
-    title: "DJHX Memo · 日常を書き、考えを残す。",
+    title: `${brand.en} · 日常を書き、考えを残す。`,
     skip: "メインコンテンツへスキップ",
     "nav.lang": "言語を切り替え",
     "nav.theme": "テーマを切り替え",
@@ -41,7 +42,7 @@ const I18N = {
     "rail.open": "オープンソース",
   },
   ko: {
-    title: "DJHX Memo · 일상을 적고 생각을 남기세요.",
+    title: `${brand.en} · 일상을 적고 생각을 남기세요.`,
     skip: "주요 콘텐츠로 건너뛰기",
     "nav.lang": "언어 전환",
     "nav.theme": "테마 전환",
@@ -108,7 +109,11 @@ function applyLang(lang) {
     const key = el.getAttribute("data-i18n-title");
     if (dict[key] != null) el.setAttribute("title", dict[key]);
   });
-  document.title = dict.title || "DJHX Memo";
+  const name = lang === "zh" ? brand["zh-CN"] : brand.en;
+  document.querySelectorAll("[data-brand-name]").forEach(el => { el.textContent = name; });
+  document.querySelectorAll("[data-brand-aria]").forEach(el => { el.setAttribute("aria-label", name); });
+  document.querySelector('meta[property="og:title"]')?.setAttribute("content", dict.title);
+  document.title = dict.title || name;
 }
 
 function applyTheme(theme) {

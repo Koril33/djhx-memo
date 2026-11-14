@@ -28,6 +28,15 @@ export class EditorSession {
   get unsaved(): boolean {
     return this.content !== this.committed;
   }
+
+  /** Capture displayed text before opening a native picker; saving failures do not block rescue. */
+  exportSnapshot(): string {
+    if (this.composing)
+      throw new InvokeError({ code: 'IME_COMPOSING', message: '', retryable: true });
+    if (this.note?.purge_state === 'pending' || this.note?.purge_state === 'purged')
+      throw new InvokeError({ code: 'NOTE_PURGED', message: '', retryable: false });
+    return this.content;
+  }
   get status(): string {
     if (this.error) return '保存失败';
     if (this.saving || this.unsaved || this.composing) return '保存中';

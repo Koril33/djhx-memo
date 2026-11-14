@@ -149,6 +149,12 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
     val context = LocalContext.current
     val menuConfiguration = LocalConfiguration.current
     val currentContext = rememberUpdatedState(context)
+    var noteExportId by rememberSaveable { mutableStateOf<String?>(null) }
+    noteExportId?.let { id ->
+        key(id) {
+            NoteExportPicker(id, model) { completed -> if (noteExportId == completed) noteExportId = null }
+        }
+    }
     val exporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
         val payload = model.takeExportData()
         if (uri != null && payload != null) {
@@ -395,11 +401,19 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                                     MemoMenuItem(
                                         R.drawable.ic_ui_file_output,
                                         stringResource(
-                                            if (model.trash) R.string.export_trash else R.string.export_space
-                                        )
+                                            if (model.editorOpen) {
+                                                R.string.export_current_note
+                                            } else if (model.trash) R.string.export_trash else R.string.export_space
+                                        ),
+                                        enabled = !model.busy && !model.noteExport.writing && noteExportId == null &&
+                                            (!model.editorOpen || model.content.isNotBlank())
                                     ) {
                                         more = false
-                                        export()
+                                        if (model.editorOpen) {
+                                            model.beginNoteExport()?.let { noteExportId = it.id }
+                                        } else {
+                                            export()
+                                        }
                                     }
                                     if (model.editorOpen) {
                                         MemoMenuItem(cloudIcon(model.state.optJSONObject("sync")), statusLabel) {

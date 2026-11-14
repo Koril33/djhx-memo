@@ -97,3 +97,9 @@ UI、网络恢复触发及 WorkManager 共享应用单例 core；后台仅尽力
 原证书升级仪器测试可额外传 `-PupdateFixtureApk=<已验签APK绝对路径>`，将候选仅复制到`build/`下的androidTest assets（不进入应用release）；instrumentation 参数用`updateApk=asset:update-candidate.apk`。测试先复制到目标应用私有cache，再按实际更新器一样解析/提交PackageInstaller，避免shell创建的外部文件在Android存储沙箱中被拒绝。普通构建不包含此fixture。
 
 `PublishedUpgradeTest` 仅在专用模拟器正式包0.1.5上显式设置`publishedUpgrade=1`时运行：从真正签名官网目录检查/下载，使用原生AppUpdates安装流程并确认系统更新。可选`localProxyPort`只设置测试进程的HTTPS代理（模拟器主机别名），不是设备或其他主机的公共配置。系统替换APK会终止旧instrumentation进程，必须由宿主核对versionCode7，再运行`upgradedInstallationRetainsTheCommittedNote`确认最后缓冲；不能把旧进程断开单独当成功。
+
+## 0.1.10品牌与单笔记导出
+
+源码为0.1.10/code11，显示名和sunrise资源由[统一品牌配置](../assets/brand/profile.json)生成；不要手工改applicationId来刷新图标。编辑页更多菜单导出点击时的Markdown快照，列表和设置保留空间ZIP。使用系统SAF创建单个`.md`，Activity重建/切换笔记不会重定向当前请求，写入关闭后才报告成功；进程丢失快照需重新发起，不把正文放进Bundle。契约见[0.1.10](../spec/client-0.1.10.md)。
+
+`NoteExportTest`验证真实ContentResolver写入、失败与请求隔离，文档fixture只在测试APK中声明。`NoteExportPickerTest`需显式参数`-e nativeNoteExport 1`，在专用测试设备打开真实系统文件选择器并重建Activity/切换笔记；宿主还需读取其合成输出，核对测试回执的文件名和SHA256。默认不自动向设备共享目录写入文件。

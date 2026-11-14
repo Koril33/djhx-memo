@@ -1,14 +1,1 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="title description">
-  <title id="title">DJHX Memo</title>
-  <desc id="description">绿色圆角底、奶白折角纸张和三条横线；所有平台图标的唯一可编辑母版。</desc>
-  <!-- Shape IDs form the input contract of scripts/generate-brand-assets.py. -->
-  <rect id="background" x="0" y="0" width="128" height="128" rx="28" fill="#3D7963"/>
-  <g id="symbol">
-    <rect id="paper" x="29" y="22" width="70" height="84" rx="9" fill="#F6F4E9"/>
-    <path id="fold" d="M80 22V41H99Z" fill="#BED5BB"/>
-    <rect id="line-one" x="42" y="51" width="38" height="4" rx="2" fill="#6B927A"/>
-    <rect id="line-two" x="42" y="65" width="38" height="4" rx="2" fill="#6B927A"/>
-    <rect id="line-three" x="42" y="79" width="27" height="4" rx="2" fill="#6B927A"/>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F2B45C"/><stop offset="1" stop-color="#E8734A"/></linearGradient></defs><rect x="0" y="0" width="1024" height="1024" rx="229.069" fill="url(#bg)"/><g transform="translate(197.307 197.307) scale(26.224)"><path d="M13.063 3.669A8.2 8.2 0 1 0 20.131 10.737A1 1 0 0 0 19.104 9.867A5 5 0 0 1 13.933 4.696A1 1 0 0 0 13.063 3.669Z" fill="#14161A"/><path d="M12 7.4C12.1 9.4 12.43 11.82 13.35 12.59A2.1 2.1 0 1 1 10.65 12.59C11.57 11.82 11.9 9.4 12 7.4Z" fill="#F6F1E7"/></g></svg>

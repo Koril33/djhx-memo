@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
+  import { brandNames } from './lib/brand';
   import { native } from './lib/bridge';
   import { runUpdateCommand, updateCommandPending } from './lib/update-commands';
   import { formatTime, type Preferences } from './lib/preferences';
@@ -156,7 +157,7 @@
   <div class="update-overview">
     <span class="update-symbol"><Icon name="download" size={24} /></span>
     <div class="update-identity">
-      <h3>DJHX Memo <span>v{status?.current_version ?? '—'}</span></h3>
+      <h3>{brandNames[language]} <span>v{status?.current_version ?? '—'}</span></h3>
       <p>
         {managed
           ? zh

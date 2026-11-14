@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DJHX Memo</string>
     <string name="back">Back</string>
     <string name="settings">Account / Settings</string>
     <string name="settings_title">Account and settings</string>
@@ -83,7 +82,7 @@
     <string name="register_sign_in">Register and sign in</string>
     <string name="sign_in">Sign in</string>
     <string name="existing_account">Already registered</string>
-    <string name="about">DJHX Memo %1$s · Android 10+\nOffline data is stored privately. Export before uninstalling or clearing app data.</string>
+    <string name="about">%1$s %2$s · Android 10+\nOffline data is stored privately. Export before uninstalling or clearing app data.</string>
     <string name="import_confirm_title">Copy into the current account?</string>
     <string name="import_confirm_body">Source: %1$s\nDestination: %2$s\nUndeleted notes will be copied and synced to this account. Originals are kept.</string>
     <string name="confirm_import">Copy and import</string>
@@ -154,6 +153,8 @@
     <string name="empty_notes_quiet">No notes yet</string>
     <string name="export_trash">Export trash</string>
     <string name="export_space">Export current space</string>
+    <string name="export_current_note">Export current note</string>
+    <string name="export_expired">The export request could not be restored. Open the note and export again; no current note was substituted.</string>
     <string name="export_short">Export</string>
     <string name="save_failed_short">Save failed</string>
     <string name="saved_short">Saved locally</string>
@@ -171,7 +172,7 @@
     <string name="add_account">Add account</string>
     <string name="hide_account_form">Hide sign-in form</string>
     <string name="sign_in_for_devices">Sign in to manage devices</string>
-    <string name="about_app">About DJHX Memo</string>
+    <string name="about_app">About %1$s</string>
     <string name="purge_note">Delete permanently</string>
     <string name="purge_confirm">Permanently delete this note?</string>
     <string name="purge_help">This cannot be restored in the app. Account notes are removed on other devices when they sync. Existing history, backups and exported files are retained.</string>
@@ -249,4 +250,5 @@
     <string name="update_recovery_state">Update recovery needed</string>
     <string name="update_install_cancelled_state">Installation canceled</string>
     <string name="update_wait_cancelled_state">Stopped waiting</string>
+    <string name="note_export_success">Note exported</string>
 </resources>

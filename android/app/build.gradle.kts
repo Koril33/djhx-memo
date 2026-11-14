@@ -10,12 +10,12 @@ android {
     ndkVersion = "30.0.16248370"
     defaultConfig {
         applicationId = "app.djhx.memo"
-        manifestPlaceholders["appLabel"] = "DJHX Memo"
+        manifestPlaceholders["appLabel"] = "@string/app_name"
         minSdk = 29
         targetSdk = 36
         // Only isolated device fixtures can override identity for a real upgrade preflight.
-        versionCode = if (project.hasProperty("isolatedValidation")) providers.gradleProperty("updateTestVersionCode").orNull?.toInt() ?: 10 else 10
-        versionName = if (project.hasProperty("isolatedValidation")) providers.gradleProperty("updateTestVersionName").orNull ?: "0.1.9" else "0.1.9"
+        versionCode = if (project.hasProperty("isolatedValidation")) providers.gradleProperty("updateTestVersionCode").orNull?.toInt() ?: 11 else 11
+        versionName = if (project.hasProperty("isolatedValidation")) providers.gradleProperty("updateTestVersionName").orNull ?: "0.1.10" else "0.1.10"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         providers.environmentVariable("DJHX_ANDROID_TEST_SERVER_URL").orNull?.let {
             testInstrumentationRunnerArguments["serverUrl"] = it
@@ -45,7 +45,7 @@ android {
             // Optional isolated device validation never opens an existing debug/release data directory.
             applicationIdSuffix = if (project.hasProperty("isolatedValidation")) ".validation014" else ".debug"
             versionNameSuffix = "-debug"
-            manifestPlaceholders["appLabel"] = "DJHX Memo Debug"
+            manifestPlaceholders["appLabel"] = "DJHX MEMO Debug"
         }
         release {
             isMinifyEnabled = false
