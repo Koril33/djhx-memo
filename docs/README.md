@@ -1,6 +1,6 @@
 # 项目文档
 
-- Android安装兼容修复候选（未发布）：[行为](../spec/android-install-compatibility.md)、[验证](android-install-compatibility-validation.md)、[独立评审](reviews/android-install-compatibility-review.md)。Civi已手动覆盖到0.1.8，新兼容入口仍待真机验证。
+- Android0.1.9单端发行：[发布状态](releases/0.1.9-validation.md)、[行为](../spec/android-install-compatibility.md)、[修复验证](android-install-compatibility-validation.md)、[独立评审](reviews/android-install-compatibility-review.md)。Windows/Linux继续0.1.8，Civi新兼容入口仍待真机验证。
 
 - 本轮：[0.1.8 界面与官网下载](../spec/client-0.1.8.md)，[实际验证/发行状态](releases/0.1.8-validation.md)、[独立评审](reviews/client-0.1.8-review.md)。0.1.6列表/导入已实现并保留；Web 暂缓。
 

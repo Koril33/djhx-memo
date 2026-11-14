@@ -21,7 +21,7 @@ npm run preview -- --host 127.0.0.1
 
 将 `dist/` 中的文件交给静态文件服务器即可，`npm run build` 同时从规范来源生成 `dist/licenses/` 的项目、图标和 Vite 许可。静态产物使用相对资源路径，可以在域名根目录或子目录托管。发布到现有服务域名前，需保留同步 API 与健康检查的路由；本机部署路径为 `/var/www/memo.djhx.site/`，步骤与回退见[运维](../docs/operations.md)及[实际部署记录](../docs/website-deployment.md)。品牌图标源自 [品牌母版](../assets/brand/master.svg)。
 
-安装包统一放在 [GitHub Releases](https://github.com/Koril33/djhx-memo/releases)。发布新版本时，先上传并验证全部平台附件与 SHA256SUMS，再更新页面的版本说明和下载地址，避免发布不可用直链。官网 Logo 由统一品牌生成器维护，不能手改。包名和校验流程见[客户端发布](../docs/client-release.md)。
+安装包统一放在 [GitHub Releases](https://github.com/Koril33/djhx-memo/releases)。发布新版本时，先上传并验证本次平台附件与 SHA256SUMS，再更新页面的版本说明和下载地址，避免发布不可用直链。允许各平台版本不同：0.1.9仅更新Android，Windows/Linux保留0.1.8直链。官网 Logo 由统一品牌生成器维护，不能手改。包名和校验流程见[客户端发布](../docs/client-release.md)。
 
 ## 下载回归与部署
 
