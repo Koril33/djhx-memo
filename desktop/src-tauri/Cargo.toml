@@ -1,7 +1,7 @@
 [package]
 license = "MIT"
 name = "djhx-memo-desktop"
-version = "0.1.6"
+version = "0.1.7"
 description = "本地优先的 Markdown 备忘录"
 authors = ["djhx-memo contributors"]
 edition = "2024"

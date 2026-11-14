@@ -606,7 +606,14 @@ impl Engine {
                 if !engine.foreground.load(Ordering::SeqCst) && !manual {
                     continue;
                 }
-                if profile.kind != "account" || engine.token(&profile).is_err() {
+                // Loading platform credentials updates caches and must also drain before install.
+                let eligible = {
+                    let Ok(_activity) = engine.activity.enter() else {
+                        continue;
+                    };
+                    profile.kind == "account" && engine.token(&profile).is_ok()
+                };
+                if !eligible {
                     continue;
                 }
                 if engine
@@ -657,20 +664,26 @@ impl Engine {
                 let Some(engine) = weak.upgrade() else {
                     break;
                 };
-                if !engine.foreground.load(Ordering::SeqCst) {
-                    continue;
-                }
-                let Ok(profile) = engine.profile(&json!({})) else {
-                    continue;
-                };
-                if profile.kind != "account" {
-                    continue;
-                }
-                let Ok(token) = engine.token(&profile) else {
-                    continue;
-                };
-                let Some(server) = profile.server_url.clone() else {
-                    continue;
+                let (profile, token, server) = {
+                    let Ok(_activity) = engine.activity.enter() else {
+                        continue;
+                    };
+                    if !engine.foreground.load(Ordering::SeqCst) {
+                        continue;
+                    }
+                    let Ok(profile) = engine.profile(&json!({})) else {
+                        continue;
+                    };
+                    if profile.kind != "account" {
+                        continue;
+                    }
+                    let Ok(token) = engine.token(&profile) else {
+                        continue;
+                    };
+                    let Some(server) = profile.server_url.clone() else {
+                        continue;
+                    };
+                    (profile, token, server)
                 };
                 let stream = engine
                     .http
@@ -682,19 +695,18 @@ impl Engine {
                 let Ok(response) = stream else {
                     continue;
                 };
-                // Installing must also wait for the SSE credential/database path.
-                let Ok(_activity) = engine.activity.enter() else {
-                    continue;
-                };
                 if response.status().as_u16() == 401 {
+                    let Ok(_activity) = engine.activity.enter() else {
+                        continue;
+                    };
                     let _ = engine.forget_token_if_current(&profile, Some(&token));
                     continue;
                 }
                 if !response.status().is_success() {
                     continue;
                 }
-                // Each line is bounded: sync signals contain UUID and counter,
-                // never note content. A timeout bounds account-switch latency.
+                // A healthy SSE stream can live indefinitely: blocking read timeout restarts
+                // on each read. Hold no installation lease while waiting on the network.
                 let mut reader = BufReader::new(response);
                 loop {
                     let mut bytes = Vec::new();
@@ -702,8 +714,14 @@ impl Engine {
                     if read.is_err() || bytes.is_empty() || bytes.len() > 4096 {
                         break;
                     }
+                    let Ok(_activity) = engine.activity.enter() else {
+                        break;
+                    };
                     if !engine.foreground.load(Ordering::SeqCst)
-                        || engine.profile(&json!({})).is_ok_and(|p| p.id != profile.id)
+                        || !engine
+                            .profile(&json!({}))
+                            .is_ok_and(|p| p.id == profile.id && p.kind == "account")
+                        || !engine.token(&profile).is_ok_and(|current| current == token)
                     {
                         break;
                     }

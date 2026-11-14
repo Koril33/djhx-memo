@@ -103,6 +103,9 @@ impl Engine {
 }
 
 #[cfg(test)]
+mod stream_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     #[test]

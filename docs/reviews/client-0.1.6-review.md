@@ -26,3 +26,10 @@
 ## 维护者UI反馈后的补充复核
 
 维护者要求提升新交互的UI/UX后，平台评审者再次只读核对了上下文栏、SVG选择标记、行内Checkbox、三态全选、原目标导入确认和非阻塞反馈。发现并修正Undo与普通Snackbar互相关闭、旧成功提示残留等问题；选择行保留selected语义。Android为遵守既有LargeClass检查，将文件请求/不确定回执拆入MarkdownImportSession，未扩大告警抑制；评审者确认原token、空间、明确错误清理、未知回执保留和flush/composition屏障保持。该补充复核未实跑新版UI或升级安装，测试结果仍见发布记录。
+
+
+## 最后Android增量与升级证据边界
+
+2026-11-14补记：原平台评审者只读复核`6aad69d..0562999`，确认primaryContainer和成功恢复notice不改变数据屏障；可选APK fixture仅注册androidTest assets，未进入正式main资源，无生产代码阻断项。未由评审者运行构建、UI或仪器检查。
+
+PublishedUpgradeTest只证明下载、保存屏障和系统确认阶段；旧进程断开或单独JUnit OK均不足以证明安装成功。完整判定须由宿主核对0.1.6/code7/原证书，并在新进程按原ID验证正文。发布执行者已完成该组合验证，实际证据见发布记录。
