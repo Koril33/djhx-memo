@@ -740,7 +740,7 @@
     const content = editor.exportSnapshot();
     if (!content.trim()) return;
     const path = await native<string | null>('export_note', { content });
-    if (path) notify('exported', { path });
+    if (path) notify('noteExported', { path });
   }
   async function rescue(andSwitch = false): Promise<void> {
     const path = await native<string | null>('rescue_text', { content: editor.content });
