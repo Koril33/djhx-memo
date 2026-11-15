@@ -1,6 +1,6 @@
 # desktop
 
-当前客户端 **0.1.8** 已公开发布，整理多选/危险操作、账号入口和状态/更新排版；原生共享任务屏障覆盖后台检查、页面命令及安装。Windows原生预览及0.1.7→0.1.8线上升级/笔记保留由维护者确认，宿主核对原目录版本为0.1.8；Linux实际DEB覆盖升级通过，详见[本轮记录](../docs/releases/0.1.8-validation.md)。Windows使用签名更新目录，Linux继续DEB系统包管理；旧版限制仍见[0.1.7记录](../docs/releases/0.1.7-validation.md)。
+当前客户端 **0.1.10** 已公开发布，统一sunrise图形与中英文名称，支持当前笔记Markdown导出并调整删除留白；Windows日常0.1.8→0.1.10与Linux实际DEB覆盖升级通过，具体范围见[本轮记录](../docs/releases/0.1.10-validation.md)。Windows使用原签名更新目录，Linux继续DEB系统包管理。原0.1.7安装屏障与既有数据身份保持。
 
 0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](../docs/releases/0.1.4-validation.md)。
 

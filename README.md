@@ -1,6 +1,6 @@
 # djhx-memo
 
-当前客户端源码为 **0.1.10**：中文名 **阳墨随记**、英文 **DJHX MEMO**，三端采用sunrise Logo，支持编辑页单笔记Markdown导出，并调整红底删除按钮留白。构建、发行与实际升级状态见[0.1.10记录](docs/releases/0.1.10-validation.md)，后续更名或换图标按[固定流程](docs/brand-change-workflow.md)执行；旧paper-v1完整保留。
+**[0.1.10三端正式版](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.10)已发布**：中文名 **阳墨随记**、英文 **DJHX MEMO**，三端采用sunrise Logo，支持编辑页单笔记Markdown导出，并调整红底删除按钮留白。构建、发行与实际升级状态见[0.1.10记录](docs/releases/0.1.10-validation.md)，后续更名或换图标按[固定流程](docs/brand-change-workflow.md)执行；旧paper-v1完整保留。
 
 core0.1.10新增纯文件名API，server仍0.1.4、协议2/schema3及签名身份不变。Android保留[0.1.9安装兼容补丁](docs/releases/0.1.9-validation.md)；Windows/Linux跳过0.1.9。完整设备矩阵与7天试用仍待完成。
 
