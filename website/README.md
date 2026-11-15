@@ -1,4 +1,4 @@
-# DJHX Memo 静态官网
+# 阳墨随记 / DJHX MEMO 静态官网
 
 面向访客的单屏产品介绍、桌面/移动端界面示意和安装入口。站点使用 HTML、CSS、SVG 与一份原生 ES 模块（`app.js`），详细决策见 [ADR-0014](../docs/adr/0014-static-website.md)。
 
