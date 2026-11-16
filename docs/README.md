@@ -31,3 +31,4 @@
 - [brand-change-workflow.md](brand-change-workflow.md)：Logo与中英文名称的固定变更、归档、恢复及三端发布流程。
 - [0.1.10验证](releases/0.1.10-validation.md) / [独立评审](reviews/client-0.1.10-review.md)。
 - [0.1.10 安全/架构/UI 综合调研](reviews/quality-audit-0.1.10.md)：一次性调研报告，含缺陷分级清单、架构与 UI/UX 建议及测试证据，供后续优化参考。
+- [PR #27 调研报告事实核验](reviews/quality-audit-0.1.10-verification.md)：独立复核 M1/M2、测试命令及架构/规范引用，区分已复现、需修正和历史证据不足的结论。
