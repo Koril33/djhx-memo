@@ -32,4 +32,5 @@
 - [0.1.10验证](releases/0.1.10-validation.md) / [独立评审](reviews/client-0.1.10-review.md)。
 - [0.1.10 安全/架构/UI 综合调研](reviews/quality-audit-0.1.10.md)：已按独立核验更正 M1、测试记录与架构表述，区分已复现缺陷、候选风险和未证实的历史自述。
 - [PR #27 调研报告事实核验](reviews/quality-audit-0.1.10-verification.md)：独立复核 M1/M2、测试命令及架构/规范引用，区分已复现、需修正和历史证据不足的结论。
-- [下一版客户端讨论稿](client-next-discussion.md)：M2、Android 离线交互、编辑排版、图片可行性、桌面图标和 Windows 新装目录的候选方案；仅讨论，尚未实施。
+- [下一版客户端讨论稿](client-next-discussion.md)：0.2.0 范围确定前的历史讨论，图片仍暂缓；最新选择见下列开发前文档。
+- [0.2.0 开发前准备](client-0.2.0-development.md) / [目标规范草案](../spec/client-0.2.0.md)：已确定五项范围与三项交互/视觉取舍，评估可行性、工程待定参数和有效验收矩阵；未开始编码或发版。
