@@ -1,145 +1,140 @@
 # 0.1.10 安全、架构与 UI/UX 综合调研报告
 
-- 日期：2026-11-15
-- 对象：`v0.1.10`（commit `6e5373e`）——客户端/core 0.1.10 品牌统一与单笔记导出；server 仍 0.1.4、协议 2 / schema 3 不变
-- 性质：一次性调研/测试/分析，未改动任何代码与文档；本文供后续开发人员参考优化
-- 方法：静态审查（server Go 全量 + core/Android/桌面 各一路独立评审 + 本人交叉）+ 本机动态测试（core/server/联调 + Android API36 模拟器 + Windows 10 VM 实机）
+- 原始日期：2026-11-15；事实更正：2026-11-16。
+- 对象：`v0.1.10`（commit `6e5373e`）——客户端/core 0.1.10；server 0.1.4、协议 2，客户端 schema 3、server schema 2。
+- 性质：一次性调研，不改变产品行为；本次只修正文档。原始版本保留于 Git 提交 `97743e0`。
+- 证据依据：[PR #27 独立事实核验](quality-audit-0.1.10-verification.md)。原报告自述的分路审查、API36 与 Windows VM 操作未附原始产物，本次不将其视为已独立证实的执行记录。
+- 后续讨论：[下一版客户端讨论稿](../client-next-discussion.md)，仍为提案，不是已接受契约或实施授权。
 
 ## 1. 结论总览
 
-- **未发现 Critical/High 级可利用安全漏洞。** 安全工程水准明显高于个人项目平均水平（详见 §3.1）。
-- 最值得修的是两项：
-  - **M1 数据完整性缺陷**：outbox 一旦进入 `blocked` 状态无任何解除路径，笔记会「本机已保存但永久不同步」，并可能陷入彻底删除死锁。
-  - **M2 性能缺陷（实测复现）**：约 1 MiB（2 万行）笔记的导入/打开在 Android 上造成约 40–60 秒 UI 冻结，CPU 约 150%，接近 ANR。
-- 其余为 Low/Info 级的防御性与一致性改进项。
-- 架构整体清晰、测试覆盖充分；相对最弱的是「异常路径可恢复性」与「UI 大文件分解」。
-- UI/UX 视觉体系克制规范；0.1.10 由 paper-v1「绿纸」切换为 sunrise「橙渐变 + 阳墨随记」是一次品牌身份切换，存在收尾成本。
+- **M2 大笔记 UI 停顿已独立复现，应优先修复。** API35 隔离 debug 包打开 937.5 KiB／20,000 行合成笔记，至界面空闲约 135.6 秒，主线程心跳最大间隔约 131.7 秒。它证明问题存在，不验证原报告 API36 的 40–60 秒等历史数值。
+- **M1 所述 NOTE_PURGED 永久死锁结论撤回。** 同步前后会 pull，安装远端永久删除标记会清理 blocked outbox 和待删除请求。其他永久拒绝下的恢复性问题保留为候选，需要补实际可达场景。
+- 若干 Low/Info 项有局部代码依据，但尚未全部形成真实操作复现，不能与已复现缺陷等同排序。
+- 账号、事务、更新验签及 Markdown 安全边界有相应实现；本次不是全面漏洞审计，不提供“无 Critical/High 漏洞”保证，也没有项目间统计依据支持“高于个人项目平均水平”的比较。
+- 分层和跨端契约清楚；视觉取舍、组件拆分及品牌收尾是建议，不代表对应验收已经完成。
 
-## 2. 目标一：漏洞与 BUG
+## 2. 漏洞与 BUG 的核查
 
-### 2.1 安全面核查（正面结论）
+### 2.1 安全面的实现依据
 
-| 边界 | 实现要点 | 结论 |
-|---|---|---|
-| 密码存储 | `server/auth.go` Argon2id，`passwordOK` 校验内存/迭代/线程上界，`subtle.ConstantTimeCompare` | 良好 |
-| 防用户枚举 | 登录对不存在用户用 dummy hash，统一返回 `AUTH_INVALID_CREDENTIALS` | 已防 |
-| 会话与吊销 | token 仅存 SHA-256；`authenticate` 校验 `revoked_at IS NULL AND expires_at>`；`revoke` 在事务内重新校验操作者身份 | 良好 |
-| 幂等/越权 | push/purge 按 `user_id+op_id` 指纹去重，每次写事务内 `validIdentity` 复验 | 良好 |
-| SSE | 每秒复验身份，`stop` 通道与设备绑定，注销/吊销关闭流 | 良好 |
-| 自动更新 | `core/src/update_catalog.rs` minisign 验签 + sequence 回放防护 + URL 白名单 + 大小/SHA256 + 版本绑定；Android `UpdateInstaller` 再验签名/包名/versionCode/ABI/minSdk | 良好 |
-| 本地凭据 | Android Keystore AES-GCM（每 profile 独立 key）；桌面 keyring；`remove` 双路撤销 | 良好 |
-| XSS | Android 无 WebView（Compose Text，HTML 按字面显示）；桌面 CSP 无内联脚本 + `markdown.ts` 全量转义、图片禁用、链接白名单 | 良好 |
-| 文件边界 | 桌面导出「临时文件 + `create_new` + hard_link」原子不覆盖；导入 2 MiB 有界；文件名脱敏 | 良好 |
-| 日志/隐私 | 全仓无正文、token、邀请码、密码输出；错误码固定脱敏 | 良好 |
+以下是相关机制的代码核对，不表示已穷尽所有攻击面。
 
-### 2.2 缺陷清单
+| 边界 | 实现依据与限制 |
+|---|---|
+| 密码 | `server/auth.go` 使用 Argon2id，校验参数上界并进行常量时间比较 |
+| 用户枚举 | 不存在用户执行 dummy hash，登录统一返回 AUTH_INVALID_CREDENTIALS |
+| 会话/吊销 | 服务端存 token 的 SHA-256，鉴权检查有效期/吊销；写事务内复验操作者身份 |
+| 幂等/越权 | push/purge 按账号范围和 op_id 处理指纹，事务内 validIdentity 复验 |
+| SSE | 周期复验身份，流与设备绑定，注销/吊销关闭流 |
+| 自动更新 | core 验签、sequence 防回放、URL/大小/哈希/版本绑定；Android 再核包名、签名、versionCode、ABI/minSdk |
+| 本地凭据 | Android Keystore AES-GCM；桌面 keyring；平台删除失败时 core 仍有本地会话隔离保护 |
+| Markdown | Android Compose 展示原始 HTML 文本；桌面 CSP、HTML 转义、图片禁用及链接白名单；不能据此授予 Markdown 原生命令权限 |
+| 文件 | 桌面临时文件 + create_new + hard_link 发布新文件；原始导入读取有界，规范化正文上限 1 MiB；文件名过滤非法字符，不等于隐去标题中的全部个人信息 |
+| 日志/隐私 | 相关运行错误采用固定脱敏提示；`invite-create` 按设计仅向管理员标准输出一次性邀请码，不能声称“全仓无邀请码输出”；没有重新执行全面隐私审计 |
 
-#### M1（Medium，数据完整性）outbox `blocked` 无解除路径 → 笔记永久不同步 + purge 死锁
+### 2.2 M1：永久错误的恢复性候选，原 NOTE_PURGED 场景结论已更正
 
-- 位置：`core/src/db.rs:166,170,341`、`core/src/purge.rs:52`
-- 机制：`acknowledge` 收到不可重试错误时执行 `UPDATE outbox SET blocked=?`（db.rs:341），但全仓没有任何代码清除 `blocked`。`freeze` 的两个查询分别「跳过 blocked 行」（db.rs:166 `WHERE blocked IS NULL`）与「排除有 outbox 行的笔记」（db.rs:170 `NOT EXISTS(SELECT 1 FROM outbox WHERE note_id=n.id)`）。
-- 触发场景（多设备真实可达）：设备 A 彻底删除笔记 → 设备 B 离线编辑 → B 同步收到 `NOTE_PURGED`（不可重试）→ B 的 outbox 进入 `blocked`。
-- 后果：
-  1. 该笔记后续所有编辑只落本机、**永不再冻结同步**（跨设备/重装即丢失这些增量）。
-  2. 若此时再请求彻底删除：`purge::request` 因 `generation>acknowledged` 写入 `base_rev=NULL` 的 pending 行，而 `purge::next`（purge.rs:52）要求 `base_rev IS NOT NULL AND NOT EXISTS(outbox)`，永远取不到 → 笔记卡死在 `purge_state=pending`：不能编辑、不能导出、不能彻底删除、不能同步。
-- 建议：增加显式「解除 blocked / 重试」路径——在确认服务端权威状态（先 pull 或按最终响应）后删除 blocked 行并以 shadow 重定 `base_rev`，让 `generation>acknowledged` 的新内容重新冻结为新的 op；至少保证有 blocked outbox 的笔记在 `purge::request` 时走可完成路径。
-- 验证状态：代码路径确认；未动态构造服务端错误复现。
+- 相关位置：`core/src/db.rs` 的 freeze/acknowledge、`core/src/sync.rs` 的 sync_round、`core/src/purge.rs` 的 request/next/install。
+- 局部机制确实存在：不可重试的单项错误设置 blocked；freeze 跳过该操作，也不会为同一笔记生成新快照。未确认的普通删除会令 purge 等待原 outbox。
+- 原推导遗漏：sync_round 在发送前及结束时拉取变化；apply_page 安装永久删除标记时，purge::install 删除对应 outbox（含 blocked 行）和 purge_requests，清空正文并写入最终状态。
+- 因此，远端先永久删除通常在首次 pull 即收敛；若删除恰好发生在 pull 与 push 之间，NOTE_PURGED 后仍能通过末尾或后续成功 pull 收敛。不能称为“无任何解除路径”或“必然永久死锁”。
+- 独立验证：既有 Go/Rust 永久删除 HTTP 场景通过；另一个隔离探针显式进入 blocked/pending 后应用永久删除标记，确认两类待发记录被清除，最终为 purged。
+- 仍待调查：注入 INVALID_REQUEST 永久错误且没有远端删除标记时，blocked 不会因空页拉取消失，purge 可持续 pending。注入证明状态处理存在缺口，但尚未证明正常客户端操作能触发这一响应。
+- 后续建议：先确定错误类型及真实触发步骤，再设计明确处理入口。永久字段错误不应无限自动重试；NOTE_PURGED 不得复活原 ID，也不得自动生成副本。不能仅因 shadow 更新就提高旧编辑的 draft_base_rev 并重发，以免绕过冲突保全。
 
-#### M2（Medium，性能，动态实测）大笔记 UI 冻结约 40–60s
+### 2.3 M2：大笔记 UI 停顿，独立复现
 
-- 位置：`android/.../MarkdownPreview.kt`（非惰性 `Column` 全量组合，约 34–47 行）、`android/.../SourceEditor.kt:93-99,197-203`
-- 实测：API36 模拟器导入 932 KiB / 2 万行 Markdown，UI 无响应约 40–60s、CPU≈150%、内存 275→449 MiB，之后恢复；无 crash/ANR 记录。
-- 根因：
-  1. 预览用 `Column(verticalScroll)` 一次性 Compose 全部块（无 `LazyColumn`/虚拟化）。
-  2. `afterTextChanged` 每次按键在主线程对**全文**跑 4 组正则 `findAll` 并逐个 `setSpan`（无阈值/防抖）。
-- 建议：预览改 `LazyColumn`（或按块分段渲染）；编辑器高亮按字数阈值降级（如 >128 KiB 与 core `highlight_code` 阈值对齐）并加防抖；避免 `update` 中重复 `highlight`。
-- 验证状态：已在模拟器复现。
+- 位置：Android `MarkdownPreview.kt` 的非惰性 Column、`SourceEditor.kt` 的 afterTextChanged/highlight/update。
+- 2026-11-16 独立样本：API35 x86_64、4 核、3072 MiB、隔离 0.1.10-debug 包，沿用本机 JNI。20,000 行标题，960,000 UTF-8 字节；公共桥接导入 228 ms，实际源码页打开至空闲 135,561 ms，主线程 50 ms 心跳最大间隔 131,692 ms；恢复后正文精确一致，测试 1 项通过。
+- 原报告自述 API36／932 KiB／40–60 秒／CPU≈150%／内存 275→449 MiB／无 crash 或 ANR；缺原始 fixture、包哈希和采样资料，保留为未独立证实的历史自述，不能用上述新结果回填。
+- 可疑耗时路径有代码依据：主线程对全文做四组正则与大量 span 操作；预览解析/非虚拟化组合；update 可能重复装饰。独立样本没有切换预览，说明仅修预览不足以解决已复现问题；尚未用 profiling 分摊各路径耗时。
+- 建议讨论：先限制大文本全量高亮及装饰数量，保留编辑、保存、IME 和撤销；再后台解析并分块惰性预览。仅添加防抖不能消除首次打开的昂贵工作；大段落/大代码块也不能只靠 LazyColumn 解决。
+- 详细候选方案、数据不变量与拟验收条件见[下一版讨论稿](../client-next-discussion.md)。本轮没有修改实现或宣布性能达标。
 
-#### Low 级
+### 2.4 Low 级候选
 
-| 编号 | 位置 | 问题 | 建议 |
+| 编号 | 位置 | 已核对事实与证据边界 | 后续建议 |
 |---|---|---|---|
-| L1 | `core/src/sync.rs:483` | 本地 `cursor` 被破坏为非法字符串时 `counter` 返回 `INVALID_REQUEST`，而 `synchronize` 恢复分支只匹配 `CURSOR_INVALID`/`SYNC_EPOCH_MISMATCH`，不进入保全恢复 | 把 cursor 解析失败统一映射为 `CURSOR_INVALID` |
-| L2 | `core/src/purge.rs:107` | `purge::install` 只删 `source_id` 侧 redirect，不删以该 ID 为 `target_id` 的残留映射 | 同时 `DELETE FROM redirects WHERE target_id=?` |
-| L3 | `desktop/src-tauri/src/main.rs:69` | `core_invoke` 无动作白名单，前端 JSON 原样透传 core（纵深防御缺口） | 入口加允许动作集合校验 |
-| L4 | `desktop/src/App.svelte:745` | `rescue()` 未检查 IME 组合输入，可能捕获组合中的中间文本 | 捕获前检查 `editor.composing` |
-| L5 | `desktop/src-tauri/src/main.rs:288-297` | 导出依赖 hard_link，FAT32/exFAT/SMB 不可用 | 检测 `Unsupported/CrossesDevices` 时回退不覆盖重命名 |
-| L6 | `android/.../NoteExport.kt:64-69` | 单笔记导出写失败残留半截 `.md`（ZIP 路径会清理） | 失败时尽力 `deleteDocument` |
+| L1 | `core/src/sync.rs` | 非法本地 cursor 的 counter 返回 INVALID_REQUEST，恢复分支只匹配 CURSOR_INVALID/SYNC_EPOCH_MISMATCH；未做损坏数据库端到端注入 | 补复现，再评估专门映射与保全恢复 |
+| L2 | `core/src/purge.rs` | install 只删 source_id 侧 redirect，target 侧映射可残留；已有目标删除屏障测试通过，不证明可复活 | 评估清理与迟到编辑反馈，不绕过代次检查 |
+| L3 | `desktop/src-tauri/src/main.rs` | core_invoke 透传 JSON，但 core dispatch 已枚举动作并拒绝未知动作 | 外壳白名单属于纵深建议，不是已证实的任意能力执行漏洞 |
+| L4 | `desktop/src/App.svelte` | rescue 未显式检查 composing；未验证真实 IME 点击、失焦、compositionend 顺序 | 补原生复现，保留救援缓冲 |
+| L5 | `desktop/src-tauri/src/main.rs` | 导出依赖 hard_link，FAT32/exFAT 存在兼容限制；SMB 取决于共享后端，不能一概否定 | 补文件系统测试；回退须保证不覆盖，通用 rename 本身不保证跨平台不覆盖 |
+| L6 | Android `NoteExport.kt` | 单篇失败无删除目标的清理，ZIP 路径有尽力清理；是否残留取决于 SAF provider 失败方式 | 注入半写入故障后设计清理，不声称所有失败都留下半文件 |
 
-#### Info 级
+### 2.5 Info 与措辞修正
 
-- `core/src/model.rs:177` `counter` 用 `i64`，与 `spec/data-model.md` 的 u64 声明有文字偏差（无现实影响，不建议 0.1.x 改 schema）。
-- `core/src/markdown_export.rs:28-30` Windows 保留设备名「尾随空格」变体（如 `CON .txt`）未拦截（仅影响建议文件名可移植性）。
-- Android `AppUpdates.kt` `confirmation_pending` 只写不读（死状态，进程死亡后待确认只能取消）。
-- Android `UpdateInstaller` verify→submit 之间未二次哈希（app-private 目录 + 系统签名已闭合，属纵深建议）。
-- debug 包允许明文 HTTP（符合 spec 的 `BuildConfig.DEBUG`，发布包传 false，仅提示勿用真实凭据连明文服务器）。
+- `counter` 用 i64，server 用 ParseInt(..., 64)；`spec/data-model.md` 写的是“非负 64 位整数”，没有 u64 声明。可以补明确上界，不能直接记为现有 i64/u64 契约冲突。
+- 建议文件名对 Windows 保留设备名尾随空格变体（如 CON .txt）的处理需补可移植性测试；不能将文件名过滤称作完整隐私脱敏。
+- AppUpdates 的 confirmation_pending 只写不读，但恢复仍依据 session/compatibility 并允许取消；这不等于整个安装恢复缺失。
+- UpdateInstaller verify→submit 间二次哈希属于纵深建议，需结合 app-private 存储和系统签名验证评估。
+- debug 允许明文 HTTP，release 不允许；符合现有调试边界，不是正式包明文漏洞结论。
 
-## 3. 目标二：架构与软件工程评估
+## 3. 架构与工程评估
 
-### 3.1 优点
+### 3.1 已有机制
 
-- **分层清晰**：core(Rust+SQLite，本地数据与同步状态机) / server(Go，权威版本+SSE) / Android(Compose) / Desktop(Tauri+Svelte)；UI 层不实现同步/冲突规则，凭据经平台适配接口，笔记正文不交 WebView 直连数据库。
-- **spec-as-truth**：产品行为、数据模型、同步协议、错误码均为规范先行，跨语言以同一组声明式一致性场景验证。
-- **迁移严谨**：server 版本化迁移带 checksum 校验、拒绝篡改；core 只追加迁移并验证升级路径。
-- **工程质量**：无 TODO/FIXME 标记、无生产路径 panic；`clippy -D warnings`、`gofmt`/`go vet`/`go test -race`；Conventional Commits、独立分支工作流；依赖经 ADR 记录。
-- **测试覆盖充分**：core 49 单元 + 10 联调；server `-race`；Android 22 个仪器测试 + 单元测试；桌面单测（editor-session/markdown/presentation 等）。
+- core 管理本地 SQLite、待发与同步；server 管理权威版本与账号；平台处理交互和安全凭据，不在 UI 重做冲突规则。
+- spec 提供行为契约与共享一致性场景；迁移有版本和校验，并有升级/高版本保护测试。
+- 本地入口包括 clippy、Go 检查、桌面/Android 测试；“存在检查入口”与“本轮已执行”分开记载。没有 CI/Runner。
+- 生产路径存在内嵌配置和静态 scope 的 expect，不声称完全没有 panic 路径；未据此证明外部可利用崩溃。
+- 数量口径：core 49 项单元、10 项默认 ignored 的联调；Android 22 个仪器测试类、60 个 @Test 方法；桌面当前 6 文件/34 项。数量不等于全部执行或充分覆盖。
 
-### 3.2 短板与建议
+### 3.2 建议与限制
 
-1. **无 CI/Runner（有意）**：质量完全依赖本地验证纪律与交叉评审，存在回归风险。若未来引入，建议至少覆盖 `validate-local.sh` 各模块与迁移升级路径（不改变当前「不新增工作流」的决定）。
-2. **超大单文件**：`desktop/src/App.svelte`（1978 行）、`desktop/src/lib/i18n.ts`（994 行）、`android/.../MainActivity.kt`（896 行）建议按「列表/编辑/设置/更新/账号」拆分，降低认知负担与合并冲突面。
-3. **Markdown 渲染三处重复实现**：Android Compose、桌面 TS（`markdown.ts`）、core Rust（`highlight.rs`）各实现一份，一致性与安全规则需三处同步维护；若未来抽共享 Web 前端时再收敛，至少应有一份「渲染安全规则清单」对照。
-4. **版本偏移**：server 仍 0.1.4，client/core 已 0.1.10；monorepo 内版本语义可更清晰（README 已注明，但建议在 `spec/README.md` 顶部给一张「模块→版本→协议/schema」对照表）。
-5. **异常路径可恢复性**是相对最弱一环：M1（blocked 无解除）、L1（非法 cursor 不保全）都属于「正常流程正确、边界恢复不闭环」。
-6. **`core_invoke` 任意 JSON 透传**：与「平台 UI 只提交固定意图」的纵深要求有差距（见 L3）。
+1. 按现有本地检查纪律记录真实结果，保持不新增 CI/Runner 的决定。
+2. App.svelte 1978 行、i18n.ts 994 行、MainActivity.kt 896 行，可按职责渐进拆分；不为修 M2 顺带重写全 UI。
+3. **两套平台 Markdown 渲染 + core 共享代码高亮**：Android/桌面分别渲染，core highlight.rs 定位代码块并输出 span，不是第三套完整渲染器。对齐两端的任务/链接/安全场景，不由此引入暂缓的独立 Web。
+4. server0.1.4 与 client/core0.1.10 是已说明的模块版本差异，可完善版本表，不直接当作兼容缺陷。
+5. 异常恢复候选按可达性与证据分级；M1 的原场景不能作为已确认数据完整性缺陷。
 
-## 4. 目标三：UI/UX 与产品审视
+## 4. UI/UX 建议
 
-### 4.1 优点
+原报告未逐像素核验目标平台，以下主要依据源码与设计规范，不能当作设备矩阵已通过。
 
-- 视觉体系克制规范：纸白/炭灰 + 品牌色，4/8 倍数间距，正文优先可读；危险操作用强危险色 + 配对前景 + 红底留白；统一 Lucide 图标（桌面 20px/移动 24dp）、按钮点击区桌面 ≥36px/移动 ≥48dp。
-- 信息架构清晰：列表（搜索 + 笔记 + 时间）→ 编辑（正文居中、返回/空间名/预览切换/更多）→ 设置（展示/空间/设备/数据/更新分 Tab）。
-- 状态反馈到位：Draft/Saved locally/同步状态/冲突/凭据失效明确显示，不隐藏为普通成功图标；删除提供撤销 Snackbar。
+- 现有纸白/炭灰、品牌色、Lucide 图标和点击区域有设计依据，需继续原生复核。
+- 本地保存和云同步状态应独立表达；不能笼统称“状态反馈到位”。维护者现已报告 Android 离线打开 Devices 等待后模态报错，已纳入[下一版离线交互讨论](../client-next-discussion.md)。
+- 大笔记以保持可输入和可保存为优先；不牺牲正文、组合输入、选区、撤销或同步基准来换取速度。
+- 品牌与安装收尾遵循[固定流程](../brand-change-workflow.md)，未核查项保留待测。下一版讨论包含桌面图形占比、墨绿候选和新安装目录命名；现行资源与身份尚未改变。
+- 单篇导出重点是快照正确、写入失败可见及残留清理；文件导出不是删除操作，缺少“撤销导出”本身不作为缺陷。
+- 新手提示、键盘可达、焦点与读屏可继续评估，避免在未做真实操作时宣称体验完全通过。
 
-### 4.2 问题与建议（按优先级）
+## 5. 测试记录与证据状态
 
-1. **大笔记虚拟化 + 高亮限流**（=M2，最高优先级）：预览 `LazyColumn`，编辑器高亮按阈值降级/防抖。
-2. **品牌切换收尾**：0.1.10 由 paper-v1「绿纸」改为「sunrise 橙渐变 + 阳墨随记」是一次身份切换，需核查官网 favicon/logo、三端图标、托盘、Windows 旧快捷方式迁移、旧包与新包的并存与卸载路径，避免新旧视觉并存割裂（流程见 `docs/brand-change-workflow.md`）。
-3. **桌面超大组件拆分**：提升渲染粒度与可维护性（同 §3.2-2）。
-4. **导出反馈一致性**：Android 单笔记导出成功仅 Toast 且无撤销；单笔记写失败残留半截文件而 ZIP 路径会清理（L6），行为应统一。
-5. **新手引导**：`Sign in / Register with an invite` 表单对非技术朋友理解成本偏高（spec 有意不做常驻教程，可考虑一次性引导或更清晰的占位提示）。
-6. **无障碍与键盘导航**：桌面多选上下文栏、菜单焦点恢复（`closeMenus(restoreFocus)`）已有处理，建议补全「全键盘可达」验收（Tab 序、焦点环、aria 状态）。
+### 5.1 原报告记录的更正
 
-## 5. 测试执行记录（证据）
+| 原记录 | 核验与修正 |
+|---|---|
+| `cargo test --locked core` → 49 passed | core 是测试名过滤器；独立执行为 0 passed、49 单元及 10 联调 filtered out。原命令不能支撑原结论 |
+| `go test -race ./...` → ok | 原始输出未附，本轮未重跑完整 Linux 流程，保留未独立证实 |
+| 10 项联调、SSE p95≈610ms | 原始输出与样本未附，本轮只重跑其中永久删除真实 HTTP 场景，不将其当作 10 项通过 |
+| API36 安装、HTML/导出、大笔记测量 | 未附完整执行资料；M2 问题由另一 API35 样本独立确认，其余历史流程未重演 |
+| Windows10 VM 安装、版本/标题、100KiB 数据库、包哈希一致 | 保留为原报告自述；缺可追溯收据，本轮未独立重演 |
 
-| 项 | 命令/环境 | 结果 |
-|---|---|---|
-| core 单元测试 | `cargo test --locked core` | 49 passed / 0 failed |
-| server 测试 | `go test -race ./...` | ok |
-| core-server 联调 | `DJHX_SERVER_BIN=… cargo test --test server_integration -- --ignored` | 10 passed（SSE 收敛 p95≈610ms） |
-| Android 实机 | djhx_dev_api36 模拟器（Android 16），0.1.10 APK | 安装成功；`<script>alert(1)</script>` 预览为纯文本（无执行）；单笔记导出 `script_script_alert(1)__script_.md` 内容一致、文件名已脱敏；大笔记 40–60s 冻结复现；全程无 crash |
-| Windows 实机 | vm-windows10（Windows 10 22H2，Guest Additions 7.2.2），0.1.10 安装包 | 静默安装成功（`djhx-memo.exe` 版本 0.1.10）；启动后窗口标题「DJHX MEMO」；数据目录 `%APPDATA%\app.djhx.memo\` 生成 `local.sqlite`(100KiB)/`profiles.json`/`.instance.lock`/`updates`，`profiles.json` 默认 `selected=local`；安装包 SHA256 与发布清单一致 |
+正确的根目录 core 命令为 `cargo test --locked --manifest-path core/Cargo.toml`。完整联调另需 Linux 构建的真实服务端并显式执行 ignored 测试，入口见[本地验证](../validation.md)。
 
-### Windows 实机交互限制（记录）
+### 5.2 独立核验的实际结果（2026-11-16）
 
-- 环境无 RDP 客户端；`VBoxManage guestcontrol` 以 `--username koril` 运行在非交互窗口站，`SendKeys`/`SetForegroundWindow` 无法操作交互桌面。
-- 交互改用 `VBoxManage controlvm keyboardputscancode/keyboardputstring`（物理键盘注入）：已确认 Win 键、Win+R 运行、Notepad 启动与文本键入均正常，即输入管线可达交互桌面。
-- 未能在无鼠标注入的 headless 环境里点击 DJHX MEMO 窗口内的编辑器完成「新建→键入→保存」的端到端交互；该流程由共用 core（59 项测试 + Android 实测）与桌面 bridge 静态审查覆盖，不作为「桌面未通过」结论，也不宣称已完成该交互路径的真机点击验收。
+| 项 | 实际结果 |
+|---|---|
+| 正确 core 命令 | 49 passed，10 ignored |
+| Windows Go 显式文件集 + DJHX_CORE_PURGE_INTEGRATION=1 | 4 个 Go 测试通过，包含 1 项 Rust 真实 HTTP 永久删除联调；Android HTTP 项跳过，不覆盖 Unix epoch/CLI |
+| 隔离源码副本的 blocked/purge 探针 | 2 passed；NOTE_PURGED 标记可清理，另一永久错误注入可持续 pending |
+| 桌面 npm test | 6 文件、34 项通过 |
+| API35 独立大笔记样本 | 1 项通过并记录严重停顿；不是性能验收通过 |
 
-## 6. 局限与未验证项
+命令、平台、fixture、测量输出和清理边界见[独立核验全文](quality-audit-0.1.10-verification.md)。这些新执行结果不回填为原报告日期的验证。
 
-- 真实多设备、物理 arm64 Android、连续 7 天试用未做（项目自身亦承认未完成）。
-- M1 为代码路径确认，未动态构造服务端不可重试错误复现。
-- 调研期间当前模型不支持读图，UI 视觉细节依赖 Android uiautomator 文本层次、Windows 截图 OCR 与代码/设计规范，未做逐像素视觉比对。
-- Windows 端到端「新建笔记」交互因 headless 无鼠标注入未完成（见 §5）。
+### 5.3 Windows 交互的边界
 
-## 7. 优先级建议清单（供后续开发参考）
+原报告自述 headless VM 中可注入键盘，但未完成应用“新建→输入→保存”交互。此限制是当次操作条件，不应泛化为本机永远没有鼠标控制能力。共用 core/Android 测试与 bridge 静态检查不能代替 Windows 原生端到端验收；既不据此判定该流程失败，也不宣称已经通过。
 
-1. **P0** M2 大笔记虚拟化 + 高亮限流（可用性/ANR 风险，已实测复现）。
-2. **P1** M1 blocked outbox 解除/重试路径 + 彻底删除死锁修复（数据完整性，需配套 spec 变更）。
-3. **P2** L1 非法 cursor 保全恢复、L2 redirect 清理（异常路径闭环）。
-4. **P2** 桌面 `core_invoke` 动作白名单、L4 rescue IME、L5 硬链接回退（防御与兼容）。
-5. **P3** 品牌切换收尾核查、超大组件拆分、渲染安全规则清单、模块版本对照表。
-6. **P3** L6 导出失败清理、Info 项按需处理。
+## 6. 局限与后续优先级
 
-> 注：本文发现的任何需要改行为的项，按项目规范应先更新 `spec/` 对应契约、再实现并补测试，同步/迁移/鉴权变更须经交叉评审；本文不构成「已通过」任何验收。
+- 完整三端设备矩阵、物理 arm64/OEM、连续七天试用仍未完成。
+- M2 是本轮最明确的修复项；先做性能剖析和受控降级，再评估预览分块，方案尚待讨论。
+- M1、L1–L6 按各自证据补复现/边界测试，不能直接套用原来的统一重发或全面加白名单建议。
+- 原历史环境的测试和分路独立审查没有补齐产物；本次不把文档修订、单元测试或版本号当作完整安全/平台验收。
+
+任何后续行为变更均先更新 spec，再实现并补有效测试；同步、迁移、鉴权变更仍须独立交叉评审。下一版讨论不构成编码或发版授权。
