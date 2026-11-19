@@ -6,4 +6,4 @@
 - UI 事件、网络操作和数据库事务有明确线程边界；兼容 Android/Windows/Linux，不依赖专有路径。
 - Pull 更新 shadow 不得改变未同步编辑基准；确认旧代次不能清除新输入。
 - 公开接口写 Rust 文档，crate 初始化时开启 missing_docs 检查。
-- 工程初始化后本地运行格式、clippy、有效测试和 [一致性场景](../spec/conformance/scenarios.md)，无 CI 前提；同步和迁移变更需交叉评审。
+- 工程初始化后本地运行格式、clippy、有效测试和 [一致性场景](../spec/conformance/scenarios.md)；同步和迁移变更需交叉评审。CI/CD 统一走 GitHub Actions（见 [ADR-0017](../docs/adr/0017-github-actions-ci.md)），本目录检查以本地 `bash scripts/validate-local.sh core` 为快速反馈入口。

@@ -2,7 +2,7 @@
 
 ## 分支与提交
 
-使用 `docs/`、`feat/`、`fix/` 等分支，提交遵循 Conventional Commits。先提交规范变化，再实施受影响模块；可以在一个分支内完成。Gitea保留私人开发分支与评审，GitHub公开主分支与Release；按[客户端发布流程](docs/client-release.md)同步审核后的main及指定tag，不批量公开私人开发分支。没有 CI/Runner。
+使用 `docs/`、`feat/`、`fix/` 等分支，提交遵循 Conventional Commits。先提交规范变化，再实施受影响模块；可以在一个分支内完成。Gitea保留私人开发分支与评审，GitHub公开主分支与Release；按[客户端发布流程](docs/client-release.md)同步审核后的main及指定tag，不批量公开私人开发分支。CI/CD 采用 GitHub Actions，见 [CI/CD 计划](docs/ci-cd-plan.md) 与 [ADR-0017](docs/adr/0017-github-actions-ci.md)。
 
 推送分支不代表通过评审或发布。平台支持 PR 时使用 PR；不支持时，提供分支、提交范围和检查记录供人工或另一位协作者评审，再由维护者合并。不得以自写自审代替同步、迁移和鉴权的交叉评审。
 
@@ -35,4 +35,4 @@
 
 贡献以 [MIT](LICENSE) 提供，不要求版权转让；只提交有权贡献的原创或合规复用材料。第三方代码、图标、模板和依赖仍保留自己的许可，见[许可说明](docs/licensing.md)。不要删除上游通知或把所有依赖统一改成MIT。
 
-按 [SECURITY](SECURITY.md)执行本地源码/历史/提交元信息扫描，报告脱敏。发现真实凭据先联系维护者并轮换；不要把原值放进Issue或修复PR。不要擅自清理历史、强推、改仓库可见性或运行真实数据的破坏性验证。当前无CI/Runner，必要本地检查与独立评审仍是交付条件。
+按 [SECURITY](SECURITY.md)执行本地源码/历史/提交元信息扫描，报告脱敏。发现真实凭据先联系维护者并轮换；不要把原值放进Issue或修复PR。不要擅自清理历史、强推、改仓库可见性或运行真实数据的破坏性验证。CI 只负责可自动化的构建/测试与发布草案；本地检查、独立评审与真实设备验收仍是交付条件。

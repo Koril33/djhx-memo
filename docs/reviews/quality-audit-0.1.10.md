@@ -78,13 +78,13 @@
 
 - core 管理本地 SQLite、待发与同步；server 管理权威版本与账号；平台处理交互和安全凭据，不在 UI 重做冲突规则。
 - spec 提供行为契约与共享一致性场景；迁移有版本和校验，并有升级/高版本保护测试。
-- 本地入口包括 clippy、Go 检查、桌面/Android 测试；“存在检查入口”与“本轮已执行”分开记载。没有 CI/Runner。
+- 本地入口包括 clippy、Go 检查、桌面/Android 测试；“存在检查入口”与“本轮已执行”分开记载。当时没有 CI/Runner（构建/测试自动化现由 [ADR-0017](../adr/0017-github-actions-ci.md) 采用 GitHub Actions）。
 - 生产路径存在内嵌配置和静态 scope 的 expect，不声称完全没有 panic 路径；未据此证明外部可利用崩溃。
 - 数量口径：core 49 项单元、10 项默认 ignored 的联调；Android 22 个仪器测试类、60 个 @Test 方法；桌面当前 6 文件/34 项。数量不等于全部执行或充分覆盖。
 
 ### 3.2 建议与限制
 
-1. 按现有本地检查纪律记录真实结果，保持不新增 CI/Runner 的决定。
+1. 按现有本地检查纪律记录真实结果；CI/Runner 的暂缓已由 [ADR-0017](../adr/0017-github-actions-ci.md) 变更为采用 GitHub Actions。
 2. App.svelte 1978 行、i18n.ts 994 行、MainActivity.kt 896 行，可按职责渐进拆分；不为修 M2 顺带重写全 UI。
 3. **两套平台 Markdown 渲染 + core 共享代码高亮**：Android/桌面分别渲染，core highlight.rs 定位代码块并输出 span，不是第三套完整渲染器。对齐两端的任务/链接/安全场景，不由此引入暂缓的独立 Web。
 4. server0.1.4 与 client/core0.1.10 是已说明的模块版本差异，可完善版本表，不直接当作兼容缺陷。

@@ -15,7 +15,7 @@
 
 v1 必须交付：三端客户端、桌面托盘、本地保存、邀请码注册登录、云同步、Markdown 源码编辑与预览、任务勾选、搜索、冲突副本、回收站、设备吊销、本地导出，以及服务端部署和恢复说明。具体流程和边界见 [产品规范](spec/product-v1.md)。
 
-暂缓：独立 Web 客户端、Apple 客户端、全局快捷键、系统分享、开机自启、附件、多人协作、端到端加密、自动墓碑清理、完整版本历史 UI、CI 与 Runner。独立 Web 暂缓不影响 Tauri 使用本地 WebView 前端。
+暂缓：独立 Web 客户端、Apple 客户端、全局快捷键、系统分享、开机自启、附件、多人协作、端到端加密、自动墓碑清理、完整版本历史 UI。独立 Web 暂缓不影响 Tauri 使用本地 WebView 前端。CI/CD 已不再暂缓：采用 GitHub Actions 做构建、测试自动化与发布草案（见 [ADR-0017](docs/adr/0017-github-actions-ci.md)）。
 
 自动升级（2026-11-11）已按维护者要求进入[三端方案设计](docs/automatic-update-design.md)，完成[17 个 Rust GUI 软件调研](docs/research/rust-gui-auto-update-survey.md)。2026-11-12 已形成 [0.1.5 Windows/Android 实现](spec/automatic-updates.md)及[本机验证](docs/client-updates-0.1.5-validation.md)，2026-11-13 已完成[公开发行及 Windows 目录部署](docs/releases/0.1.5-validation.md)，Android 原证书正式包已在后续补齐；Linux DEB 已构建，自动安装仍为后续范围。
 
@@ -36,7 +36,7 @@ v1 必须交付：三端客户端、桌面托盘、本地保存、邀请码注�
 | Android | Kotlin + Jetpack Compose | 原生 UI、生命周期与后台任务适配 |
 | Windows / Linux | Tauri 2 + Svelte + TypeScript + Vite；CodeMirror 6 | 编辑、预览、托盘、文件与窗口集成 |
 | 协议 | HTTP JSON `/v1` + OpenAPI 3.1 | 跨语言行为契约 |
-| 质量 | 本地自动检查 + 三端真机/系统验收记录 | 无远程 CI 依赖 |
+| 质量 | 本地自动检查 + 三端真机/系统验收记录；构建与可自动化测试由 GitHub Actions 承担 | 远程 CI 不替代真机验收 |
 
 前端代码在 `desktop/` 内组织，v1 不提前建立共享 Web 包。Go module 使用 `git.djhx.site/koril/djhx-memo/server`，Rust crate 使用 `djhx-memo-core`，Android application ID 使用 `app.djhx.memo`。
 
@@ -72,4 +72,4 @@ Go 服务端、Rust 核心、Tauri 桌面与 Android 工程已经实现，提交
 
 v0.2 文档基线轮次仅完善文档；随后已完成本机开发环境安装、仓库外探针与业务实现，见 [Linux 开发说明](docs/dev-setup-linux.md) 和验证记录。规范中的“必须”仍是验收要求，代码存在不等于所有目标设备已通过。
 
-后续以独立分支提交；无自动 CI 时仍需本地检查和交叉评审。同步、迁移、鉴权的高风险实现需独立评审后才能合并或投入真实数据使用。暂不需要项目负责人继续选择产品方案；实现中遇到与既定范围不兼容的限制时记录 ADR 并说明。
+后续以独立分支提交；GitHub Actions 承担构建与可自动化测试，本地检查、交叉评审与真实设备验收仍必须执行。同步、迁移、鉴权的高风险实现需独立评审后才能合并或投入真实数据使用。暂不需要项目负责人继续选择产品方案；实现中遇到与既定范围不兼容的限制时记录 ADR 并说明。

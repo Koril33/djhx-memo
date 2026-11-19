@@ -11,7 +11,7 @@
 - 按任务范围修改目录，跨模块改动说明影响面。
 - 文档使用简体中文，代码标识符和提交信息使用英文；提交遵循 Conventional Commits。
 - 使用独立分支并推送远程；合并遵循 [贡献流程](CONTRIBUTING.md)。同步、迁移与鉴权变更必须经过交叉评审。
-- 当前无 CI 和 Runner，不新增工作流，不以远程 CI 为交付前提。执行并记录 [本地验证](docs/validation.md)，不宣称未运行的检查通过。
+- CI/CD 采用 GitHub Actions（见 [ADR-0017](docs/adr/0017-github-actions-ci.md) 与 [CI/CD 计划](docs/ci-cd-plan.md)）：自建 Gitea 无法提供稳定的编译/打包虚拟机，故使用 GitHub 托管 runner 做构建、测试自动化与发布草案。真实设备验收、签名与 Release 公开仍由维护者本地完成；继续执行并记录 [本地验证](docs/validation.md)，不宣称未运行的检查通过。
 - 本地检查入口为 `bash scripts/validate-local.sh <模块>`，构建入口见各模块 README。文档变更检查链接、契约引用和 Git 差异。
 - 引入依赖前查阅 ADR，说明理由、许可证、维护情况与锁定版本；未被现有 ADR 覆盖的新依赖或框架追加 ADR。
 
@@ -29,7 +29,7 @@
 - 行为变化有对应规范、文档和有效测试；公共接口有文档。
 - core、server 按同一组声明式场景分别验证职责，并运行联调测试。
 - 三端均属于 v1，不以 Windows 单端通过代替 Android/Linux 验收。
-- 不开展暂缓范围：独立 Web、Apple、全局快捷键、系统分享、CI/Runner。
+- 不开展暂缓范围：独立 Web、Apple、全局快捷键、系统分享。
 - 文档规范的建立不代表已交叉评审；提交说明注明实际检查与未验证项。
 
 ## 新开发者、AI 与公开发布
@@ -40,7 +40,7 @@
 - 原创内容按根 [LICENSE](LICENSE) 的 MIT 授权；保留第三方许可与来源，见 [docs/licensing.md](docs/licensing.md)。提交者对代码来源和AI辅助内容的可贡献性负责。
 - 公共API注释说明行为、边界及错误；平台/并发修正解释原因，不堆砌逐行翻译。不得通过删除或弱化测试、宽泛屏蔽告警/密钥规则获得绿色结果。
 - 按 [SECURITY](SECURITY.md)检查待公开源码、可达历史与提交元信息，不扫描后就宣称绝对无漏洞。维护者明确选择保留既有作者身份与完整历史；不擅自重写/强推或改变仓库可见性。
-- 外部贡献者无原仓库写权限时使用fork/PR；具备授权的协作者按独立分支提交推送。无CI/Runner要求仍有效，不能以开源准备为由添加工作流。
+- 外部贡献者无原仓库写权限时使用fork/PR；具备授权的协作者按独立分支提交推送。CI 工作流的改动须经维护者审阅后再打 tag，不得由同一提交者既改 workflow 又自行发版。
 
 0.1.6 依 spec/client-0.1.6.md 增加批量普通删除/严格代次撤销、Android左滑和单Markdown导入；core版本同步0.1.6，server/协议/schema不变。交叉评审见 docs/reviews/client-0.1.6-review.md；发布与三端升级结果只以 docs/releases/0.1.6-validation.md 为准。
 

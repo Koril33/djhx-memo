@@ -21,7 +21,7 @@
 ## 未执行
 
 - 未添加/编译 updater 或验签新依赖，未执行 core/server/desktop/Android 业务测试；纯文档变更不重复构建已有业务模块。
-- 未部署 `/updates/`，未建立 APT/Flatpak/商店渠道，无 CI/Runner。
+- 未部署 `/updates/`，未建立 APT/Flatpak/商店渠道；本轮无 CI/Runner（构建/测试自动化现由 [ADR-0017](adr/0017-github-actions-ci.md) 采用 GitHub Actions）。
 - 未执行 Windows、Linux、Android 的更新安装、生产证书覆盖、输入法保存屏障、升级失败恢复或密钥轮换实验。
 - 未做独立交叉评审，未完成三端更新验收或 7 天试用。后续实现门槛见[提案场景](../spec/automatic-updates.md#u7-验收场景)。
 

@@ -14,9 +14,9 @@
 
 测试范围与边界的文字描述（不含测试代码）见 [测试用例描述](test-cases.md)。
 
-## 1. 无 CI 的检查方式
+## 1. 检查方式：本地验证 + GitHub Actions 构建自动化
 
-项目没有 CI/Runner，v1 不部署它们。提交人执行检查并记录：提交 SHA、平台、工具版本、命令、结果和未运行原因。另一位协作者评审同步、迁移与鉴权实现；没有评审或未通过必要检查的变更不能因“远程无 CI”而直接投入真实数据。
+构建与可自动化测试由 GitHub Actions 承担（见 [CI/CD 计划](ci-cd-plan.md) 与 [ADR-0017](adr/0017-github-actions-ci.md)），真实设备验收、签名与 Release 公开仍由维护者本地完成。提交人执行本地检查并记录：提交 SHA、平台、工具版本、命令、结果和未运行原因。另一位协作者评审同步、迁移与鉴权实现；没有评审或未通过必要检查的变更不能仅凭 CI 通过而直接投入真实数据。
 
 业务工程已建立。入口为 `bash scripts/validate-local.sh core|server|integration|desktop|android`，每次选择一个模块；工具与原生构建前置条件见各模块 README。真实结果分别记录于 [core](core-validation.md)、[server](server-validation.md)、[desktop](desktop-validation.md)、[Android](android-validation.md)，独立评审见 [核心](reviews/core-review.md)、[服务端](reviews/server-review.md)、[桌面](reviews/desktop-review.md) 和 [Android](reviews/android-review.md)。云端实际检查另见 [部署记录](cloud-deployment.md) 与 [配置评审](reviews/deployment-review.md)。环境阶段的仓库外探针不等同于这些业务检查。
 

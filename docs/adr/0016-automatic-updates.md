@@ -7,7 +7,7 @@
 
 ## 背景与选择
 
-现有桌面是 Tauri 2，Android 为 Kotlin/Compose + Rust core。Windows 使用 currentUser NSIS；Linux 仅有 DEB；公开包托管在 GitHub，无 CI/Runner。单一自研跨平台替换器会重复实现安装权限和签名处理，且无法让 Android/DEB 获得通用静默安装权限。
+现有桌面是 Tauri 2，Android 为 Kotlin/Compose + Rust core。Windows 使用 currentUser NSIS；Linux 仅有 DEB；公开包托管在 GitHub（当时无 CI/Runner；构建自动化现由 [ADR-0017](0017-github-actions-ci.md) 采用 GitHub Actions）。单一自研跨平台替换器会重复实现安装权限和签名处理，且无法让 Android/DEB 获得通用静默安装权限。
 
 建议桌面复用官方 Tauri updater；新增 AppImage 自更新渠道，DEB 继续交给系统；Android 使用 PackageInstaller。统一静态签名发行目录由官网分发，不依赖 Go 账号 API；分享解析/验签行为，保留平台安装差异。安装前显式保存，不依赖进程正常退出事件。
 
@@ -36,7 +36,7 @@ HTTP、Base64、JSON 和 SHA-256 复用现有依赖，匿名更新客户端不�
 - **首期迁移 Flatpak/Play/winget**：增加渠道、商店政策和签名运维，不能覆盖现有侧载用户；暂缓。
 - **只有 HTTPS + 包签名**：较简单，但目录中的版本、平台兼容与撤回信息缺少独立签名绑定；选用小型签名目录。它不是完整 TUF，冻结/根钥泄露边界在设计中明确说明。
 
-代价是多一套目录签名管理、目录定期重签、AppImage 构建/验收和 Android 安装授权流程。换来的好处是无需常驻更新服务或 CI，账号服务故障不影响发行检查，三端能复用可信目标选择。
+代价是多一套目录签名管理、目录定期重签、AppImage 构建/验收和 Android 安装授权流程。换来的好处是无需常驻更新服务，账号服务故障不影响发行检查，三端能复用可信目标选择；构建与测试自动化另由 GitHub Actions 承担（[ADR-0017](0017-github-actions-ci.md)），与本方案相互独立。
 
 ## 启用门槛
 

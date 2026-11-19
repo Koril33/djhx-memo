@@ -8,7 +8,7 @@ core0.1.10新增纯文件名API，server仍0.1.4、协议2/schema3及签名身�
 
 面向个人和少数朋友的 Markdown 备忘录，支持本地优先保存和多设备云同步。
 
-**v1 目标：Windows、Android、Linux 三端可日常使用。** 桌面端包含托盘；允许未登录记笔记，提供邀请码注册、登录、同步、搜索、回收站和 Markdown 导出。Web、Apple、全局快捷键、系统分享以及 CI/Runner 暂缓。
+**v1 目标：Windows、Android、Linux 三端可日常使用。** 桌面端包含托盘；允许未登录记笔记，提供邀请码注册、登录、同步、搜索、回收站和 Markdown 导出。Web、Apple、全局快捷键、系统分享暂缓。
 
 0.1.4起的既有版本已公开发布，当前客户端保持其协议 2 与 schema 基线，core新增本地列表/文件入口。Windows/Linux/Android 客户端已实现，公开安装包以 Release 列出的平台为准。已执行核心/服务端联调及目标系统的部分实际使用验证；完整设备矩阵仍待完成；连续 7 天日常试用已由维护者确认完成（逐日明细未入库，三端矩阵仍独立验收），完整产品 v1 尚未正式发布。实际结果和限制见各模块验证记录。
 
@@ -44,7 +44,7 @@ djhx-memo/
 └── apple/         # 暂缓，仅保留说明
 ```
 
-`.github/workflows/` 为此前留下的空目录，不配置工作流，也不作为交付要求。当前没有 CI 或 Runner；实施后的质量检查在开发机与目标设备上运行并记录结果。
+`.github/workflows/` 承载 CI/CD 工作流。构建、测试自动化与发布草案采用 GitHub Actions：自建 Gitea 无法提供稳定的编译/打包虚拟机，故使用 GitHub 托管 runner 构建四类产物并运行可自动化的测试（见 [CI/CD 计划](docs/ci-cd-plan.md) 与 [ADR-0017](docs/adr/0017-github-actions-ci.md)）。真实设备验收、签名与 Release 公开仍由维护者本地完成；实施后的质量检查在开发机与目标设备上运行并记录结果。
 
 ## 构建与使用
 

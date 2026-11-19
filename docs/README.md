@@ -17,7 +17,8 @@
 - [architecture.md](architecture.md)：模块、数据流与跨端边界。
 - [dev-setup.md](dev-setup.md)：新克隆项目的公共工具链入口、锁定版本与本机配置边界。
 - 公共开发：[Linux](dev-setup-linux-portable.md)、[Windows](dev-setup-windows.md)；历史本机记录：[Linux](dev-setup-linux.md)、[Windows](dev-setup-windows-history.md)。
-- [validation.md](validation.md)：无 CI 环境下的本地检查与 v1 验收。
+- [validation.md](validation.md)：本地检查与 v1 验收。
+- [ci-cd-plan.md](ci-cd-plan.md)：GitHub Actions 构建/测试自动化与发布草案的建设计划；决策见 [ADR-0017](adr/0017-github-actions-ci.md)。
 - 实际验证：[核心](core-validation.md)、[服务端](server-validation.md)、[桌面](desktop-validation.md)、[Android](android-validation.md)。
 - 独立评审：[核心](reviews/core-review.md)、[服务端](reviews/server-review.md)、[桌面](reviews/desktop-review.md)、[Android](reviews/android-review.md)。
 - 展示增量交叉评审：[国际化、主题与品牌](reviews/presentation-review.md)。

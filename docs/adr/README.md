@@ -17,5 +17,6 @@
 
 - [ADR-0015：单条彻底删除与同步协议 2](0015-permanent-deletion.md)
 - [ADR-0016：三端自动更新与静态签名发行目录（Windows/Android 已实现，Linux 待实现）](0016-automatic-updates.md)
+- [ADR-0017：GitHub Actions CI/CD（构建、测试自动化与发布草案）](0017-github-actions-ci.md)
 
 新增依赖前记录确切版本、理由、许可证与维护来源；工具探针的通过不能代替业务验收。

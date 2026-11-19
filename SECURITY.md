@@ -10,7 +10,7 @@
 
 Git 忽略 `.local/`、`dist/`、数据库、日志、Android keystore 和常见私钥容器；忽略规则不能清除已提交历史，也不能证明本地目录可公开。签名密钥、部署密钥及备份解密材料必须由部署者自己生成，放在仓库外或被忽略的私有目录。公共默认服务地址不是开发测试环境；本地测试使用自己的服务和临时账号。
 
-本轮使用 [Gitleaks 8.30.1](https://github.com/gitleaks/gitleaks/releases/tag/v8.30.1)（MIT，已核官方校验和）检查。它是可选本地审计工具，不是客户端运行依赖，不新增 CI/Runner。新机器从官方发布安装到 PATH；Linux/Windows 均可运行：
+本轮使用 [Gitleaks 8.30.1](https://github.com/gitleaks/gitleaks/releases/tag/v8.30.1)（MIT，已核官方校验和）检查。它是可选本地审计工具，不是客户端运行依赖，也不依赖 CI/Runner 部署（构建/测试自动化见 [ADR-0017](docs/adr/0017-github-actions-ci.md)）。新机器从官方发布安装到 PATH；Linux/Windows 均可运行：
 
 ```text
 python scripts/check-secrets.py

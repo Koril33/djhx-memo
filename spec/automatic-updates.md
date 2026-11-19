@@ -62,7 +62,7 @@
 
 ## U6. 平台发布与撤回
 
-- Gitea 继续放代码/评审，GitHub Release 继续放公开源码及安装包；官网提供静态可信更新入口，不新增 CI/Runner。
+- Gitea 继续放代码/评审，GitHub Release 继续放公开源码及安装包；官网提供静态可信更新入口。构建与可自动化测试由 GitHub Actions 承担（见 [ADR-0017](../docs/adr/0017-github-actions-ci.md)），签名与 Release 公开仍由维护者本地执行。
 - 每个平台只发布已经构建并验证的资产。Windows 先就绪时可以先推广 Windows；Android/Linux 继续各自已有版本，不显示虚假的可安装新版。
 - 已发布 tag/版本化资产不覆盖；增加更高发行目录序号撤回问题版本。已安装问题版需要后续更高版本修复，撤回不是远程卸载或数据库回滚。
 - 正式提供“三端自动更新”前，Windows、Android、Linux 各自实际升级链路均须验收；本机只能验证 Windows/Android 不构成 Linux 已通过。

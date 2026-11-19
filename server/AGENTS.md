@@ -6,4 +6,4 @@
 - 幂等结果、权威笔记、变化日志、账号序号在同一事务中提交；通知仅在提交后发出。
 - 按 [协议](../spec/sync-protocol.md) 保留权威当前版本并生成冲突副本；不实现自动清理。
 - 注册必须消费一次性邀请码；设备 token 与密码按 [认证规范](../spec/auth.md) 保存和验证。
-- 导出类型与函数有 Go 文档。本地运行 gofmt、go vet、选定 lint、go test -race 及共享场景；鉴权、同步、迁移需交叉评审，无 CI 前提。
+- 导出类型与函数有 Go 文档。本地运行 gofmt、go vet、选定 lint、go test -race 及共享场景；鉴权、同步、迁移需交叉评审。CI/CD 统一走 GitHub Actions（见 [ADR-0017](../docs/adr/0017-github-actions-ci.md)），本目录检查以本地 `bash scripts/validate-local.sh server` 为快速反馈入口。

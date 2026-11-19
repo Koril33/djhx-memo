@@ -2,7 +2,7 @@
 
 本记录按项目负责人要求完成 Linux 本机 Go、Rust 和 Android 环境配置。工具来源与隔离方式见 [ADR-0004](adr/0004-linux-development-toolchains.md)。这是环境阶段的历史记录；当前业务工程与检查见 [验证索引](validation.md)。
 
-环境阶段仓库仅有目录骨架；此后已建立 Go、Cargo、Gradle 与 Tauri 工程并提交锁文件。本文不定义正式协议，应用最低 Android 版本和项目依赖以当前工程及 ADR 为准，没有 CI/Runner。
+环境阶段仓库仅有目录骨架；此后已建立 Go、Cargo、Gradle 与 Tauri 工程并提交锁文件。本文不定义正式协议，应用最低 Android 版本和项目依赖以当前工程及 ADR 为准；当时无 CI/Runner，构建/测试自动化现由 [ADR-0017](adr/0017-github-actions-ci.md) 采用 GitHub Actions。
 
 ## 本机版本与路径
 

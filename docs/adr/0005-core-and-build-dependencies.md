@@ -17,6 +17,6 @@ HTTP 使用 reqwest 0.13.5（MIT/Apache-2.0，reqwest 项目）；TLS 使用 rus
 
 ## 构建环境
 
-宿主 Debian 13 已安装的 systemd 运行库版本与当前软件源开发包不匹配。为避免降级或替换主机系统组件，Linux 桌面构建使用本机 Docker 的 Ubuntu 24.04 临时构建环境，再在真实 Linux 桌面验证安装包。容器仅用于本地构建，不建立 CI/Runner；用户已提供的 Debian/Ubuntu/Windows 虚拟机用于实际部署与安装验收。
+宿主 Debian 13 已安装的 systemd 运行库版本与当前软件源开发包不匹配。为避免降级或替换主机系统组件，Linux 桌面构建使用本机 Docker 的 Ubuntu 24.04 临时构建环境，再在真实 Linux 桌面验证安装包。容器仅用于本地构建；构建/测试自动化现由 [ADR-0017](0017-github-actions-ci.md) 的 GitHub Actions 承担，不改变本机 Docker 构建的既有用法。用户已提供的 Debian/Ubuntu/Windows 虚拟机用于实际部署与安装验收。
 
 凭据由各平台系统服务实现，核心仅通过回调访问；凭据服务不可用时 token 仅驻留内存。发布客户端只允许 HTTPS，本地 HTTP 由调试构建显式开启。
