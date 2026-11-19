@@ -44,7 +44,7 @@ djhx-memo/
 └── apple/         # 暂缓，仅保留说明
 ```
 
-`.github/workflows/` 承载 CI/CD 工作流。构建、测试自动化与发布草案采用 GitHub Actions：自建 Gitea 无法提供稳定的编译/打包虚拟机，故使用 GitHub 托管 runner 构建四类产物并运行可自动化的测试（见 [CI/CD 计划](docs/ci-cd-plan.md) 与 [ADR-0017](docs/adr/0017-github-actions-ci.md)）。真实设备验收、签名与 Release 公开仍由维护者本地完成；实施后的质量检查在开发机与目标设备上运行并记录结果。
+`.github/workflows/` 承载 CI/CD 工作流。构建、测试自动化、签名与发布草案采用 GitHub Actions：自建 Gitea 无法提供稳定的编译/打包虚拟机，故使用 GitHub 托管 runner 构建并签名四类产物、运行可自动化的测试（见 [CI/CD 计划](docs/ci-cd-plan.md) 与 [ADR-0017](docs/adr/0017-github-actions-ci.md)）。真实设备验收、更新目录部署与 Release 公开仍由维护者本地完成；实施后的质量检查在开发机与目标设备上运行并记录结果。
 
 ## 构建与使用
 

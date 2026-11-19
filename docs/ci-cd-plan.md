@@ -1,12 +1,12 @@
 # GitHub Actions CI/CD 可行性评估与建设计划
 
 - 日期：2026-11-19
-- 状态：评审完成；`.github/workflows/release.yml` 已起草（版本校验、core/server 测试、四类产物构建、draft Release），尚未在 GitHub tag 上演练。决策见 [ADR-0017](adr/0017-github-actions-ci.md)。
+- 状态：已实施并经 `workflow_dispatch` 演练通过（版本校验、core/server 测试、四类产物**构建+签名**、draft Release 逻辑）；tag 触发的 draft Release 尚未演练。决策见 [ADR-0017](adr/0017-github-actions-ci.md)。
 - 依据：仓库现有构建/测试入口、锁文件与工具链版本；`docs/client-release.md`、`docs/update-publishing.md`、各模块 README。
 
 ## 1. 结论
 
-**可行，而且适合本项目。** 公开仓库使用 GitHub 托管 runner（Linux/Windows 免费）构建服务端包、Linux DEB、Windows NSIS 安装包与 Android APK，并运行可自动化的测试，把三端打包从“AI agent 在虚拟机逐台编译”变为“推 tag 即构建”。真正的难点是签名密钥的存放，本轮采用**路线 B（CI 只构建，签名留在本机）**规避。
+**可行，而且适合本项目。** 公开仓库使用 GitHub 托管 runner（Linux/Windows 免费）构建服务端包、Linux DEB、Windows NSIS 安装包与 Android APK，并运行可自动化的测试，把三端打包从“AI agent 在虚拟机逐台编译”变为“推 tag 即构建”。签名密钥经 GitHub Secrets 注入，采用**路线 A（CI 内签名）**。
 
 自建 Gitea 无法提供稳定的供编译/打包的虚拟机（Gitea Actions 需自备 runner，三端无稳定自托管构建环境），因此 CI/CD 基础设施采用 **GitHub**。
 
@@ -81,12 +81,12 @@ CI 中必须在 workflow 内**显式安装并固定**上述版本，不依赖 ru
 - Android 仪器测试（需模拟器/真机）、Windows 原生安装器实际运行。
 - 官网签名目录部署与 Release 公开。
 
-## 6. 签名与密钥策略（路线 B）
+## 6. 签名与密钥策略（路线 A，已实施）
 
-- CI 只构建**未签名**产物：Windows setup.exe（当前本就不做 Authenticode）、Android release-**unsigned** APK。
-- Tauri 更新签名（`.exe.sig`）与 Android 原证书 keystore 私钥**不进入 GitHub**；维护者在本机用现有工具对 **CI 产出的同一文件**补签。
-- CI 用自带 `GITHUB_TOKEN` 生成 `SHA256SUMS.ci`（传输校验）；最终 `SHA256SUMS` 由维护者签名完成后本地重生成并回读核对。
-- 后续可选路线 A（secrets + Environment + Required reviewers + tag ruleset）需维护者明确授权后再做。
+- CI 在 runner 内完成签名：Windows 用 `TAURI_SIGNING_PRIVATE_KEY` 生成 `.exe.sig`；Android 用原证书 keystore（`DJHX_ANDROID_KEYSTORE_B64` + 口令 + alias）产出已签名 APK。
+- 密钥经 GitHub Secrets 注入，不进仓库、不进日志（GitHub 自动脱敏）。
+- Release 为 draft，随附正式 `SHA256SUMS`；**更新目录签名与官网部署仍在维护者服务器**（catalog 钥不进入 GitHub）。
+- 后续硬化：签名 job 绑定 Environment + Required reviewers + tag ruleset；action 固定 commit SHA。
 
 ## 7. 分阶段实施计划
 

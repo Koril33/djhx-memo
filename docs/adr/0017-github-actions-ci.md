@@ -1,6 +1,6 @@
 # ADR-0017：GitHub Actions CI/CD（构建、测试自动化与发布草案）
 
-- 状态：已接受（构建/测试自动化与发布草案；工作流分阶段实施，见 [ci-cd-plan](../ci-cd-plan.md)）
+- 状态：已接受并实施（构建、测试自动化、四类产物构建与**签名**、draft Release；签名已改为 CI 内完成（路线 A），见 [ci-cd-plan](../ci-cd-plan.md)）
 - 日期：2026-11-19
 - 替代：ADR-0001、ADR-0004、ADR-0005、ADR-0012、ADR-0016 中“暂缓/无 CI/Runner”的表述
 
@@ -16,12 +16,12 @@
 采用 **GitHub Actions 作为 CI/CD 基础设施**，负责：
 
 1. 自动化测试：core、server、desktop、Android 中能在托管 runner 上运行的部分。
-2. 四类产物构建：服务端 Linux amd64 tar.gz、Linux DEB、Windows NSIS setup.exe、Android unsigned APK。
+2. 四类产物构建并签名：服务端 Linux amd64 tar.gz、Linux DEB、Windows NSIS setup.exe + Tauri `.sig`、Android 已签名 APK。
 3. 生成校验文件并创建 **draft（草稿）Release**（仅 tag 触发）。
 
 ## 边界（不进入本轮 CI 范围）
 
-- 签名：Tauri 更新签名私钥与 Android 原证书 keystore 暂不进入 GitHub（路线 B，本机签名）。
+- 签名：Tauri 更新签名与 Android 原证书签名已在 CI 内完成（路线 A，密钥经 GitHub Secrets 注入）；**更新目录签名与官网部署**仍在维护者服务器（catalog 钥不进入 GitHub）。
 - 真机/模拟器安装验收、托盘/输入法/升级链路、三端设备矩阵、连续 7 天试用仍由本地人工完成。
 - 官网静态签名目录部署、Release 由草稿转为公开仍由维护者核验后执行。
 - Gitea 继续放代码与评审；日常开发分支仍靠本地 `scripts/validate-local.sh` 快速反馈（可选后续在 Gitea 部署 Linux `act_runner`，只跑 core/server 测试）。
@@ -42,4 +42,4 @@
 
 - 继续无 CI：三端打包慢、token 消耗大、不可重复，否决。
 - Gitea Actions + 自备 runner：无稳定编译/打包虚拟机，否决。
-- 全自动签名（密钥进 GitHub Secrets）：风险更高，留作后续可选（路线 A），需先完成 Environment + Required reviewers + tag ruleset 防护。
+- 全自动签名（密钥进 GitHub Secrets）：已采用（路线 A）；仍需后续硬化 Environment + Required reviewers + tag ruleset 防护。

@@ -11,7 +11,7 @@
 - 按任务范围修改目录，跨模块改动说明影响面。
 - 文档使用简体中文，代码标识符和提交信息使用英文；提交遵循 Conventional Commits。
 - 使用独立分支并推送远程；合并遵循 [贡献流程](CONTRIBUTING.md)。同步、迁移与鉴权变更必须经过交叉评审。
-- CI/CD 采用 GitHub Actions（见 [ADR-0017](docs/adr/0017-github-actions-ci.md) 与 [CI/CD 计划](docs/ci-cd-plan.md)）：自建 Gitea 无法提供稳定的编译/打包虚拟机，故使用 GitHub 托管 runner 做构建、测试自动化与发布草案。真实设备验收、签名与 Release 公开仍由维护者本地完成；继续执行并记录 [本地验证](docs/validation.md)，不宣称未运行的检查通过。
+- CI/CD 采用 GitHub Actions（见 [ADR-0017](docs/adr/0017-github-actions-ci.md) 与 [CI/CD 计划](docs/ci-cd-plan.md)）：自建 Gitea 无法提供稳定的编译/打包虚拟机，故使用 GitHub 托管 runner 做构建、测试自动化、签名与发布草案。真实设备验收、更新目录部署与 Release 公开仍由维护者本地完成；继续执行并记录 [本地验证](docs/validation.md)，不宣称未运行的检查通过。
 - 本地检查入口为 `bash scripts/validate-local.sh <模块>`，构建入口见各模块 README。文档变更检查链接、契约引用和 Git 差异。
 - 引入依赖前查阅 ADR，说明理由、许可证、维护情况与锁定版本；未被现有 ADR 覆盖的新依赖或框架追加 ADR。
 
