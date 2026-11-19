@@ -5,6 +5,7 @@
 - 原报告：[0.1.10 安全、架构与 UI/UX 综合调研](quality-audit-0.1.10.md)。本记录评估其准确性，不改写原始审计记录，不修改产品行为或 spec。
 - 对照源码：最新 main `8e4f46e`；与报告注明的 `6e5373e` 比较，core/server/Android/desktop 的产品源码无差异，两个模块 README 有后续发布说明变化。
 - 本轮平台：Windows 原生 Rust 1.99.1/MSVC、Go 1.27.3、Node 22；另建 API35 x86_64 模拟器运行隔离 Android 包。没有使用真实账号、笔记或生产服务。
+- 2026-11-19 追加：连续 7 天试用已由维护者确认完成；本记录正文保留 2026-11-16 核验时状态。
 
 后续说明（2026-11-16）：维护者现已要求修正原报告并讨论下一版。[原报告](quality-audit-0.1.10.md)已依据本文更正；本文保留核验时的发现与测量，以下“原报告第 N 行”均指提交 `97743e0` 的原始版本，不是更正后的行号。新增讨论见[下一版客户端讨论稿](../client-next-discussion.md)，本轮后续修订未重跑这些产品测试。
 
@@ -125,7 +126,7 @@ OK (1 test)
 | Gradle 离线 `-PisolatedValidation assembleDebug assembleDebugAndroidTest`，直接 adb instrumentation | 构建通过；上述 Android 性能/正文断言测试 1 项通过 |
 | `python scripts/check-docs.py`、`git diff --check` | 通过 |
 
-源码副本、临时仪器测试、构建及观测输出保留在本机 Git 忽略目录 `.local/pr27-verification/`；它们不是原报告的历史执行凭据。临时测试源已从工程移除；新建模拟器已关闭、AVD 注册已移除，`C:/Users/ABC/.android/avd/codex_pr27_api35.avd` 残留目录因自动审批策略拒绝清理而保留（仅返回策略拦截，未给出具体原因）。本轮启动的 adb 服务已停止，没有改动原设备、显示/输入设置或用户数据。工具输出 APK 为隔离 debug 产物，不是新发行包。
+源码副本、临时仪器测试、构建及观测输出保留在本机 Git 忽略目录 `.local/pr27-verification/`；它们不是原报告的历史执行凭据。临时测试源已从工程移除；新建模拟器已关闭、AVD 注册已移除，`%USERPROFILE%/.android/avd/codex_pr27_api35.avd` 残留目录因自动审批策略拒绝清理而保留（仅返回策略拦截，未给出具体原因）。本轮启动的 adb 服务已停止，没有改动原设备、显示/输入设置或用户数据。工具输出 APK 为隔离 debug 产物，不是新发行包。
 
 未运行全量 Linux 服务端 `go test -race ./...`、完整 10 项 CLI 联调、Windows VM 交互、arm64/OEM 真机和完整设备矩阵；Windows 显式文件集不覆盖 Unix epoch/CLI。未复做整体漏洞审计，也不将“本轮未发现”扩展为没有漏洞。
 

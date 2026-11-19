@@ -1,6 +1,6 @@
 # v1 部署、备份与发布
 
-状态：2026-11-07 已将 0.1.0 候选服务部署到 `https://memo.djhx.site`，完成公网 TLS、同步与 SSE 烟测。云部署证据见 [部署记录](cloud-deployment.md)，本机异地加密备份见 [说明](backup-local.md)；关机期间的异地 RPO、真实云主机故障恢复及完整 v1 验收不因部署成功而通过。原有隔离备份/恢复检查见 [server-validation](server-validation.md)。
+状态：2026-11-07 已将 0.1.0 候选服务部署到 `https://memo.djhx.site`，完成公网 TLS、同步与 SSE 烟测；后续已随 0.1.4 升级到同步协议 2。云部署证据见 [部署记录](cloud-deployment.md)，本机异地加密备份见 [说明](backup-local.md)；关机期间的异地 RPO、真实云主机故障恢复及完整 v1 验收不因部署成功而通过。原有隔离备份/恢复检查见 [server-validation](server-validation.md)。
 
 ## 1. 单实例部署
 
@@ -37,7 +37,7 @@ v1 自用上线前必须具备异地备份并完成一次恢复演练：目标 R
 
 Linux 安装说明列出 WebView/AppIndicator 依赖及 GNOME 扩展要求；窗口无法隐藏/恢复属于发布阻断问题。Windows 验证 WebView2 缺失时安装流程。真实设备之外的发行版或架构不标记为已验证。
 
-服务端升级先备份，停止写入后迁移，保留旧二进制。只在 schema 向后兼容时回退二进制；还原旧数据库按恢复流程轮换 epoch。客户端遇到高版本 schema 禁止自动降级。发布前检查 [validation](validation.md) 并完成 7 天自用。
+服务端升级先备份，停止写入后迁移，保留旧二进制。只在 schema 向后兼容时回退二进制；还原旧数据库按恢复流程轮换 epoch。客户端遇到高版本 schema 禁止自动降级。发布前检查 [validation](validation.md)；连续 7 天自用已由维护者确认完成。
 
 ## 5. 当前实现的部署命令
 

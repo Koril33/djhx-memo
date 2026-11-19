@@ -1,5 +1,7 @@
 # Go 服务端本机验证
 
+> 2026-11-19 注：连续 7 天试用已由维护者确认完成，见 [validation §4](validation.md#4-连续-7-天自用已完成)；本记录其余未验收项不变。
+
 日期：2026-11-03。分支：`codex/v1-implementation`。环境：Linux amd64，Go 1.27.3；golangci-lint 2.15.0（govet、staticcheck、ineffassign、unused、errcheck）。本记录描述实际执行，不代替云部署及三端验收。
 
 ## 已运行

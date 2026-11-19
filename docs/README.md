@@ -1,10 +1,12 @@
 # 项目文档
 
-- Android0.1.9单端发行：[发布状态](releases/0.1.9-validation.md)、[行为](../spec/android-install-compatibility.md)、[修复验证](android-install-compatibility-validation.md)、[独立评审](reviews/android-install-compatibility-review.md)。Windows/Linux继续0.1.8，Civi新兼容入口仍待真机验证。
+> 状态说明：发布、模块验证和评审记录按日期保留当时状态；当前状态以 [README](../README.md)、[AGENTS](../AGENTS.md)、[项目现状报告](project-status-2026-11-18.md) 和 [validation §4](validation.md#4-连续-7-天自用已完成) 为准。历史记录中的“7 天试用未完成/待完成”是当时结论，不代表当前。
 
-- 本轮：[0.1.8 界面与官网下载](../spec/client-0.1.8.md)，[实际验证/发行状态](releases/0.1.8-validation.md)、[独立评审](reviews/client-0.1.8-review.md)。0.1.6列表/导入已实现并保留；Web 暂缓。
+- Android0.1.9单端发行历史：[发布状态](releases/0.1.9-validation.md)、[行为](../spec/android-install-compatibility.md)、[修复验证](android-install-compatibility-validation.md)、[独立评审](reviews/android-install-compatibility-review.md)。当时Windows/Linux继续0.1.8；0.1.10已统一三端，Civi新兼容入口仍待真机验证。
 
-- [quick-start.md](quick-start.md)：候选版安装、离线使用与接入自有服务器。
+- 本轮：[0.1.10 品牌与单笔记导出](../spec/client-0.1.10.md)，[实际验证/发行状态](releases/0.1.10-validation.md)、[独立评审](reviews/client-0.1.10-review.md)。0.1.8界面/官网下载与0.1.6列表/导入已实现并保留；Web 暂缓。
+
+- [quick-start.md](quick-start.md)：0.1.10 安装、离线使用与接入自有服务器。
 - [client-release.md](client-release.md)：GitHub/Gitea 发布流程；[0.1.4 三端验证与发布](releases/0.1.4-validation.md)、[0.1.4 同步/迁移交叉评审](reviews/client-0.1.4-review.md)；历史 0.1.3 构建：[Android](releases/0.1.3-android-validation.md)、[Linux](releases/0.1.3-linux-validation.md)。
 - [0.1.5 三端发布与部署](releases/0.1.5-validation.md)：本轮构建、独立评审与 Android 待签名边界。
 - 自动更新：Windows/Android 的[发布与密钥说明](update-publishing.md)、[0.1.5 验证](client-updates-0.1.5-validation.md)；原[17 项调研](research/rust-gui-auto-update-survey.md)与[设计](automatic-update-design.md)，Linux 仍待实现。

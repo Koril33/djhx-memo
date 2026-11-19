@@ -2,7 +2,7 @@
 
 **[0.1.10三端正式版](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.10)已发布**：中文名 **阳墨随记**、英文 **DJHX MEMO**，三端采用sunrise Logo，支持编辑页单笔记Markdown导出，并调整红底删除按钮留白。构建、发行与实际升级状态见[0.1.10记录](docs/releases/0.1.10-validation.md)，后续更名或换图标按[固定流程](docs/brand-change-workflow.md)执行；旧paper-v1完整保留。
 
-core0.1.10新增纯文件名API，server仍0.1.4、协议2/schema3及签名身份不变。Android保留[0.1.9安装兼容补丁](docs/releases/0.1.9-validation.md)；Windows/Linux跳过0.1.9。完整设备矩阵与7天试用仍待完成。
+core0.1.10新增纯文件名API，server仍0.1.4、协议2/schema3及签名身份不变。Android保留[0.1.9安装兼容补丁](docs/releases/0.1.9-validation.md)；Windows/Linux跳过0.1.9。完整设备矩阵仍待完成；连续7天日常试用已由维护者确认完成（逐日明细未入库，三端矩阵仍独立验收）。
 
 0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](docs/releases/0.1.4-validation.md)。
 
@@ -10,7 +10,7 @@ core0.1.10新增纯文件名API，server仍0.1.4、协议2/schema3及签名身�
 
 **v1 目标：Windows、Android、Linux 三端可日常使用。** 桌面端包含托盘；允许未登录记笔记，提供邀请码注册、登录、同步、搜索、回收站和 Markdown 导出。Web、Apple、全局快捷键、系统分享以及 CI/Runner 暂缓。
 
-0.1.4起的既有版本已公开发布，当前客户端保持其协议 2 与 schema 基线，core新增本地列表/文件入口。Windows/Linux/Android 客户端已实现，公开安装包以 Release 列出的平台为准。已执行核心/服务端联调及目标系统的部分实际使用验证；完整设备矩阵与连续 7 天日常试用仍待完成，完整产品 v1 尚未正式发布。实际结果和限制见各模块验证记录。
+0.1.4起的既有版本已公开发布，当前客户端保持其协议 2 与 schema 基线，core新增本地列表/文件入口。Windows/Linux/Android 客户端已实现，公开安装包以 Release 列出的平台为准。已执行核心/服务端联调及目标系统的部分实际使用验证；完整设备矩阵仍待完成；连续 7 天日常试用已由维护者确认完成（逐日明细未入库，三端矩阵仍独立验收），完整产品 v1 尚未正式发布。实际结果和限制见各模块验证记录。
 
 ## 从这里开始
 
@@ -48,11 +48,11 @@ djhx-memo/
 
 ## 构建与使用
 
-安装和首次使用见 [候选版使用说明](docs/quick-start.md)。面向访客的产品介绍与下载页源码位于 [website/](website/README.md)。公开版本及安装包通过 [GitHub Releases](https://github.com/Koril33/djhx-memo/releases) 分发。
+安装和首次使用见 [使用说明](docs/quick-start.md)。面向访客的产品介绍与下载页源码位于 [website/](website/README.md)。公开版本及安装包通过 [GitHub Releases](https://github.com/Koril33/djhx-memo/releases) 分发。
 
 新开发者先按[公共环境入口](docs/dev-setup.md)选择 [Linux](docs/dev-setup-linux-portable.md)或 [Windows](docs/dev-setup-windows.md)及所需模块。维护者的本机 env.sh、VM、已生成 JNI 和私有签名不是新 clone 的前提。各工程提交 Cargo/npm/Gradle 锁文件，构建步骤见 [server](server/README.md)、[core](core/README.md)、[desktop](desktop/README.md)、[android](android/README.md)。本地检查入口：`bash scripts/validate-local.sh core|server|integration|desktop|android`，每次选择一个模块。
 
-客户端中文显示 **阳墨随记**、英文显示 **DJHX MEMO**。语言支持简体中文、英文和跟随系统；外观支持浅色、深色和跟随系统；时间默认显示为上海（UTC+08:00）。入口与偏好说明见 [候选版使用说明](docs/quick-start.md#语言外观与显示时区)。
+客户端中文显示 **阳墨随记**、英文显示 **DJHX MEMO**。语言支持简体中文、英文和跟随系统；外观支持浅色、深色和跟随系统；时间默认显示为上海（UTC+08:00）。入口与偏好说明见 [使用说明](docs/quick-start.md#语言外观与显示时区)。
 
 客户端首次打开即可离线记录，本机空间不会自动上传。候选服务默认地址为 `https://memo.djhx.site`，使用管理员生成的一次性邀请码注册；登录后可明确选择将本机笔记复制到账号空间。该域名根路径提供[产品官网](https://memo.djhx.site)，同步API仍在 `/v1`；当前没有独立Web笔记客户端。部署检查见 [云部署记录](docs/cloud-deployment.md)，备份恢复见 [operations](docs/operations.md)。
 

@@ -1,11 +1,11 @@
 # v1 产品与技术契约
 
-版本：0.1.8界面/官网下载优化，保留0.1.7安装屏障及0.1.6客户端增量；数据/同步仍为0.1.4已发布契约，更新于2026-11-14。客户端/core/服务端的单条彻底删除使用同步协议 2，HTTP 路径仍为 /v1；必须配套升级，旧 0.1.3 Release 不变。桌面托盘与列表折叠见增量契约；普通同步、编辑和鉴权仍遵循原基线。实际检查和独立评审见[验证索引](../docs/validation.md)与[0.1.4 发布验证](../docs/releases/0.1.4-validation.md)，规范中的要求不自动表示已通过。
+版本：0.1.10品牌/单笔记导出，保留0.1.9 Android安装兼容、0.1.8界面/官网下载优化及0.1.6/0.1.7增量；数据/同步仍为0.1.4已发布契约，更新于2026-11-19。客户端/core/服务端的单条彻底删除使用同步协议 2，HTTP 路径仍为 /v1；必须配套升级，旧 0.1.3 Release 不变。桌面托盘与列表折叠见增量契约；普通同步、编辑和鉴权仍遵循原基线。实际检查和独立评审见[验证索引](../docs/validation.md)与[0.1.4 发布验证](../docs/releases/0.1.4-validation.md)，规范中的要求不自动表示已通过。
 
 | 文档 | 定义内容 |
 |---|---|
 | [client-0.1.10.md](client-0.1.10.md) | 0.1.10品牌更新固定流程、sunrise图标与中英文名称、单篇Markdown导出、危险操作留白 |
-| [android-install-compatibility.md](android-install-compatibility.md) | Android0.1.9系统安装器兼容入口、失败分类与恢复；Windows/Linux仍0.1.8 |
+| [android-install-compatibility.md](android-install-compatibility.md) | Android0.1.9系统安装器兼容入口、失败分类与恢复；该补丁发布时Windows/Linux仍0.1.8，0.1.10已统一三端 |
 | [client-0.1.8.md](client-0.1.8.md) | 0.1.8操作语义、账号入口、状态与更新排版、官网直链 |
 | [client-0.1.6.md](client-0.1.6.md) | 0.1.6 本轮实现契约：多选、左滑、撤销、单个 Markdown 文件导入 |
 | [automatic-updates.md](automatic-updates.md) | 0.1.5 Windows/Android自动更新及0.1.7安装屏障修正、签名目录；Linux自动安装暂缓 |

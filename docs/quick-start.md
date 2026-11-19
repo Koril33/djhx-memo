@@ -1,26 +1,26 @@
-# 0.1.8 客户端使用说明
+# 0.1.10 客户端使用说明
 
-三端正式安装包已公开，实际发行/升级结果见[0.1.8记录](releases/0.1.8-validation.md)；物理 arm64 Android、完整系统/输入法矩阵与连续 7 天日常试用仍待完成。
+三端 0.1.10 正式安装包已公开，实际发行/升级结果见[0.1.10记录](releases/0.1.10-validation.md)；物理 arm64 Android、完整系统/输入法矩阵仍待完成，连续 7 天日常试用已由维护者确认完成。
 
 ## 安装客户端
 
-从[官网](https://memo.djhx.site/)或[GitHub Release](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.8)下载，先核对同页SHA256SUMS。编译机的dist位置属于本机发行配置，安装包不提交Git。
+从[官网](https://memo.djhx.site/)或[GitHub Release](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.10)下载，先核对同页SHA256SUMS。编译机的dist位置属于本机发行配置，安装包不提交Git。
 
 | 系统 | 文件 | 安装方式 |
 |---|---|---|
-| Windows x64 | [djhx-memo-0.1.8-windows-x64-setup.exe](https://github.com/Koril33/djhx-memo/releases/download/v0.1.8/djhx-memo-0.1.8-windows-x64-setup.exe) | 运行安装程序，默认当前用户安装；依赖 WebView2，缺失时配置为运行随包引导程序下载 |
-| Linux amd64 | [djhx-memo-0.1.8-linux-amd64.deb](https://github.com/Koril33/djhx-memo/releases/download/v0.1.8/djhx-memo-0.1.8-linux-amd64.deb) | 在下载目录运行下面的 apt 命令，安装 WebKit/AppIndicator 运行依赖 |
-| Android | [djhx-memo-0.1.8-android.apk](https://github.com/Koril33/djhx-memo/releases/download/v0.1.8/djhx-memo-0.1.8-android.apk) | 将 APK 复制到设备并安装；包含 arm64-v8a 与 x86_64，Android 10+ |
+| Windows x64 | [djhx-memo-0.1.10-windows-x64-setup.exe](https://github.com/Koril33/djhx-memo/releases/download/v0.1.10/djhx-memo-0.1.10-windows-x64-setup.exe) | 运行安装程序，默认当前用户安装；依赖 WebView2，缺失时配置为运行随包引导程序下载 |
+| Linux amd64 | [djhx-memo-0.1.10-linux-amd64.deb](https://github.com/Koril33/djhx-memo/releases/download/v0.1.10/djhx-memo-0.1.10-linux-amd64.deb) | 在下载目录运行下面的 apt 命令，安装 WebKit/AppIndicator 运行依赖 |
+| Android | [djhx-memo-0.1.10-android.apk](https://github.com/Koril33/djhx-memo/releases/download/v0.1.10/djhx-memo-0.1.10-android.apk) | 将 APK 复制到设备并安装；包含 arm64-v8a 与 x86_64，Android 10+ |
 
 ```sh
-sudo apt install --reinstall ./djhx-memo-0.1.8-linux-amd64.deb
+sudo apt install --reinstall ./djhx-memo-0.1.10-linux-amd64.deb
 ```
 
 Windows 包尚无代码签名证书；版本和文件来源以本机校验值为准。Linux GNOME 的托盘需要 AppIndicator 支持；无法确认托盘可用时，客户端采用普通窗口模式并说明关闭后退出。
 
-本次为0.1.8客户端，整理控件、账号入口与状态/更新排版，保留回收站单条彻底删除、托盘左右键、列表折叠、离线代码高亮及0.1.6列表/导入功能。账号同步使用协议 2，服务端和各客户端必须配套升级；0.1.3 及更早客户端不能继续同步。Linux 使用上述 `--reinstall` 也可覆盖同版本预览包。桌面安装完成后从托盘退出旧进程再重新打开；Android 沿用同一签名直接覆盖安装，保留既有数据。
+本次为0.1.10客户端：统一sunrise品牌、中英文名称与单篇Markdown导出，保留0.1.8界面整理、回收站单条彻底删除、托盘左右键、列表折叠、离线代码高亮及0.1.6列表/导入功能。账号同步使用协议 2，服务端和各客户端必须配套升级；0.1.3 及更早客户端不能继续同步。Linux 使用上述 `--reinstall` 也可覆盖同版本预览包。桌面安装完成后从托盘退出旧进程再重新打开；Android 沿用同一签名直接覆盖安装，保留既有数据。
 
-安装包也可从[GitHub Release v0.1.8](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.8)下载，并用同页SHA256SUMS核对。
+安装包也可从[GitHub Release v0.1.10](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.10)下载，并用同页SHA256SUMS核对。
 
 ## 新界面入口
 
@@ -46,7 +46,7 @@ Windows 包尚无代码签名证书；版本和文件来源以本机校验值为
 
 在客户端账号设置填写 HTTPS 根地址、用户名、密码和设备名，使用管理员生成的一次性邀请码注册。登录后本机空间内容保持独立；需要上传时明确选择复制导入。冲突会保留原笔记并生成副本，设备吊销和注销不会删除本地笔记。
 
-先导出再卸载、清除数据或更换设备。候选版手动安装升级；Android 后续 APK 必须沿用本机保管的同一发布签名密钥。服务端升级前备份，恢复旧库必须停服并轮换 epoch，具体命令以运维说明为准。
+先导出再卸载、清除数据或更换设备。Linux 当前手动 DEB 覆盖升级；Windows/Android 使用设置内更新。Android 后续 APK 必须沿用本机保管的同一发布签名密钥。服务端升级前备份，恢复旧库必须停服并轮换 epoch，具体命令以运维说明为准。
 
 ## 语言、外观与显示时区
 
@@ -70,6 +70,6 @@ Windows/Linux 在“账号与设置 → 偏好设置”（Account & settings →
 
 列表更多菜单选“导入Markdown”，一次选择一个UTF-8 `.md` 文件（允许BOM，正文最多1MiB）。换行统一为LF，其余文字保留；不会从文件名生成标题或加载附件。每次明确导入产生独立副本，失败不覆盖当前笔记。账号空间会先提示同步范围；选择文件期间切换空间则停止，不能将原文件导入新账号。
 
-## 0.1.8 账号与更新入口
+## 账号与更新入口
 
 已保存账号时，空间页优先显示账号卡，新增登录/注册从“添加账号”进入；失效会话可点“重新登录”，原账号/服务器固定。切本机空间不会注销账号。保存与同步详情右上角关闭，本机空间不显示无效同步按钮。Windows/Android在设置的更新页按状态检查、下载或安装；Linux继续使用DEB覆盖。旧0.1.5/0.1.6的账号更新屏障处理见[0.1.7说明](releases/0.1.7-validation.md)。

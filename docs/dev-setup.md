@@ -69,4 +69,4 @@ SDK/JDK 绝对路径、`.local/`、`android/local.properties`、签名材料、�
 - [M0 UniFFI 绑定探针](../tools/native-probe/README.md)。
 - [桌面实现验证](desktop-validation.md)、[0.1.1 界面验证](desktop-ui-preview-validation.md)及[0.1.2 修正验证](client-fixes-0.1.2-validation.md)。
 
-完整三端矩阵、物理 arm64 Android 与连续 7 天试用仍以[验收清单](validation.md)的实际状态为准。
+完整三端矩阵与物理 arm64 Android 仍以[验收清单](validation.md)的实际状态为准；连续 7 天试用已由维护者确认完成。

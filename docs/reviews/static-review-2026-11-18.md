@@ -209,6 +209,8 @@
 | W10 | 中 | spec/README.md:3；djhx-memo-project-plan.md:2-4,24-26 | 索引页头仍写 0.1.8；项目计划缺 0.1.9/0.1.10，状态行停在 11-04；ADR-0015/0001 状态过期 | 一并更新 |
 | W11 | 低 | quality-audit-0.1.10-verification.md:128 | 含本机用户路径 | 改为 `%USERPROFILE%` |
 
+> 2026-11-19 后续处理：W10 的 spec 索引、项目计划状态与 0.1.9/0.1.10 增量、ADR-0001/0015 状态已更新；W11 本机路径已脱敏。
+
 - **凭据**：
   - 全部 Git 历史中没有私钥、令牌或密码赋值；`memo.djhx.site.key` 被 `.gitignore` 忽略，从未进入历史。
   - 但它是放在工作目录里的明文部署 SSH 信息，建议移出仓库目录。
@@ -217,6 +219,7 @@
   - URL 白名单；下载后检查大小和 SHA256。
   - Windows 校验 minisign trusted comment；Android 核对证书摘要和 versionCode 递增。
 - **分支**：26 个本地分支已合并入 main，可以删除（`git branch --merged main` 列出的除 main 外全部）。`codex/docs-audit-corrections-next-client` 和 `codex/review-pr-27-doc-accuracy` 等当前 PR 合并后再删。
+- 2026-11-19 后续处理：已删除 26 个已合并分支；保留 4 个既有未合并分支（`codex/docs-audit-corrections-next-client`、`codex/docs-client-020-predevelopment`、`codex/review-pr-27-doc-accuracy`、`docs/static-review-2026-11-18`）和 `main`；本次文档修改另在 `docs/trial-completed-status` 分支。远程分支未动。
 
 ---
 
