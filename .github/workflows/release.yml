@@ -194,8 +194,6 @@ jobs:
             "ndk;30.0.16248370" \
             "cmake;3.31.6"
       - name: Build unsigned release APK
-        env:
-          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/30.0.16248370
         run: |
           ./android/scripts/build-native.sh
           cd android && ./gradlew --no-daemon assembleRelease
