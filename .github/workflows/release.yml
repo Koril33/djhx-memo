@@ -13,7 +13,6 @@
 # 待办（后续硬化）：
 #   - 第三方 action 固定到完整 commit SHA（当前使用版本 tag）。
 #   - 桌面/Android 测试自动化（svelte-check/vitest、detekt/lint/unitTest）拆分到独立 job。
-#   - Rust / Gradle 缓存接入（Swatinem/rust-cache、setup-gradle）。
 
 name: release
 
@@ -62,9 +61,14 @@ jobs:
         with:
           toolchain: 1.99.1
           components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
       - uses: actions/setup-go@v5
         with:
           go-version-file: server/go.mod
+          cache: true
+          cache-dependency-path: server/go.sum
       - name: core checks
         run: |
           cargo fmt --manifest-path core/Cargo.toml --check
@@ -86,6 +90,8 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: server/go.mod
+          cache: true
+          cache-dependency-path: server/go.sum
       - name: Build server tarball
         run: bash scripts/package-server.sh
       - name: Collect artifact
@@ -113,6 +119,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.99.1
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
       - name: Install Tauri Linux dependencies
         run: |
           sudo apt-get update
@@ -150,6 +159,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.99.1
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
       - name: Build NSIS installer (unsigned)
         working-directory: desktop
         run: |
@@ -182,6 +194,9 @@ jobs:
         with:
           toolchain: 1.99.1
           targets: aarch64-linux-android, x86_64-linux-android
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
       - name: Install cargo-ndk
         run: cargo install cargo-ndk --version 4.1.2 --locked
       - name: Install Android SDK components
@@ -193,6 +208,7 @@ jobs:
             "build-tools;36.1.0" \
             "ndk;30.0.16248370" \
             "cmake;3.31.6"
+      - uses: gradle/actions/setup-gradle@v4
       - name: Build unsigned release APK
         run: |
           ./android/scripts/build-native.sh
