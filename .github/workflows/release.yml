@@ -1,17 +1,18 @@
 # djhx-memo 发布与构建自动化
 #
 # 触发：
-#   - push tag v*  （正式发版：构建四类产物 + 创建 draft Release）
+#   - push tag v*  （正式发版：构建四类签名产物 + 创建 draft Release）
 #   - workflow_dispatch（手动触发：仅构建并上传产物，不创建 Release）
 #
-# 策略（路线 B，见 docs/ci-cd-plan.md 与 docs/adr/0017-github-actions-ci.md）：
-#   - CI 只构建未签名产物：Windows setup.exe（无 Authenticode / 无 Tauri .sig）、
-#     Android release-unsigned APK、Linux DEB、服务端 tar.gz。
-#   - Tauri 更新签名与 Android 原证书 keystore 不进入 GitHub，由维护者本机补签。
+# 策略（路线 A，见 docs/ci-cd-plan.md 与 docs/adr/0017-github-actions-ci.md）：
+#   - CI 构建并签名：Windows setup.exe + Tauri .sig（TAURI_SIGNING_PRIVATE_KEY）、
+#     Android 已签名 APK（原证书 keystore）、Linux DEB、服务端 tar.gz。
+#   - 签名私钥经 GitHub Secrets 注入；更新目录签名与官网部署仍在维护者服务器。
 #   - Release 只创建为 draft，由维护者核验后公开；不覆盖已有 tag / 附件。
 #
 # 待办（后续硬化）：
 #   - 第三方 action 固定到完整 commit SHA（当前使用版本 tag）。
+#   - 签名 job 绑定 Environment + required reviewers + tag ruleset。
 #   - 桌面/Android 测试自动化（svelte-check/vitest、detekt/lint/unitTest）拆分到独立 job。
 
 name: release
@@ -162,18 +163,22 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: desktop/src-tauri
-      - name: Build NSIS installer (unsigned)
+      - name: Build NSIS installer (signed updater artifact)
         working-directory: desktop
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         run: |
           npm ci
-          npm run tauri build -- --bundles nsis --config src-tauri/tauri.ci.conf.json -- --locked
+          npm run tauri build -- --bundles nsis -- --locked
       - name: Collect artifact
         working-directory: desktop
         shell: pwsh
         run: |
-          $exe = Get-ChildItem -Path src-tauri/target/release/bundle/nsis -Filter *.exe | Select-Object -First 1
           New-Item -ItemType Directory -Force artifacts | Out-Null
+          $exe = Get-ChildItem -Path src-tauri/target/release/bundle/nsis -Filter *.exe | Select-Object -First 1
           Copy-Item $exe.FullName "artifacts/djhx-memo-${{ needs.version-check.outputs.client_version }}-windows-x64-setup.exe"
+          $sig = Get-ChildItem -Path src-tauri/target/release/bundle/nsis -Filter *.sig | Select-Object -First 1
+          if ($sig) { Copy-Item $sig.FullName "artifacts/djhx-memo-${{ needs.version-check.outputs.client_version }}-windows-x64-setup.exe.sig" }
       - uses: actions/upload-artifact@v4
         with:
           name: windows-exe
@@ -209,15 +214,22 @@ jobs:
             "ndk;30.0.16248370" \
             "cmake;3.31.6"
       - uses: gradle/actions/setup-gradle@v4
-      - name: Build unsigned release APK
+      - name: Build signed release APK
+        env:
+          DJHX_ANDROID_KEYSTORE_B64: ${{ secrets.DJHX_ANDROID_KEYSTORE_B64 }}
+          DJHX_ANDROID_KEYSTORE: ${{ runner.temp }}/release.jks
+          DJHX_ANDROID_STORE_PASSWORD: ${{ secrets.DJHX_ANDROID_STORE_PASSWORD }}
+          DJHX_ANDROID_KEY_PASSWORD: ${{ secrets.DJHX_ANDROID_KEY_PASSWORD }}
+          DJHX_ANDROID_KEY_ALIAS: ${{ secrets.DJHX_ANDROID_KEY_ALIAS }}
         run: |
+          printf '%s' "$DJHX_ANDROID_KEYSTORE_B64" | base64 -d > "$DJHX_ANDROID_KEYSTORE"
           ./android/scripts/build-native.sh
           cd android && ./gradlew --no-daemon assembleRelease
       - name: Collect artifact
         run: |
           mkdir -p artifacts
-          cp android/app/build/outputs/apk/release/app-release-unsigned.apk \
-             "artifacts/djhx-memo-${{ needs.version-check.outputs.client_version }}-android-release-unsigned.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk \
+             "artifacts/djhx-memo-${{ needs.version-check.outputs.client_version }}-android.apk"
       - uses: actions/upload-artifact@v4
         with:
           name: android
@@ -239,7 +251,7 @@ jobs:
       - name: Generate checksums
         run: |
           cd dist
-          sha256sum djhx-memo-* > SHA256SUMS.ci
+          sha256sum djhx-memo-* > SHA256SUMS
           ls -l
       - name: Create draft release
         env:
@@ -250,4 +262,4 @@ jobs:
             --verify-tag \
             --title "${{ github.ref_name }}" \
             --generate-notes \
-            dist/djhx-memo-* dist/SHA256SUMS.ci
+            dist/djhx-memo-* dist/SHA256SUMS
