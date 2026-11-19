@@ -1,7 +1,7 @@
 # GitHub Actions CI/CD 可行性评估与建设计划
 
 - 日期：2026-11-19
-- 状态：评审完成；工作流分阶段实施。决策见 [ADR-0017](adr/0017-github-actions-ci.md)。
+- 状态：评审完成；`.github/workflows/release.yml` 已起草（版本校验、core/server 测试、四类产物构建、draft Release），尚未在 GitHub tag 上演练。决策见 [ADR-0017](adr/0017-github-actions-ci.md)。
 - 依据：仓库现有构建/测试入口、锁文件与工具链版本；`docs/client-release.md`、`docs/update-publishing.md`、各模块 README。
 
 ## 1. 结论
