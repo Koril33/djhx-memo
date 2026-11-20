@@ -16,17 +16,17 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -34,7 +34,6 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -683,43 +682,38 @@ private fun SearchScopeSelector(
     onKind: (String) -> Unit,
     onIncludeDeleted: (Boolean) -> Unit
 ) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         listOf(
             "current" to R.string.search_scope_current,
             "all_local" to R.string.search_scope_all_local,
             "account" to R.string.search_scope_account,
         ).forEach { (value, label) ->
-            Row(
-                Modifier.fillMaxWidth()
-                    .selectable(selected = kind == value, role = Role.RadioButton, onClick = { onKind(value) })
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                RadioButton(selected = kind == value, onClick = null)
-                Text(stringResource(label), style = MaterialTheme.typography.bodyMedium)
-            }
-        }
-        Row(
-            Modifier.fillMaxWidth()
-                .selectable(
-                    selected = includeDeleted,
-                    role = Role.Checkbox,
-                    onClick = { onIncludeDeleted(!includeDeleted) }
-                )
-                .padding(vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Checkbox(checked = includeDeleted, onCheckedChange = null)
-            Text(stringResource(R.string.search_include_deleted), style = MaterialTheme.typography.bodyMedium)
-        }
-        if (kind == "account") {
-            Text(
-                stringResource(R.string.search_account_local_only),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            FilterChip(
+                selected = kind == value,
+                onClick = { onKind(value) },
+                label = { Text(stringResource(label)) }
             )
         }
+        FilterChip(
+            selected = includeDeleted,
+            onClick = { onIncludeDeleted(!includeDeleted) },
+            label = { Text(stringResource(R.string.search_include_deleted)) }
+        )
+    }
+    if (kind == "account") {
+        Text(
+            stringResource(R.string.search_account_local_only),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
+        )
     }
 }
 
@@ -752,7 +746,10 @@ private fun ColumnScope.SearchResults(model: MemoModel, onOpenSearch: (JSONObjec
 
 @Composable
 private fun SearchResultItem(hit: JSONObject, onClick: () -> Unit) {
-    val highlightStyle = SpanStyle(fontWeight = FontWeight.Bold, background = Color(0x66FFEB3B))
+    val highlightStyle = SpanStyle(
+        fontWeight = FontWeight.SemiBold,
+        background = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
+    )
     val title = hit.optString("title")
     val titleText = hit.optJSONArray("title_segments")?.let { segmentsToAnnotated(it, highlightStyle) }
         ?: AnnotatedString(if (title.isBlank()) stringResource(R.string.untitled) else title)

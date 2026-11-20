@@ -1116,47 +1116,6 @@
     aria-label={t('noteList')}
   >
     <header class="list-header">
-      <div class="brand-row">
-        <strong class="brand">{brandNames[language]}</strong>
-        <details class="action-menu" data-menu>
-          <!-- svelte-ignore a11y_no_redundant_roles (WebKitGTK exposes an unknown AT-SPI role without this explicit role.) -->
-          <summary
-            role="button"
-            class="icon-button"
-            aria-label={t('moreActions')}
-            title={t('moreActions')}><Icon name="ellipsis" /></summary
-          >
-          <div class="menu-panel">
-            <button
-              disabled={!state || busy || state.profile.read_only}
-              on:click={(event) => menuAction(event, importMarkdown)}
-              ><Icon name="file-input" />{t('importMarkdown')}</button
-            >
-            {#if pendingMarkdown}<button
-                on:click={() => {
-                  pendingMarkdown = null;
-                }}>{t('cancel')} · {t('importMarkdown')}</button
-              >{/if}
-            {#if !trash}<button
-                disabled={busy || !!state?.profile.read_only}
-                on:click={() => {
-                  closeMenus();
-                  selecting = !selecting;
-                  selection = new Set();
-                }}>{t('selectNotes')}</button
-              >{/if}
-            <button disabled={!state || busy} on:click={(event) => menuAction(event, exportNotes)}
-              ><Icon name="file-output" />{t(trash ? 'exportTrash' : 'exportNotes')}</button
-            >
-            <button on:click={(event) => menuAction(event, () => openSettings('account'))}
-              ><Icon name="user" />{t('accountTab')}</button
-            >
-            <button on:click={(event) => menuAction(event, () => openSettings())}
-              ><Icon name="settings" />{t('settings')}</button
-            >
-          </div>
-        </details>
-      </div>
       <div
         class="list-heading"
         class:selecting
@@ -1223,6 +1182,44 @@
             on:click={() => run(() => refreshState(true))}
             ><Icon name="refresh-cw" size={16} /></button
           >
+          <details class="action-menu" data-menu>
+            <!-- svelte-ignore a11y_no_redundant_roles (WebKitGTK exposes an unknown AT-SPI role without this explicit role.) -->
+            <summary
+              role="button"
+              class="icon-button"
+              aria-label={t('moreActions')}
+              title={t('moreActions')}><Icon name="ellipsis" /></summary
+            >
+            <div class="menu-panel">
+              <button
+                disabled={!state || busy || state.profile.read_only}
+                on:click={(event) => menuAction(event, importMarkdown)}
+                ><Icon name="file-input" />{t('importMarkdown')}</button
+              >
+              {#if pendingMarkdown}<button
+                  on:click={() => {
+                    pendingMarkdown = null;
+                  }}>{t('cancel')} · {t('importMarkdown')}</button
+                >{/if}
+              {#if !trash}<button
+                  disabled={busy || !!state?.profile.read_only}
+                  on:click={() => {
+                    closeMenus();
+                    selecting = !selecting;
+                    selection = new Set();
+                  }}>{t('selectNotes')}</button
+                >{/if}
+              <button disabled={!state || busy} on:click={(event) => menuAction(event, exportNotes)}
+                ><Icon name="file-output" />{t(trash ? 'exportTrash' : 'exportNotes')}</button
+              >
+              <button on:click={(event) => menuAction(event, () => openSettings('account'))}
+                ><Icon name="user" />{t('accountTab')}</button
+              >
+              <button on:click={(event) => menuAction(event, () => openSettings())}
+                ><Icon name="settings" />{t('settings')}</button
+              >
+            </div>
+          </details>
         {/if}
       </div>
       <label class="search"
