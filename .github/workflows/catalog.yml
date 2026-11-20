@@ -14,9 +14,17 @@ name: catalog
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to catalog (e.g. v0.1.11)'
+        required: true
 
 permissions:
   contents: write
+
+env:
+  TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
 
 jobs:
   catalog:
@@ -49,7 +57,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p dist/catalog/assets
-          gh release download "${{ github.ref_name }}" \
+          gh release download "$TAG" \
             --dir dist/catalog/assets \
             --pattern 'djhx-memo-*-windows-x64-setup.exe' \
             --pattern 'djhx-memo-*-windows-x64-setup.exe.sig' \
@@ -70,9 +78,9 @@ jobs:
           fi
       - name: Build catalog manifest
         run: |
-          commit="$(git rev-parse "${GITHUB_REF_NAME}^{commit}")"
+          commit="$(git rev-parse "${TAG}^{commit}")"
           python scripts/build-catalog-manifest.py \
-            --tag "${{ github.ref_name }}" \
+            --tag "$TAG" \
             --commit "${commit}" \
             --assets-dir dist/catalog/assets \
             --output dist/catalog/manifest.json
@@ -85,7 +93,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload "${{ github.ref_name }}" dist/catalog/out/*.json --clobber
+          gh release upload "$TAG" dist/catalog/out/*.json --clobber
       - name: Upload catalog for bundle job
         uses: actions/upload-artifact@v4
         with:
@@ -106,13 +114,13 @@ jobs:
           cache-dependency-path: website/package-lock.json
       - name: Derive version from tag
         id: version
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        run: echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
       - name: Build website
         working-directory: website
         run: |
           npm ci
           python ../scripts/build-downloads-manifest.py \
-            --tag "${{ github.ref_name }}" \
+            --tag "$TAG" \
             --output downloads.json
           npm run build
       - name: Download signed catalog
@@ -129,7 +137,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload "${{ github.ref_name }}" \
+          gh release upload "$TAG" \
             "dist/deploy-bundle-${{ steps.version.outputs.version }}.tar.gz" --clobber
       - name: Upload bundle artifact
         uses: actions/upload-artifact@v4
