@@ -1405,3 +1405,94 @@ svg {
 .destructive-solid:hover:not(:disabled) {
   background: #8d332b;
 }
+
+/* In-note find panel (CodeMirror custom shell). */
+.cm-panel.memo-find-panel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--canvas);
+  border-bottom: 1px solid var(--border);
+}
+.memo-find-input {
+  flex: 0 1 220px;
+  height: 32px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+}
+.memo-find-input:focus {
+  border-color: var(--accent);
+}
+.memo-find-count {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  min-width: 96px;
+  text-align: center;
+}
+.memo-find-button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  color: var(--muted);
+  border-radius: 6px;
+  font-size: 14px;
+}
+.memo-find-case {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 4px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.memo-find-close {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  margin-left: auto;
+  color: var(--muted);
+  border-radius: 6px;
+  font-size: 16px;
+}
+
+/* Search match highlights reuse the accent palette. */
+.cm-searchMatch {
+  background-color: color-mix(in srgb, var(--accent) 28%, transparent) !important;
+}
+.cm-searchMatch-selected {
+  background-color: color-mix(in srgb, var(--accent) 58%, transparent) !important;
+}
+.cm-selectionMatch {
+  background-color: color-mix(in srgb, var(--accent) 20%, transparent) !important;
+}
+.cm-searchMatch .cm-selectionMatch {
+  background-color: transparent !important;
+}
+
+/* Global search dialog (command-palette style). */
+.global-search-dialog {
+  width: 640px;
+  max-width: 100%;
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 16px 64px var(--shadow);
+}

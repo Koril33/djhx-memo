@@ -74,3 +74,32 @@ export interface RuntimeInfo {
 }
 export type Request = { action: string; [key: string]: unknown };
 export type CoreCall = <T>(request: Request) => Promise<T>;
+
+export interface SearchSegment {
+  text: string;
+  hit: boolean;
+}
+export interface SearchHit {
+  note_id: string;
+  profile_id: string;
+  space_kind: 'local' | 'account';
+  deleted: boolean;
+  title: string;
+  title_segments: SearchSegment[];
+  snippet: string;
+  segments: SearchSegment[];
+  hit_count: number;
+  score: number;
+  updated_at: string;
+  generation: string;
+}
+export interface SearchResult {
+  hits: SearchHit[];
+  truncated: boolean;
+}
+/** The imperative find surface Editor.svelte exposes to App.svelte. */
+export interface EditorFindApi {
+  open: () => void;
+  run: (query: string) => void;
+  focus: () => void;
+}
