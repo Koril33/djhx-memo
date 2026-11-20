@@ -34,8 +34,7 @@ def main():
     for target, item in manifest["targets"].items():
         artifact = Path(item["file"])
         assets.extend(["--asset", target, str(artifact.resolve())])
-        with artifact.open("rb") as source:
-            digest = hashlib.file_digest(source, "sha256").hexdigest()
+        digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
         payload["targets"][target] = {
             "version": item["version"], "tag": "v" + item["version"], "commit": item["commit"],
             "notes": item.get("notes", ""), "url": item["url"], "size": artifact.stat().st_size,
