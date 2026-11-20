@@ -84,6 +84,8 @@ jobs:
             --commit "${commit}" \
             --assets-dir dist/catalog/assets \
             --output dist/catalog/manifest.json
+      - name: Fetch Rust deps for offline validation
+        run: cargo fetch --locked --manifest-path core/Cargo.toml
       - name: Sign and validate catalog
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.DJHX_CATALOG_SIGNING_KEY }}
