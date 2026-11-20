@@ -499,6 +499,127 @@ fn search_is_literal_short_chinese_ascii_and_tombstones_are_preserved() {
 }
 
 #[test]
+fn search_notes_ranks_title_hits_first_and_returns_segments() {
+    let app = engine();
+    let a = invoke(
+        &app,
+        json!({"action":"create","content":"会议安排\n明天下午三点","request_id":id()}),
+    );
+    let b = invoke(
+        &app,
+        json!({"action":"create","content":"随笔\n关于会议纪要我写了一点","request_id":id()}),
+    );
+    let result = invoke(
+        &app,
+        json!({"action":"search_notes","query":"会议","scope":{"kind":"current","include_deleted":false}}),
+    );
+    let hits = result["hits"].as_array().unwrap();
+    assert_eq!(hits.len(), 2);
+    assert_eq!(hits[0]["note_id"], a["id"]);
+    assert_eq!(hits[0]["title_segments"][0]["hit"], true);
+    assert!(
+        hits[0]["segments"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|s| s["hit"] == true)
+    );
+    assert_eq!(hits[0]["hit_count"].as_i64().unwrap(), 1);
+    assert_eq!(hits[0]["space_kind"], "local");
+    assert_eq!(hits[1]["note_id"], b["id"]);
+    assert_eq!(result["truncated"], false);
+}
+
+#[test]
+fn search_notes_include_deleted_scope() {
+    let app = engine();
+    let n = invoke(
+        &app,
+        json!({"action":"create","content":"回收站里的会议","request_id":id()}),
+    );
+    invoke(
+        &app,
+        json!({"action":"set_deleted","id":n["id"],"expected_generation":n["generation"],"deleted":true}),
+    );
+    let none = invoke(
+        &app,
+        json!({"action":"search_notes","query":"会议","scope":{"kind":"current","include_deleted":false}}),
+    );
+    assert_eq!(none["hits"].as_array().unwrap().len(), 0);
+    let some = invoke(
+        &app,
+        json!({"action":"search_notes","query":"会议","scope":{"kind":"current","include_deleted":true}}),
+    );
+    let hits = some["hits"].as_array().unwrap();
+    assert_eq!(hits.len(), 1);
+    assert_eq!(hits[0]["deleted"], true);
+    assert_eq!(hits[0]["note_id"], n["id"]);
+}
+
+#[test]
+fn search_notes_trigram_path_case_special_and_miss() {
+    let app = engine();
+    invoke(
+        &app,
+        json!({"action":"create","content":"标题\nMeeting notes with Python code 100%","request_id":id()}),
+    );
+    invoke(
+        &app,
+        json!({"action":"create","content":"杂记\nnothing relevant here","request_id":id()}),
+    );
+    // >=3 chars goes through the trigram candidate path; ASCII case-insensitive.
+    let hits = invoke(
+        &app,
+        json!({"action":"search_notes","query":"MEETING","scope":{"kind":"current","include_deleted":false}}),
+    )["hits"]
+        .as_array()
+        .unwrap()
+        .clone();
+    assert_eq!(hits.len(), 1);
+    // "MEETING" is in the body (not the title), so the snippet highlights it.
+    assert!(
+        hits[0]["segments"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|s| s["hit"] == true)
+    );
+    // Special characters match literally, never interpreted as FTS syntax.
+    let percent = invoke(
+        &app,
+        json!({"action":"search_notes","query":"%","scope":{"kind":"current","include_deleted":false}}),
+    );
+    assert_eq!(percent["hits"].as_array().unwrap().len(), 1);
+    // No match yields an empty result.
+    let miss = invoke(
+        &app,
+        json!({"action":"search_notes","query":"zzzmissing","scope":{"kind":"current","include_deleted":false}}),
+    );
+    assert_eq!(miss["hits"].as_array().unwrap().len(), 0);
+}
+
+#[test]
+fn search_trigger_skips_unchanged_content_and_schema_v4() {
+    let app = engine();
+    let db = db::open(&app.root.join("local.sqlite")).unwrap();
+    let sql: String = db
+        .query_row(
+            "SELECT sql FROM sqlite_master WHERE type='trigger' AND name='notes_update'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert!(
+        sql.contains("WHEN old.content IS NOT new.content"),
+        "trigger missing WHEN guard: {sql}"
+    );
+    let version: i64 = db
+        .pragma_query_value(None, "user_version", |r| r.get(0))
+        .unwrap();
+    assert_eq!(version, 4);
+}
+
+#[test]
 fn tasks_modify_only_the_marker_and_skip_all_code_blocks() {
     let source = "- [ ] 中文\n```md\n- [ ] 围栏\n```\n\n    - [ ] 缩进代码\n\n- [x] 完成\n";
     assert_eq!(
@@ -785,7 +906,7 @@ fn migration_backup_checksum_and_newer_schema_are_enforced() {
     assert_eq!(
         db.pragma_query_value(None, "user_version", |r| r.get::<_, i64>(0))
             .unwrap(),
-        3
+        4
     );
     db.pragma_update(None, "user_version", 99).unwrap();
     drop(db);

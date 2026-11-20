@@ -946,6 +946,70 @@ export const messages = {
     'zh-CN': '回收站笔记需先恢复才能编辑。',
     en: 'Restore this note from trash before editing.',
   },
+  globalSearch: {
+    'zh-CN': '全局搜索',
+    en: 'Global search',
+  },
+  searchScope: {
+    'zh-CN': '搜索范围',
+    en: 'Search scope',
+  },
+  searchCurrentSpace: {
+    'zh-CN': '当前空间',
+    en: 'Current space',
+  },
+  searchAllLocal: {
+    'zh-CN': '全部本机空间',
+    en: 'All local spaces',
+  },
+  searchAccount: {
+    'zh-CN': '账号空间',
+    en: 'Account space',
+  },
+  includeTrash: {
+    'zh-CN': '包含回收站',
+    en: 'Include trash',
+  },
+  searchLocalOnlyHint: {
+    'zh-CN': '仅搜索已同步到本机的笔记',
+    en: 'Only searches notes synced to this device',
+  },
+  searchTruncated: {
+    'zh-CN': '结果已截断，请细化关键词',
+    en: 'Results truncated — refine your query',
+  },
+  searchNoResults: {
+    'zh-CN': '无匹配',
+    en: 'No matches',
+  },
+  searchEmptyQuery: {
+    'zh-CN': '输入关键词，搜索所有笔记',
+    en: 'Type a query to search all notes',
+  },
+  findPlaceholder: {
+    'zh-CN': '查找文字',
+    en: 'Find text',
+  },
+  findCount: {
+    'zh-CN': '第 {current} / 共 {total}',
+    en: '{current} / {total}',
+  },
+  findNext: {
+    'zh-CN': '下一个',
+    en: 'Next',
+  },
+  findPrev: {
+    'zh-CN': '上一个',
+    en: 'Previous',
+  },
+  findClose: {
+    'zh-CN': '关闭查找',
+    en: 'Close find',
+  },
+  findCaseSensitive: {
+    'zh-CN': '区分大小写',
+    en: 'Match case',
+  },
 } as const;
 export type MessageKey = keyof typeof messages;
 export type MessageArgs = Record<string, string | number>;

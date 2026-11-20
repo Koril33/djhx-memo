@@ -49,7 +49,7 @@
 
 | 编号 | 来源 | 问题 | 影响 | 0.1.11 处理 |
 |---|---|---|---|---|
-| C4 | static-review-2026-11-18 | `notes_update` 触发器在仅元数据更新（ack / set_deleted / purge_state）时也整篇删除重建 FTS 索引 | 1MiB 笔记每次同步多做 1-2 次重建 | 追加迁移 0004，触发器加 `WHEN old.content IS NOT new.content`（不改已发布迁移），见 §7 |
+| C4 | static-review-2026-11-18 | `notes_update` 触发器在仅元数据更新（ack / set_deleted / purge_state）时也整篇删除重建 FTS 索引 | 1MiB 笔记每次同步多做 1-2 次重建 | 追加迁移 0004，触发器加 `WHEN old.content IS NOT new.content`（不改已发布迁移），实施见 §12 step 1 |
 | C6 | static-review-2026-11-18 | <3 字符（最常见 2 字中文）退化为全表 LIKE，读全部正文 | 2 字搜索总是全表扫描 | 短查询只投影 id+摘要；用 blog 基准确认达标，见 §8 |
 | — | 本文 | 结果无相关性、无高亮、无片段、无笔记内查找 | 核心体验缺口 | 本文全部覆盖 |
 
@@ -118,12 +118,13 @@
 
 **跳转**：用户选中命中 → 打开该笔记（`get` 取全文）→ 前端把 query 注入 CodeMirror 的搜索状态（`setSearchQuery` + `findNext`），由 CodeMirror 定位并滚动到首个命中、高亮全部命中。**不跨语言传偏移**，跳转与高亮全部由 CM 完成（"全局搜索 → 笔记内查找"串成一条链路，见评审衔接设计）。
 
-### 4.5 两阶段查询（避免搬全文）
+### 4.5 召回与打分（全量召回，无 SQL 预截断）
 
-1. **阶段一（召回 + 打分）**：只 `SELECT id, title, updated_at, ...` 与打分所需最少信息，不读全文；对候选计算 score 并排序、截断。
-2. **阶段二（片段）**：仅对最终 top-N（候选 50）读 `content`，做 case-fold 定位生成 segments / snippet。
+- 召回：候选检索 SQL（trigram 候选 / 短词全表 LIKE）**不做 `LIMIT` 预截断**，返回所有字面匹配笔记的（id, content, updated_at, generation, deleted）。
+- 打分：Rust 对每个候选计算 score（标题命中 / 命中次数 / 首命中位置），生成 segments / snippet（单片段，围绕首个命中）。
+- 排序：跨空间合并后按 `score DESC, updated_at DESC, note_id ASC`，取 top 50。
 
-避免把全部候选的正文读进内存（对应 C6"短查询只投影 id 和摘要"）。
+不做 SQL `LIMIT 200` 预截断的原因：若按 `updated_at` 预截断，命中数 >200 时高分（如标题命中）笔记可能根本进不了候选，直接违反"标题命中 > 正文命中"的排序契约（§9 用例 4）。本规模（~1000 条 × 2KiB）下全量打分开销毫秒级（见 §8.4），无需预截断。结果 payload 仍小：只回 top 50、不返回全文。
 
 ### 4.6 结果结构（SearchHit）
 
@@ -148,7 +149,7 @@ SearchHit {
 
 ## 5. core API
 
-统一 core-api.md 已列的 `search_notes`，新增 `search_notes` 动作（UniFFI 与 Tauri 包装命名随语言风格，行为一致；本文简称 `search`）。
+扩展 core-api.md 已列的 `search_notes`，新增 `search_notes` 动作（UniFFI 与 Tauri 包装命名随语言风格，行为一致；本文简称 `search`）。
 
 ```
 search_notes {
@@ -158,21 +159,19 @@ search_notes {
     space_ids: string[] | null        // 显式指定空间（可选）
     include_deleted: bool             // 是否含回收站（deleted=true）
   }
-  limit: int                          // 每空间候选上限 200；返回 top 50
-  snippet: { max_snippets: int, context_chars: int }  // 片段参数（可选）
 }
 → {
   hits: [SearchHit]                   // 跨库合并排序后 top 50
-  truncated: bool                     // 结果是否被截断（提示细化关键词）
+  truncated: bool                     // 排序后命中数 >50 被截断
 }
 ```
 
 实现要点：
 
-- 枚举目标 profile（由 scope + 空间注册表决定），逐库执行 `db::search_notes`（候选检索 + 打分），跨库合并排序后取 top 50。
-- **不做 offset 分页**：多个独立 SQLite 的 `offset` 无法下推到各库（各库 top-N 合并后的第 N ≠ 任一库第 N）。v1 每库取候选上限 200 → 内存合并 → top 50 → `truncated=true` 提示"结果已截断，请细化关键词"。1000 条规模下完全够用，省掉一整类分页一致性 bug。
-- 只读本地，不触发同步；不持有全局 busy（与 list 一致，只读事务）。
-- 空 `query`：返回"最近编辑"（由前端提供，或 core 返回空 hits + 前端显示空态，见 §7.2）。
+- 枚举目标 profile（由 scope + 空间注册表决定，**跳过 `kind=="recovery"`**），逐库执行 `db::search_notes`（候选检索 + 打分 + 片段），跨库合并排序后取 top 50。
+- **不做 offset 分页**：v1 任何 scope 至多命中 1～2 个空间（一个本机 + 当前账号），单库 offset 本可下推；选"top 50 + `truncated` 提示"是产品取舍（结果少而精，避免分页一致性与高频词刷屏），非技术不可行。`truncated` 语义：合并排序后命中数 > 50 时置 true（被截断）。
+- 只读本地，不触发同步；不持有全局 busy（与 list 一致，只读事务）；跨空间用 `fixed_profile` 打开非选中库（不受 `profile()` 守卫约束，见 core-bridge）。
+- 空 `query`：返回空 hits（由前端显示"最近编辑"空态，见 §7.2）。
 - 取消/增量：前端防抖 120～180ms，`requestCounter`/`AbortController` 丢弃晚到回执（比防抖更重要——避免"输入完整词却显示上一个词结果"的乱序）；core 侧 `search_notes` 为同步只读，多库顺序执行即可（SQLite 连接不跨线程共享更简单），1000 条规模无需并行。
 - `generation` 随命中返回，打开时若已变化按现有并发规则重读（不盲目覆盖编辑器缓冲）。
 
@@ -188,10 +187,11 @@ search_notes {
 细则：
 
 - **本机空间**：`kind=local` 的 profile 数据库（"全部本机空间"即所有 local profile；通常只有一个）。
-- **账号空间**：`kind=account` 的 profile 数据库。**默认仅"当前激活账号"**，避免跨账号聚合的意外泄露与排序混乱；"全部账号"列为可选扩展（§13）。
+- **账号空间**：`kind=account` 的 profile 数据库。**仅"当前激活账号"**；**当前激活空间不是账号时，`账号` 范围返回空结果**（无独立"当前账号"概念，只有 `registry.selected`，见 core）。跨账号聚合不在 v1（§13）。
+- **恢复空间**：`kind=recovery` 的只读归档**不在 v1 全局搜索范围**，枚举目标空间时跳过（`scope.kind="current"` 且 selected 为 recovery 时返回空）。
 - **回收站**：`include_deleted=true` 时纳入 `deleted=true` 的笔记（`notes` 表已有 `deleted` 标记，加 WHERE 即可，非新机制）。
 - 数据全部来自本地 SQLite（账号空间是本地同步副本），无服务端搜索接口。**UI 必须显式说明"仅搜索已同步到本机的笔记"**（对应评审 R3，防止用户把本地副本搜索误判为服务端全量搜索、漏结果时当成数据丢失）。
-- 回收站命中的打开行为：只允许"预览 / 恢复"，不直接进入编辑（与现有回收站语义一致）。
+- 回收站命中的打开行为：只允许"预览 / 恢复"，不直接进入编辑（与现有回收站语义一致）；恢复空间只读，命中打开也只读。
 
 范围选择器默认值：**当前激活空间（本机或账号），不含回收站**。
 
@@ -199,7 +199,7 @@ search_notes {
 
 ### 7.1 笔记内查找（Ctrl+F）
 
-采用 CodeMirror `@codemirror/search` 查找面板（与 VSCode/Monaco 同源）：顶部浮层搜索框、命中计数（第 N / 共 M）、next/prev 按钮、大小写/正则/整词开关、全部命中高亮（`highlightSelectionMatches`）。无自研 UI。详见 shortcuts-design §4。
+采用 CodeMirror `@codemirror/search`：`search({ createPanel, top: true })` 自绘轻量面板外壳（输入框 + 命中计数 + 上/下一个 + 大小写开关 + 关闭，不含替换框），查找/高亮/跳转复用 CM 的 `setSearchQuery`/`findNext`/`matchHighlighter`。**面板外壳少量自研**（默认 `searchPanel` 自带替换框且无隐藏开关，故自绘以关掉替换并自守 IME Enter），查找引擎零自研。详见 shortcuts-design §4。
 
 ### 7.2 全局搜索（Ctrl+Shift+F）
 
@@ -238,6 +238,11 @@ search_notes {
 - 指标：P50 / P95 / P99，每个 query 多次（≥50 次）取稳定值；记录冷启动（首次开库）与热查询。
 - 若短词路径超标，决策点（按序尝试，不预判）：(a) 短查询只投影 id+摘要；(b) 进程内正文缓存；(c) bigram/字符辅助索引。方案选型以实测为准。
 
+### 8.3 验证入口
+
+- core 侧：`bash scripts/validate-local.sh core` + 新增 `search_notes` 单元/集成测试（见 §9）。
+- 基准脚本建议落在 `tools/` 下（与既有 `tools/native-probe` 同级），只读 blog 语料，可重复运行。
+
 ### 8.4 已测基线（2026-11-20，blog 语料，内存 SQLite）
 
 用 `C:\Project\blog` 的 180 篇 Markdown（合计 **1.56 MiB** 纯文本）构造隔离 SQLite（镜像现有 `notes` + `notes_fts` trigram），跑与现有 `db::list` 等价的 `LIKE`（<3 字符全表 / ≥3 字符走 FTS trigram 候选）查询，每 query 50 次：
@@ -256,11 +261,6 @@ search_notes {
 - **最坏情况（2 字中文全表 LIKE 扫描）P99 ≈ 1.6ms，比 200ms 基线低两个数量级**；C6 担心的"短词总是全表扫描"在本规模下不是性能瓶颈，v1 无需 bigram/unigram 辅助索引，维持"trigram 候选 + 短词 LIKE 兜底"即可。
 - 结果数越大延迟越低（`的` 命中 180 条仍 0.35ms），因 LIKE 命中即止或索引快速收敛；无命中时 FTS trigram 快速拒绝（0.03ms）。
 - **口径说明**：本测量是内存 SQLite 的纯查询延迟（不含 IPC、JS 渲染、打分、片段生成与磁盘冷缓存）；实际端到端需在实现后按 §8.1 复测，磁盘 WAL + 2MiB 热缓存预期接近本数值，冷缓存与端到端 P95 以真机记录为准。此为下限基准，不替代实现后的完整测量。
-
-### 8.3 验证入口
-
-- core 侧：`bash scripts/validate-local.sh core` + 新增 `search_notes` 单元/集成测试（见 §9）。
-- 基准脚本建议落在 `tools/` 下（与既有 `tools/native-probe` 同级），只读 blog 语料，可重复运行。
 
 ## 9. 测试用例（新增）
 
@@ -321,8 +321,12 @@ search_notes {
 维护者决定：Android 端没有 Ctrl+W / Ctrl+F 这类键盘快捷键（触摸交互），因此**只补 UI**，且本版就要交付：
 
 - **全局搜索 UI**：复用 core `search_notes`（经 UniFFI，一次实现双端共享），把现有列表页搜索升级为"范围过滤 + 相关性 + 命中高亮 + 片段 + 跳转"。入口用 Material 3 `SearchBar` / `DockedSearchBar`（版本 API 以项目锁定的 material3 为准，不照抄网上示例）；结果项用 `AnnotatedString` + `SpanStyle` 消费 core 返回的 segments（无 UTF-8↔UTF-16 换算）；**范围选择与桌面一致**——空间集合单选（当前/全部本机/账号）+ "包含回收站"独立 checkbox（账号同样"仅当前账号、仅本地已同步"，UI 附说明）。core 契约两端共享，故不缩水为"先只做本机"。
-- **笔记内查找 UI**：Compose 原生编辑器无内置 find，需自研一个轻量"笔记内查找条"（工具栏/更多菜单入口打开），实现字面子串匹配（与全局搜索"ASCII 大小写不敏感、字面"语义一致）、命中计数、上/下一个、滚动定位与高亮。**这是纯前端文档内查找，不走 core/FTS5**；实现要点：`AnnotatedString` 高亮 + `TextFieldValue.selection` 定位 + 滚动，需守 IME 组合（同桌面 A2 的 Enter 二义问题）。
+- **全局搜索 → 笔记内定位（Android 衔接）**：打开命中笔记后，自动进入该笔记并在编辑器内定位/高亮首个命中（与桌面"注入 query → 定位"等价）；由查找条承载"继续上/下一个"。否则只打开不定位，违背"两端只差 UI 载体"的承诺。
+- **防抖**：现有 `MemoModel.search` 每键直接 `loadNotes`（无 debounce），升级到 `search_notes` 后**补 120～180ms 防抖**（沿用 `listRequest` 序号丢弃晚到回执），避免每键一次打分+片段往返。
+- **笔记内查找 UI**：原生编辑器是 `AndroidView` 包裹的自定义 `EditText`（`SourceEditor.kt`），非 Compose `BasicTextField`，故查找条用**原生 Spannable** 实现：`BackgroundColorSpan` 高亮 + `Selection.setSelection` 定位 + 外层 `ScrollView` 滚动，复用既有的 composing span 跟踪守 IME。语义与全局搜索一致（ASCII 大小写不敏感、字面），**纯前端文档内查找，不走 core/FTS5**；入口挂在编辑页工具栏/更多菜单（无打开笔记时该页不存在 ⇒ 无入口，天然对应桌面"无笔记无动作"）。
 - **Ctrl+W / 键盘快捷键**：不适用（Android 对应系统返回手势/返回键，无托盘概念）。
+
+三份"字面 + ASCII 大小写不敏感"实现（Rust core / CodeMirror JS / Kotlin）需以 [product-v1 §7](../spec/product-v1.md) 的"仅 ASCII 折叠、其他 Unicode 按原字符"为唯一口径对齐，并在一致性测试中覆盖（§9），避免三端在非 ASCII 大小写上的隐性分叉。
 
 与桌面侧共用同一份 [0.1.11 规范](../spec/client-0.1.11.md) 的搜索契约；Android 全局搜索与桌面全局搜索的排序/片段/范围语义必须一致（core 保证），两端只差 UI 载体。三端均属 v1，Android 需在 AVD/真机验收（见 [validation](../docs/validation.md)），不以桌面单端通过代替。
 
@@ -334,7 +338,7 @@ search_notes {
 4. **桌面全局搜索**：`search_notes` 动作前端封装 + 全局搜索面板 + 范围选择器 + segments 高亮/片段/跳转 + 键盘导航。
 5. **Ctrl+W**：前端 `getCurrentWindow().close()` + IME 保护（复用既有关闭链路）。
 6. **Android 全局搜索 UI**：`search_notes` 经 UniFFI 接入 + M3 SearchBar + segments 高亮 + 范围过滤。
-7. **Android 笔记内查找 UI**：Compose 轻量查找条（字面匹配 + 高亮 + 上下一个 + 定位 + IME 守卫）。
+7. **Android 笔记内查找 UI**：原生 Spannable 查找条（字面匹配 + 高亮 + 上下一个 + 定位 + IME 守卫）+ 全局搜索→笔记内定位衔接 + 防抖。
 8. **交叉评审**：同步/迁移/鉴权边界变更（C4 迁移）须独立交叉评审；快捷键与搜索 UI 做 UX 交叉评审。
 9. **0.1.11 发布**：三端验收，延续 GitHub Actions 签名/发布（ADR-0017）。
 
@@ -353,11 +357,19 @@ search_notes {
 | Ctrl+W 产品语义 | **窗口级关闭到托盘**（本项目不做多笔记 tab） | 已定（评审 R6） |
 | Linux 关闭行为 | **维持 `hide()`**；`minimize()` 加固方案与理由保留在 [shortcuts-design §3.4](shortcuts-design.md) 供未来参考 | 已定 |
 | Escape 优先级链 | **接受**"面板 > 编辑器失焦 > 关菜单/取消多选" | 已定（评审 R7） |
-| 替换功能 | 0.1.11 不启用 | 已定 |
+| 替换功能 | 0.1.11 不启用（`createPanel` 自绘面板不含替换框） | 已定 |
+| Ctrl+F 实现路线 | `@codemirror/search` + `createPanel` 自绘外壳（关替换 + 守 IME Enter）；**窗口级绑定 Ctrl+F**（守卫 1 让编辑器聚焦时不重复处理） | 已定（评审 A6/A7） |
+| Ctrl+W 实现 | 新增 Tauri 命令 `request_hide`（不放开 `core:window:*` 权限；`close()` 需权限故弃用） | 已定（评审 A2） |
 | Android | **本版补充 UI**（笔记内查找 UI + 全局搜索 UI），无键盘快捷键 | 已定 |
-| C4 触发器迁移 | 追加 0004，不改已发布迁移 | 待实施+评审 |
+| Android 技术栈 | 编辑器为原生 `EditText`，查找条用 Spannable + `Selection` + `ScrollView`（非 Compose `BasicTextField`）；全局搜索→笔记内定位衔接 + 补防抖 | 已定（评审 C2/C4/C6） |
+| 账号空间无激活时 | `账号` 范围返回空（仅 `registry.selected` 是账号才搜） | 已定（评审 B2） |
+| 恢复空间 | v1 全局搜索范围跳过 `recovery`（枚举时过滤） | 已定（评审 B3） |
+| 候选截断 | **全量召回打分，无 SQL `LIMIT` 预截断**（避免高分笔记被时间序裁掉） | 已定（评审 B4） |
+| snippet/truncated | 单片段（围绕首个命中）；`truncated` = 合并排序后命中数 >50 | 已定（评审 B5） |
+| core-bridge | 已登记 `search_notes` + 跨空间只读、不受 `profile()` 守卫约束 | 已定（评审 B6） |
+| C4 触发器迁移 | 追加 0004（`WHEN old.content IS NOT new.content`），客户端 schema 3 → 4，不改既有迁移 | 待实施+评审 |
 | 1 字高频词结果爆炸 | top 50 + 相关性兜底 + "请细化关键词"提示 | 已设计 |
-| 大笔记（1MiB 上限）定位 | segments 切分 UTF-8 边界安全；两阶段查询只读 top 50 正文 | 已设计 |
+| 大笔记（1MiB 上限）定位 | 全量召回打分后取 top 50；segments 切分 UTF-8 边界安全 | 已设计 |
 
 > 0.1.11 开发前**无遗留待决策项**；剩余均为"待实施+评审/已设计"的实现期事项（C4 迁移、性能复测、三端真机验收）。
 

@@ -215,6 +215,13 @@ fn frontend_ready(state: State<'_, Backend>) {
     state.frontend_ready.store(true, Ordering::Release);
 }
 
+/// Keyboard equivalent of clicking the window close button: reuse the exact
+/// `CloseRequested` lifecycle path without widening the frontend's window permissions.
+#[tauri::command]
+fn request_hide(app: tauri::AppHandle) {
+    request_lifecycle(&app, Lifecycle::Hide);
+}
+
 #[tauri::command]
 fn finish_lifecycle(
     app: tauri::AppHandle,
@@ -601,6 +608,7 @@ fn main() {
             export_note,
             pick_markdown,
             frontend_ready,
+            request_hide,
             set_presentation,
             system_appearance
             ,update::update_invoke, update::install_update

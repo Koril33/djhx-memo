@@ -1,9 +1,10 @@
 <script lang="ts">
   import { authenticationAccepted } from './lib/account-state';
   import { brandNames } from './lib/brand';
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, tick } from 'svelte';
   import { listen, type UnlistenFn } from '@tauri-apps/api/event';
   import Editor from './Editor.svelte';
+  import GlobalSearch from './GlobalSearch.svelte';
   import Icon from './Icon.svelte';
   import Updates from './Updates.svelte';
   import { call, native, errorText, coreErrorText } from './lib/bridge';
@@ -29,7 +30,15 @@
     profileLabel,
     type Preferences,
   } from './lib/preferences';
-  import type { AppState, Device, Note, Profile, RuntimeInfo } from './lib/types';
+  import type {
+    AppState,
+    Device,
+    EditorFindApi,
+    Note,
+    Profile,
+    RuntimeInfo,
+    SearchHit,
+  } from './lib/types';
 
   let preferences: Preferences = (() => {
     try {
@@ -306,6 +315,11 @@
   let poll: ReturnType<typeof setInterval> | undefined;
   let polling = false;
   let unlisteners: UnlistenFn[] = [];
+  let editorFocused = false;
+  let modalDepth = 0;
+  let globalSearchOpen = false;
+  let findApi: EditorFindApi | undefined;
+  let pendingFindQuery: string | null = null;
   let editor = new EditorSession(
     call,
     () => {
@@ -827,6 +841,7 @@
     };
   }
   function modal(node: HTMLElement, close: () => void) {
+    modalDepth++;
     const previous = document.activeElement as HTMLElement | null;
     const focusable = () => [
       ...node.querySelectorAll<HTMLElement>(
@@ -855,10 +870,67 @@
     node.addEventListener('keydown', keydown);
     return {
       destroy() {
+        modalDepth--;
         node.removeEventListener('keydown', keydown);
         previous?.focus();
       },
     };
+  }
+
+  function receiveFindApi(api: EditorFindApi): void {
+    findApi = api;
+    if (pendingFindQuery !== null) {
+      const term = pendingFindQuery;
+      pendingFindQuery = null;
+      api.run(term);
+    }
+  }
+  function handleEditorFocus(): void {
+    editorFocused = true;
+  }
+  function handleEditorBlur(): void {
+    editorFocused = false;
+    void editor.flush().catch((error) => {
+      failure = error;
+    });
+  }
+  function focusNoteList(): void {
+    const target =
+      document.querySelector<HTMLElement>('#note-list .note-card') ??
+      document.querySelector<HTMLElement>('#note-list .search input');
+    target?.focus();
+  }
+  function openGlobalSearch(): void {
+    globalSearchOpen = true;
+  }
+  async function openInNoteFind(): Promise<void> {
+    if (!editor.note) return;
+    if (mode !== 'source') {
+      mode = 'source';
+      await tick();
+    }
+    findApi?.open();
+  }
+  async function openGlobalSearchHit(hit: SearchHit, term: string): Promise<void> {
+    await run(async () => {
+      if (mode === 'preview') mode = 'source';
+      if (state?.profile.id !== hit.profile_id) {
+        await switchProfile(hit.profile_id);
+      }
+      await editor.flush();
+      const note = await call<Note>({
+        action: 'get',
+        profile_id: hit.profile_id,
+        id: hit.note_id,
+      });
+      await editor.open(note);
+      pendingFindQuery = term;
+      documentKey++;
+      trash = false;
+      clearListActions();
+      await refreshNotes();
+      notice = null;
+    });
   }
 
   onMount(() => {
@@ -949,17 +1021,48 @@
     void call({ action: 'sync' }).catch(() => {});
   }}
   on:keydown={(event) => {
+    // Guard 1: an inner handler (editor keymap, find panel, modal) already consumed the key.
+    if (event.defaultPrevented) return;
+    // Guard 2: never intercept during IME composition.
+    if (event.isComposing || event.keyCode === 229) return;
+    // Guard 3: modal context blocks navigation shortcuts, except saving.
+    const modalOpen = modalDepth > 0;
+    if (event.ctrlKey && !event.altKey) {
+      const key = event.key.toLowerCase();
+      if (key === 'n') {
+        event.preventDefault();
+        if (!modalOpen) void run(newNote);
+        return;
+      }
+      if (key === 's') {
+        event.preventDefault();
+        void run(() => editor.flush());
+        return;
+      }
+      if (key === 'w' && !event.shiftKey) {
+        event.preventDefault();
+        if (!modalOpen) void native('request_hide');
+        return;
+      }
+      if (key === 'f' && !event.shiftKey) {
+        event.preventDefault();
+        if (!modalOpen) void openInNoteFind();
+        return;
+      }
+      if (key === 'f' && event.shiftKey) {
+        event.preventDefault();
+        if (!modalOpen) openGlobalSearch();
+        return;
+      }
+    }
     if (event.key === 'Escape') {
-      closeMenus(undefined, true);
-      if (selecting && !busy) clearListActions();
-    }
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'n') {
-      event.preventDefault();
-      void run(newNote);
-    }
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
-      event.preventDefault();
-      void run(() => editor.flush());
+      if (editorFocused) {
+        event.preventDefault();
+        focusNoteList();
+      } else {
+        closeMenus(undefined, true);
+        if (selecting && !busy) clearListActions();
+      }
     }
   }}
 />
@@ -1390,11 +1493,9 @@
               readonly={readOnly}
               onEdit={(text) => editor.edit(text)}
               onComposition={(active) => editor.setComposing(active)}
-              onBlur={() => {
-                void editor.flush().catch((error) => {
-                  failure = error;
-                });
-              }}
+              onFocus={handleEditorFocus}
+              onBlur={handleEditorBlur}
+              onFindApi={receiveFindApi}
             />{/key}
         </div>
         <div
@@ -1503,6 +1604,30 @@
     </footer>
   </section>
 </main>
+
+{#if globalSearchOpen}
+  <div class="modal-backdrop" role="presentation">
+    <div
+      class="global-search-dialog"
+      use:modal={() => {
+        globalSearchOpen = false;
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={t('globalSearch')}
+      tabindex="-1"
+    >
+      <GlobalSearch
+        {language}
+        timeZone={preferences.timeZone}
+        onClose={() => {
+          globalSearchOpen = false;
+        }}
+        onOpenNote={openGlobalSearchHit}
+      />
+    </div>
+  </div>
+{/if}
 
 {#if settings}
   <div class="modal-backdrop" role="presentation">

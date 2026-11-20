@@ -19,28 +19,37 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
 
 /** 原生主界面；退出到后台前请求本地提交，云端失败不阻止离线编辑。 */
@@ -355,6 +364,16 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                                     LocalContext provides context,
                                     LocalConfiguration provides menuConfiguration
                                 ) {
+                                    if (model.editorOpen && !preview && !readOnly) {
+                                        MemoMenuItem(
+                                            R.drawable.ic_ui_search,
+                                            stringResource(R.string.find_in_note),
+                                            !model.busy
+                                        ) {
+                                            more = false
+                                            model.openFind()
+                                        }
+                                    }
                                     if (model.editorOpen && model.selected != null) {
                                         val deleted = model.selected!!.optBoolean("deleted")
                                         val purgeState = model.selected!!.optString("purge_state")
@@ -463,6 +482,10 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                         codeSpans = codeHighlights?.sourceSpans.orEmpty(),
                         visible = !preview && !readOnly,
                         modifier = Modifier.fillMaxSize(),
+                        findOpen = model.findOpen,
+                        findQuery = model.findQuery,
+                        onFindQueryChange = model::updateFindQuery,
+                        onFindClose = model::closeFind,
                         onBlur = model::retrySave,
                         onComposition = model::composing,
                         onEdit = model::edit
@@ -479,10 +502,17 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                     }
                 }
             } else {
-                NoteList(model) { note ->
-                    preview = false
-                    model.open(note)
-                }
+                NoteList(
+                    model,
+                    onOpen = { note ->
+                        preview = false
+                        model.open(note)
+                    },
+                    onOpenSearch = { hit ->
+                        preview = false
+                        model.openSearchHit(hit)
+                    }
+                )
             }
         }
     }
@@ -545,13 +575,23 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun NoteList(model: MemoModel, onOpen: (JSONObject) -> Unit) {
+private fun NoteList(model: MemoModel, onOpen: (JSONObject) -> Unit, onOpenSearch: (JSONObject) -> Unit) {
+    if (model.trash) {
+        TrashSearchField(model)
+        NoteItems(model, onOpen)
+    } else {
+        GlobalSearchEntry(model, onOpen, onOpenSearch)
+    }
+}
+
+/** 回收站视图保留原有单空间过滤；全局搜索以「包含回收站」勾选覆盖已删除笔记。 */
+@Composable
+private fun TrashSearchField(model: MemoModel) {
     TextField(
         value = model.query, onValueChange = model::search,
         enabled = !model.busy,
-        placeholder = { Text(stringResource(if (model.trash) R.string.search_trash else R.string.search_notes)) },
+        placeholder = { Text(stringResource(R.string.search_trash)) },
         leadingIcon = { MemoIcon(R.drawable.ic_ui_search) },
         trailingIcon = if (model.query.isNotEmpty()) {
             {
@@ -573,6 +613,212 @@ private fun NoteList(model: MemoModel, onOpen: (JSONObject) -> Unit) {
         shape = RoundedCornerShape(12.dp), singleLine = true,
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp)
     )
+}
+
+/** 全局搜索入口：M3 DockedSearchBar + 范围选择 + 高亮结果列表。 */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun GlobalSearchEntry(model: MemoModel, onOpen: (JSONObject) -> Unit, onOpenSearch: (JSONObject) -> Unit) {
+    var active by rememberSaveable { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
+    BackHandler(active) {
+        active = false
+        focusManager.clearFocus()
+    }
+    DockedSearchBar(
+        inputField = {
+            SearchBarDefaults.InputField(
+                query = model.searchQuery,
+                onQueryChange = { model.searchNotes(it) },
+                onSearch = {
+                    active = false
+                    focusManager.clearFocus()
+                },
+                expanded = active,
+                onExpandedChange = { active = it },
+                placeholder = { Text(stringResource(R.string.search_notes)) },
+                leadingIcon = { MemoIcon(R.drawable.ic_ui_search) },
+                trailingIcon = if (model.searchQuery.isNotEmpty()) {
+                    {
+                        IconButton(onClick = { model.searchNotes("") }) {
+                            Icon(
+                                painterResource(R.drawable.ic_ui_x),
+                                contentDescription = stringResource(R.string.clear_search),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                } else {
+                    null
+                }
+            )
+        },
+        expanded = active,
+        onExpandedChange = { active = it }
+    ) {
+        SearchScopeSelector(
+            kind = model.searchKind,
+            includeDeleted = model.searchIncludeDeleted,
+            onKind = { model.updateSearchScope(it, model.searchIncludeDeleted) },
+            onIncludeDeleted = { model.updateSearchScope(model.searchKind, it) }
+        )
+        if (model.searchQuery.isBlank()) {
+            Text(
+                stringResource(R.string.search_start_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp)
+            )
+        } else {
+            SearchResults(model, onOpenSearch)
+        }
+    }
+    if (!active) NoteItems(model, onOpen)
+}
+
+@Composable
+private fun SearchScopeSelector(
+    kind: String,
+    includeDeleted: Boolean,
+    onKind: (String) -> Unit,
+    onIncludeDeleted: (Boolean) -> Unit
+) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
+        listOf(
+            "current" to R.string.search_scope_current,
+            "all_local" to R.string.search_scope_all_local,
+            "account" to R.string.search_scope_account,
+        ).forEach { (value, label) ->
+            Row(
+                Modifier.fillMaxWidth()
+                    .selectable(selected = kind == value, role = Role.RadioButton, onClick = { onKind(value) })
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                RadioButton(selected = kind == value, onClick = null)
+                Text(stringResource(label), style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+        Row(
+            Modifier.fillMaxWidth()
+                .selectable(
+                    selected = includeDeleted,
+                    role = Role.Checkbox,
+                    onClick = { onIncludeDeleted(!includeDeleted) }
+                )
+                .padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(checked = includeDeleted, onCheckedChange = null)
+            Text(stringResource(R.string.search_include_deleted), style = MaterialTheme.typography.bodyMedium)
+        }
+        if (kind == "account") {
+            Text(
+                stringResource(R.string.search_account_local_only),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ColumnScope.SearchResults(model: MemoModel, onOpenSearch: (JSONObject) -> Unit) {
+    if (model.searchTruncated) {
+        Text(
+            stringResource(R.string.search_truncated),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)
+        )
+    }
+    if (model.searchHits.isEmpty()) {
+        Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+            Text(stringResource(R.string.no_results), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    } else {
+        LazyColumn(Modifier.fillMaxWidth().weight(1f), contentPadding = PaddingValues(bottom = 24.dp)) {
+            items(model.searchHits, key = { it.getString("note_id") }) { hit ->
+                SearchResultItem(hit) { onOpenSearch(hit) }
+                HorizontalDivider(
+                    Modifier.padding(horizontal = 24.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchResultItem(hit: JSONObject, onClick: () -> Unit) {
+    val highlightStyle = SpanStyle(fontWeight = FontWeight.Bold, background = Color(0x66FFEB3B))
+    val title = hit.optString("title")
+    val titleText = hit.optJSONArray("title_segments")?.let { segmentsToAnnotated(it, highlightStyle) }
+        ?: AnnotatedString(if (title.isBlank()) stringResource(R.string.untitled) else title)
+    val snippetText = hit.optJSONArray("segments")?.let { segmentsToAnnotated(it, highlightStyle) }
+        ?: AnnotatedString(hit.optString("snippet"))
+    Column(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 12.dp)
+    ) {
+        Text(titleText, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (snippetText.isNotEmpty()) {
+            Text(
+                snippetText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+        Row(
+            Modifier.padding(top = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                stringResource(R.string.search_hits, hit.optInt("hit_count")),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                formattedTime(hit.optString("updated_at")),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            val spaceLabel = if (hit.optString("space_kind") == "account") {
+                stringResource(R.string.search_space_account)
+            } else {
+                stringResource(R.string.search_space_local)
+            }
+            Text(spaceLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (hit.optBoolean("deleted")) {
+                Text(
+                    stringResource(R.string.trash),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+    }
+}
+
+private fun segmentsToAnnotated(segments: JSONArray, highlightStyle: SpanStyle): AnnotatedString = buildAnnotatedString {
+    (0 until segments.length()).forEach { index ->
+        val segment = segments.getJSONObject(index)
+        val text = segment.getString("text")
+        if (segment.optBoolean("hit")) {
+            withStyle(highlightStyle) { append(text) }
+        } else {
+            append(text)
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun NoteItems(model: MemoModel, onOpen: (JSONObject) -> Unit) {
     if (model.notes.isEmpty()) {
         Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
             Text(

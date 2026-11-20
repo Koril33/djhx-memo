@@ -76,19 +76,20 @@ CodeMirror 6 的 keymap 命中时调用 `preventDefault()`，但**不 `stopPropa
 3. 前端 `App.svelte` 收到事件 → `editor.finishLifecycle(...)` 先 flush。
 4. `finish_lifecycle` 命令：`saved=false`（保存失败）→ `show_window` 中止关闭；`saved=true` → 有托盘 `window.hide()`，无托盘 `app.exit(0)`。
 
-### 3.2 方案：复用 OS 关闭路径，零 Rust 改动
+### 3.2 方案：复用关闭链路，新增一个 Tauri 命令（不放开窗口权限）
 
-前端在全局 keydown 拦截 `Ctrl+W`（仅 `ctrlKey`，不认 metaKey）后，调用 Tauri 窗口关闭 API：
+前端在全局 keydown 拦截 `Ctrl+W`（仅 `ctrlKey`，不认 metaKey）后，调用新增 Tauri 命令：
 
-```ts
-import { getCurrentWindow } from '@tauri-apps/api/window';
-// Ctrl+W 命中且守卫通过时：
-getCurrentWindow().close();
+```rust
+#[tauri::command]
+fn request_hide(app: tauri::AppHandle) {
+    request_lifecycle(&app, Lifecycle::Hide);
+}
 ```
 
-`close()` 会触发 `WindowEvent::CloseRequested`，进入 §3.1 的既有链路（`prevent_close` → `request_lifecycle(Hide)` → 前端 flush → 有托盘 hide / 无托盘 quit / 保存失败中止）。**不新增 Rust 命令**，与标题栏 X、Alt+F4、任务栏"关闭窗口"完全同源。
+前端 `native('request_hide')`。`request_lifecycle(Hide)` 正是 `CloseRequested` 分支所调用的同一入口，因此与标题栏 X、Alt+F4、任务栏"关闭窗口"行为一致（flush → 有托盘 hide / 无托盘 quit / 保存失败中止），且**不需要放开 `core:window:*` 前端权限**。
 
-（备选：若不想依赖 `close()` 的语义，可新增 `request_hide` 命令直接调 `request_lifecycle(Hide)`；但 `close()` 更简单，且保证四类关闭入口行为逐字节一致。）
+> 权衡：`getCurrentWindow().close()`（`@tauri-apps/api/window`）需在 `capabilities/main.json` 增加 `core:window:allow-close`，扩大前端权限面，故 0.1.11 弃用；`request_hide` 命令零权限扩张、等价语义，为优选。
 
 ### 3.3 为什么这样设计
 
@@ -110,22 +111,23 @@ getCurrentWindow().close();
 
 ### 4.1 方案：采用 CodeMirror 官方 `@codemirror/search`
 
-在 `Editor.svelte` 引入 `@codemirror/search`，加入扩展：
+在 `Editor.svelte` 引入 `@codemirror/search`：
 
-- `search({ top: true })`：提供查找面板（find widget）与替换能力。
+- `search({ createPanel, top: true })`：用 `createPanel` **自定义面板外壳**（输入框 + 命中计数 + 上/下一个 + 大小写开关 + 关闭），查找/高亮/跳转复用 CM 的 `setSearchQuery` / `findNext` / `findPrevious` / `matchHighlighter`（关闭面板后仍高亮命中）。
 - `searchKeymap`：绑定 `Mod-f`（打开查找）、`F3`/`Mod-g`（下一个）、`Shift-F3`/`Mod-Shift-g`（上一个）。
-- `highlightSelectionMatches()`：高亮所有命中。
+- `highlightSelectionMatches()`：高亮所有命中（可选）。
 
-这是 CodeMirror 官方、与 VSCode/Monaco find widget 同源的成熟方案，笔记内查找的 UI（搜索框、计数、next/prev、大小写/正则/整词开关、全部命中高亮）无需自研。
+这是 CodeMirror 官方、与 VSCode/Monaco find widget 同源的成熟方案；仅面板外壳少量自研（因为默认 `searchPanel` 自带替换框且无隐藏开关，而本版不启用替换），查找/高亮/跳转引擎全部复用 CM。
 
 ### 4.2 关键决策
 
-- **大小写/正则/整词开关**：查找面板自带。第一版把默认设为 `caseSensitive:false`（大小写不敏感），与全局搜索"ASCII 大小写不敏感"契约对齐；`literal:true`（字面，不解释为正则）。正则/整词/替换随默认面板能力存在，但不承诺第一版验证到替换全流程（见下）。
-- **替换**：第一版**不启用**替换（`searchPanel` 不带替换框，或默认隐藏），避免与 Markdown 预览同步、撤销栈、IME 组合的交互复杂度。后续若做，需单独评审。
-- **不在窗口级绑定 Ctrl+F**：CodeMirror keymap 仅在编辑器聚焦时生效，且命中即 `preventDefault`（守卫 1 保证全局不再插手）。窗口级 handler 目前只处理 Ctrl+N/S/Escape，不处理 Ctrl+F，因此不会双处理。保持"编辑器内按键由 CodeMirror 处理、应用级按键由窗口 handler 处理"的清晰分层。
-- **Ctrl+Shift+F 在窗口级绑定**：`Mod-Shift-f` 在 `searchKeymap`/`defaultKeymap` 均未被占用，编辑器聚焦时 CM 不消费、冒泡到全局接管，安全（这也是选 Ctrl+Shift+F 而非 Ctrl+P/Ctrl+K 的好处之一）。
-- **keymap 顺序**：`searchKeymap` 放在 `defaultKeymap` 之前（二者无重叠键，顺序只是保险）。
-- **IME 下的 Enter 二义**：查找面板输入框是普通 `<input>`，中文输入时 Enter 既可能是"上屏候选词"又触发"查找下一个"。第一版需自守 `isComposing` 门禁（用 `search({ createPanel })` 自定义面板，或至少 compositionstart/end 门禁），见 A2 实测。
+- **默认面板 vs 自绘面板**：选 `createPanel` 自绘轻量外壳，**唯一目的是关掉替换框并自守 IME Enter 二义**（默认面板两件事都做不到）；查找语义仍走 `SearchQuery{ literal:true, caseSensitive:false }`。
+- **大小写/正则/整词开关**：第一版只保留"大小写"开关（默认不敏感，与全局搜索一致）；不提供正则/整词/替换。
+- **替换**：第一版**不启用**（面板无替换框），避免与 Markdown 预览同步、撤销栈、IME 组合的交互复杂度。后续若做，需单独评审。
+- **窗口级绑定 Ctrl+F**：窗口级 handler **绑定** Ctrl+F（守卫 1 `defaultPrevented` 保证编辑器聚焦时由 CM 的 `searchKeymap` 先消费、窗口级不重复处理；编辑器未聚焦时由窗口级接管"聚焦编辑器并开面板 / 无笔记无动作"）。这正是 §4.3 触发语义得以成立的前提。
+- **Ctrl+Shift+F 在窗口级绑定**：`Mod-Shift-f` 在 `searchKeymap`/`defaultKeymap` 均未被占用，编辑器聚焦时 CM 不消费、冒泡到全局接管，安全。
+- **keymap 顺序**：`searchKeymap` 放在 `defaultKeymap` 之前（二者无重叠键，顺序只是保险）。注意 `searchKeymap` 会一并带入 `Mod-d`（选中下一个）、`Mod-Alt-g`（全部选中）等，须在 §6 冲突矩阵登记、必要时显式覆盖。
+- **IME 下的 Enter 二义**：自绘面板输入框自守 `isComposing` 门禁（compositionstart/end），中文输入时 Enter 不上屏触发查找下一个（见评审 A2 实测）。
 
 ### 4.3 触发语义
 
@@ -185,5 +187,5 @@ getCurrentWindow().close();
 ## 9. 依赖与代码变更
 
 - 新增前端依赖 `@codemirror/search`（与既有 CodeMirror 6 同源，版本随桌面 `package.json` 锁定）。按 [AGENTS](../AGENTS.md) 需在引入前补一条 ADR 记录许可与锁定版本（MIT，CodeMirror 官方维护，与既有 `@codemirror/*` 一致）。
-- Ctrl+W 复用 Tauri `getCurrentWindow().close()` 与既有 `CloseRequested` 链路，**零 Rust 新增**（Linux 本版维持 `hide()`，不改 `finish_lifecycle`）。
+- Ctrl+W 新增 Tauri 命令 `request_hide`（`request_lifecycle(app, Lifecycle::Hide)`）并注册进 `generate_handler!`，前端 `native('request_hide')`；**不放开 `core:window:*` 权限**（Linux 本版维持 `hide()`，不改 `finish_lifecycle`）。
 - core/Rust 侧搜索改动见 [搜索功能详细设计](search-design.md)（`db::search_notes` + `search_notes` 动作 + C4 触发器迁移）。
