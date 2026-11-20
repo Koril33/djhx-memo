@@ -47,6 +47,20 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         private set
     var query by mutableStateOf("")
         private set
+    var searchQuery by mutableStateOf("")
+        private set
+    var searchHits by mutableStateOf(emptyList<JSONObject>())
+        private set
+    var searchTruncated by mutableStateOf(false)
+        private set
+    var searchKind by mutableStateOf("current")
+        private set
+    var searchIncludeDeleted by mutableStateOf(false)
+        private set
+    var findOpen by mutableStateOf(false)
+        private set
+    var findQuery by mutableStateOf("")
+        private set
     var trash by mutableStateOf(false)
         private set
     var busy by mutableStateOf(false)
@@ -226,6 +240,8 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
     private var creationContent: String? = null
     private var lastEvent = ""
     private var listRequest = 0L
+    private var searchRequest = 0L
+    private var searchJob: Job? = null
     private var stateRequest = 0L
     private var editorProfileId = "local"
     private val observedRedirects = mutableMapOf<String, String>()
@@ -435,6 +451,83 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         viewModelScope.launch { runCatching { loadNotes() }.onFailure { report(it) } }
     }
 
+    /** 全局搜索入口：更新查询并防抖 150ms 后调用 core `search_notes`，晚到回执按序号丢弃。 */
+    fun searchNotes(value: String) {
+        searchQuery = value
+        searchJob?.cancel()
+        if (value.isBlank()) {
+            searchRequest++
+            searchHits = emptyList()
+            searchTruncated = false
+            searchJob = null
+            return
+        }
+        searchJob = viewModelScope.launch {
+            delay(150)
+            runSearch()
+        }
+    }
+
+    /** 范围（空间集合 + 是否含回收站）变化时立即按当前查询重新搜索。 */
+    fun updateSearchScope(kind: String, includeDeleted: Boolean) {
+        if (searchKind == kind && searchIncludeDeleted == includeDeleted) return
+        searchKind = kind
+        searchIncludeDeleted = includeDeleted
+        searchNotes(searchQuery)
+    }
+
+    private suspend fun runSearch() {
+        val request = ++searchRequest
+        try {
+            val scope = JSONObject().put("kind", searchKind).put("include_deleted", searchIncludeDeleted)
+            val result = gateway.obj("search_notes", "query" to searchQuery, "scope" to scope)
+            if (request == searchRequest) {
+                searchHits = result.optJSONArray("hits")?.objects().orEmpty()
+                searchTruncated = result.optBoolean("truncated")
+            }
+        } catch (error: kotlinx.coroutines.CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            if (request == searchRequest) {
+                searchHits = emptyList()
+                searchTruncated = false
+                report(error)
+            }
+        }
+    }
+
+    /** 打开全局搜索命中：必要时先切空间，取全文后进入编辑器并注入查询供查找条定位首个命中。 */
+    fun openSearchHit(hit: JSONObject) = action {
+        if (!flush()) return@action
+        val profileId = hit.optString("profile_id")
+        if (profileId.isNotEmpty() && profileId != currentProfileId()) {
+            gateway.call("switch", "profile_id" to profileId)
+            state = gateway.obj("state")
+        }
+        editorProfileId = if (profileId.isEmpty()) currentProfileId() else profileId
+        selected = gateway.obj("get", "profile_id" to editorProfileId, "id" to hit.getString("note_id"))
+        content = selected!!.optString("content")
+        editorOpen = true
+        localStatus = UiText(R.string.save_success)
+        revision++
+        findQuery = searchQuery
+        findOpen = true
+        loadNotes()
+    }
+
+    fun openFind() {
+        findOpen = true
+    }
+
+    fun closeFind() {
+        findOpen = false
+        findQuery = ""
+    }
+
+    fun updateFindQuery(value: String) {
+        findQuery = value
+    }
+
     fun showTrash(value: Boolean) = action {
         if (!flush()) return@action
         cancelSelection()
@@ -442,6 +535,8 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         editorOpen = false
         selected = null
         content = ""
+        query = ""
+        closeFind()
         loadNotes()
     }
 
@@ -453,6 +548,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         creationContent = null
         editorProfileId = currentProfileId()
         editorOpen = true
+        closeFind()
         localStatus = UiText(R.string.save_blank)
         revision++
     }
@@ -463,11 +559,12 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         selected = gateway.obj("get", "profile_id" to editorProfileId, "id" to note.getString("id"))
         content = selected!!.optString("content")
         editorOpen = true
+        closeFind()
         localStatus = UiText(R.string.save_success)
         revision++
     }
 
-    fun backToList() = action { if (flush()) editorOpen = false }
+    fun backToList() = action { if (flush()) { editorOpen = false; closeFind() } }
     fun retrySave() = action { flush() }
 
     fun copyAsNewNote() = action {
@@ -632,6 +729,16 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         notes = emptyList()
         devices = emptyList()
         listRequest++
+        searchRequest++
+        searchJob?.cancel()
+        searchJob = null
+        searchQuery = ""
+        searchHits = emptyList()
+        searchTruncated = false
+        searchKind = "current"
+        searchIncludeDeleted = false
+        findOpen = false
+        findQuery = ""
         compositionActive = false
         query = ""
         trash = false

@@ -251,4 +251,20 @@
     <string name="update_install_cancelled_state">安装已取消</string>
     <string name="update_wait_cancelled_state">已结束等待</string>
     <string name="note_export_success">笔记已导出</string>
+    <string name="search_scope_current">当前空间</string>
+    <string name="search_scope_all_local">全部本机空间</string>
+    <string name="search_scope_account">账号空间</string>
+    <string name="search_include_deleted">包含回收站</string>
+    <string name="search_account_local_only">仅搜索已同步到本机的笔记。</string>
+    <string name="search_truncated">结果已截断，请细化关键词。</string>
+    <string name="search_start_hint">输入关键词，跨空间搜索。</string>
+    <string name="search_hits">%1$d 处命中</string>
+    <string name="search_space_local">本机</string>
+    <string name="search_space_account">账号</string>
+    <string name="find_in_note">在笔记中查找</string>
+    <string name="find_hint">在笔记中查找</string>
+    <string name="find_close">关闭查找</string>
+    <string name="find_previous">上一个</string>
+    <string name="find_next">下一个</string>
+    <string name="find_count">%1$d/%2$d</string>
 </resources>
