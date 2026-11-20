@@ -1,0 +1,69 @@
+# 更新目录签名：Release 公开后生成并签署稳定更新目录。
+#
+# 触发：release published（维护者把草稿 Release 公开后；URL 已确定、资产可匿名下载）。
+# 与 release.yml 分离：release.yml 在 tag push 时构建并建草稿，本工作流在公开后签名目录。
+#
+# 策略（方案 A，见 docs/ci-cd-plan.md 与 docs/adr/0019-update-catalog-website-ci.md）：
+#   - 从公开 Release 下载已构建资产，用 catalog 私钥（DJHX_CATALOG_SIGNING_KEY，minisign，
+#     与 Windows .exe.sig 的 package 钥不同）经 scripts/prepare-update-catalog.py 签名目录。
+#   - sequence 读线上 current.json +1（严格递增）；产物附着到 Release 供半自动部署脚本取用。
+#   - 不部署、不替换线上目录；官网部署另见 docs/website-deployment-ci.md。
+name: catalog
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  catalog:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.99.1
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+      - name: Install desktop CLI (tauri signer)
+        working-directory: desktop
+        run: npm ci
+      - name: Download published release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p dist/catalog/assets
+          gh release download "${{ github.ref_name }}" \
+            --dir dist/catalog/assets \
+            --pattern 'djhx-memo-*-windows-x64-setup.exe' \
+            --pattern 'djhx-memo-*-windows-x64-setup.exe.sig' \
+            --pattern 'djhx-memo-*-android.apk'
+      - name: Build catalog manifest
+        run: |
+          commit="$(git rev-parse "${GITHUB_REF_NAME}^{commit}")"
+          python scripts/build-catalog-manifest.py \
+            --tag "${{ github.ref_name }}" \
+            --commit "${commit}" \
+            --assets-dir dist/catalog/assets \
+            --output dist/catalog/manifest.json
+      - name: Sign and validate catalog
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.DJHX_CATALOG_SIGNING_KEY }}
+        run: |
+          python scripts/prepare-update-catalog.py dist/catalog/manifest.json --output dist/catalog/out
+      - name: Attach catalog to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ github.ref_name }}" dist/catalog/out/*.json --clobber
