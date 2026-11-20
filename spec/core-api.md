@@ -14,7 +14,7 @@
 | save_note | profile、note_id、expected_generation、content → 新 generation | 乐观并发校验；同事务保存 notes/索引/待发状态 |
 | purge | profile、note_id、expected_generation → NoteView | 仅单条回收站；持久化请求、永久标记及错误见增量契约 |
 | set_deleted | profile、note_id、expected_generation、deleted → 新 generation | 删除和恢复保留正文，过期 UI 不能覆盖更新内容 |
-| search_notes | profile、literal_query、limit → 本地结果 | 字面搜索，短词兜底，过滤回收站 |
+| search_notes | profile、literal_query、limit → 本地结果 | 字面搜索，短词兜底，过滤回收站；0.1.11 起扩展为跨空间搜索，签名见文末 [0.1.11 搜索扩展](#0111-搜索扩展) |
 | export_notes | profile、范围 → 导出数据/结果 | 核心生成 ZIP 内容，平台层选择目标位置并原子写入 |
 | register / login | 服务器、账号凭据、设备信息 → 账号空间 | 密码只短期使用；账号切换与本机导入分开 |
 | import_local_notes | 源空间、目标空间、选择 → 进度与映射 | 目标事务幂等，保留来源，不跨账号复用映射 |
@@ -47,3 +47,12 @@ NoteView 同时带 generation、正文、删除/冲突元数据、本地保存�
 ## 单篇导出文件名（0.1.10）
 
 `markdown_export_filename(source: String) -> String`为公开UniFFI纯函数，供三端复用首行标题与文件名清理：过滤路径分隔符/控制字符和Windows保留名，stem最多180个UTF-8字节，保证单个`.md`后缀。函数不读写笔记、凭据或文件，不改变正文；平台捕获编辑快照后通过系统保存对话框写入完整UTF-8。取消/写入失败不表示导出完成；新接口不改变协议/schema。
+
+## 0.1.11 搜索扩展
+
+0.1.11 将 `search_notes` 从"单空间字面过滤"扩展为"跨空间本地全文搜索"，行为契约见 [client-0.1.11](client-0.1.11.md)，设计见 [搜索功能详细设计](../docs/search-design.md)。要点（与上表 `search_notes` 行是"扩展"关系，不改变 `list` 的稳定排序+单空间语义）：
+
+- 输入：`query`（字面子串，可为空）、`scope{kind: current|all_local|account, space_ids?, include_deleted}`、`limit`（每空间候选上限 200，返回 top 50）、`snippet{max_snippets, context_chars}`。
+- 输出：`hits[] / truncated`；`SearchHit` 含 `note_id / profile_id / space_kind(local|account) / deleted / title / title_segments / snippet / segments / hit_count / score / updated_at / generation`。`segments`/`title_segments` 是已切分文本 `{text, hit}`，无裸偏移。
+- 只读本地、不返回全文（两阶段：先召回打分、后对 top 50 读正文生成片段）、不做 offset 分页（top 50 + `truncated`）、不触发同步、不持全局 busy。
+- 匹配语义延续 v1：字面子串、ASCII 大小写不敏感、其他 Unicode 按原字符、不解释为 FTS/正则/布尔；候选检索用 FTS5 trigram（≥3 字符）与字面 LIKE 兜底（<3 字符），不构造 FTS `MATCH` 语法。v1 全局搜索范围不含恢复空间。

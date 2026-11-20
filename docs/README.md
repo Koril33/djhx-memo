@@ -37,4 +37,5 @@
 - [PR #27 调研报告事实核验](reviews/quality-audit-0.1.10-verification.md)：独立复核 M1/M2、测试命令及架构/规范引用，区分已复现、需修正和历史证据不足的结论。
 - [下一版客户端讨论稿](client-next-discussion.md)：0.2.0 范围确定前的历史讨论，图片仍暂缓；最新选择见下列开发前文档。
 - [0.2.0 开发前准备](client-0.2.0-development.md) / [目标规范草案](../spec/client-0.2.0.md)：已确定五项范围与三项交互/视觉取舍，评估可行性、工程待定参数和有效验收矩阵；未开始编码或发版。
+- [0.1.11 快捷键与搜索设计](shortcuts-design.md) / [搜索功能详细设计](search-design.md) / [目标规范草案](../spec/client-0.1.11.md)：Ctrl+W 关闭到托盘、Ctrl+F 笔记内查找、Ctrl+Shift+F 全局搜索（含 Android 笔记内查找/全局搜索 UI）的开发前设计，决策已收敛、无遗留待决策项；未开始编码或发版。交叉评审见 [Claude 独立评审](reviews/0.1.11-shortcuts-search-claude-review.md)，开源方案调研见 [搜索实现调研](research/search-implementations-survey.md)。
 - [2026-11-18 全端静态评审](reviews/static-review-2026-11-18.md) / [项目现状报告](project-status-2026-11-18.md)：一次性只读评审，覆盖 main、0.2.0 准备分支与 CLI 调研分支；提出 X1-X4 优先缺陷、0.2.0 拆分建议与调研文档内网信息处置，不改变 spec 或产品行为。
