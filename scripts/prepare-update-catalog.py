@@ -8,13 +8,15 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 
 
 def run(command):
     result = subprocess.run(command, capture_output=True)
     if result.returncode:
-        raise ValueError("Signing/validation command failed; private diagnostics were not printed")
+        detail = (result.stderr or result.stdout or b"").decode(errors="replace").strip()
+        raise ValueError(f"command failed ({detail or 'no output'})")
 
 
 def main():
@@ -79,5 +81,5 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except (ValueError, KeyError, OSError, StopIteration):
-        raise SystemExit("Catalog preparation failed. Check the manifest, signing environment and existing output sequence.")
+    except (ValueError, KeyError, OSError, StopIteration) as error:
+        raise SystemExit(f"Catalog preparation failed: {error}")
