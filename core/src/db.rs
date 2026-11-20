@@ -8,6 +8,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("../migrations/0001_local.sql"),
     include_str!("../migrations/0002_search.sql"),
     include_str!("../migrations/0003_permanent_deletion.sql"),
+    include_str!("../migrations/0004_search_trigger.sql"),
 ];
 
 pub(crate) fn open(path: &Path) -> Result<Connection> {
@@ -112,6 +113,57 @@ pub(crate) fn list(db: &Connection, query: &str, deleted: bool) -> Result<Vec<Lo
         .query_map(params![deleted, format!("%{escaped}%")], row_note)?
         .collect::<std::result::Result<Vec<_>, _>>()?;
     Ok(values)
+}
+pub(crate) fn search_notes(
+    db: &Connection,
+    query: &str,
+    include_deleted: bool,
+) -> Result<Vec<crate::search::SearchHit>> {
+    // Same literal-substring semantics as `list`, but without a time-based
+    // pre-limit: scoring must see every match or a title hit can be dropped
+    // when many notes match (see docs/search-design.md §4.5).
+    let escaped = query
+        .replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_");
+    let deleted_clause = if include_deleted {
+        ""
+    } else {
+        " AND deleted=0"
+    };
+    let sql = if query.chars().count() >= 3 && !query.contains(['%', '_', '\\']) {
+        format!(
+            "SELECT id,content,deleted,generation,updated_at FROM notes WHERE purge_state!='purged'{deleted_clause} AND rowid IN (SELECT rowid FROM notes_fts WHERE content LIKE ?1) AND content LIKE ?1 ESCAPE '\\'"
+        )
+    } else {
+        format!(
+            "SELECT id,content,deleted,generation,updated_at FROM notes WHERE purge_state!='purged'{deleted_clause} AND content LIKE ?1 ESCAPE '\\'"
+        )
+    };
+    let pattern = format!("%{escaped}%");
+    let mut statement = db.prepare(&sql)?;
+    let rows = statement.query_map([&pattern], |row| {
+        Ok((
+            row.get::<_, String>(0)?,
+            row.get::<_, String>(1)?,
+            row.get::<_, bool>(2)?,
+            row.get::<_, i64>(3)?,
+            row.get::<_, String>(4)?,
+        ))
+    })?;
+    let mut hits = Vec::new();
+    for row in rows {
+        let (id, content, deleted, generation, updated_at) = row?;
+        hits.push(crate::search::build_hit(
+            &id,
+            &content,
+            deleted,
+            &updated_at,
+            generation,
+            query,
+        ));
+    }
+    Ok(hits)
 }
 pub(crate) fn put(db: &Connection, n: &LocalNote) -> Result<()> {
     db.execute("INSERT INTO notes(id,content,deleted,generation,acknowledged,base_rev,created_at,updated_at,conflict,purge_state) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ON CONFLICT(id) DO UPDATE SET content=excluded.content,deleted=excluded.deleted,generation=excluded.generation,acknowledged=excluded.acknowledged,base_rev=excluded.base_rev,created_at=excluded.created_at,updated_at=excluded.updated_at,conflict=excluded.conflict,purge_state=excluded.purge_state",params![n.id,n.content,n.deleted,n.generation,n.acknowledged,n.base_rev,n.created_at,n.updated_at,n.conflict.as_ref().map(serde_json::to_string).transpose()?,n.purge_state])?;

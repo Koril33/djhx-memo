@@ -8,6 +8,7 @@ mod list_actions;
 mod markdown_export;
 mod model;
 mod purge;
+mod search;
 mod sync;
 mod update_barrier;
 mod update_catalog;
@@ -244,6 +245,63 @@ impl Engine {
             .cloned()
             .ok_or_else(|| AppError::new("NOT_FOUND", "空间不存在"))
     }
+    fn search_notes(&self, request: &Value) -> Result<Value> {
+        let query = request["query"].as_str().unwrap_or("");
+        let include_deleted = request["scope"]["include_deleted"]
+            .as_bool()
+            .unwrap_or(false);
+        let registry = lock(&self.registry)?.clone();
+        let kind = request["scope"]["kind"].as_str().unwrap_or("current");
+        let mut targets: Vec<Profile> = Vec::new();
+        if let Some(ids) = request["scope"]["space_ids"].as_array() {
+            for id in ids.iter().filter_map(Value::as_str) {
+                if let Some(profile) = registry.profiles.iter().find(|p| p.id == id) {
+                    targets.push(profile.clone());
+                }
+            }
+        } else {
+            let selected = registry.profiles.iter().find(|p| p.id == registry.selected);
+            match kind {
+                "all_local" => targets.extend(
+                    registry
+                        .profiles
+                        .iter()
+                        .filter(|p| p.kind == "local")
+                        .cloned(),
+                ),
+                "account" => {
+                    if let Some(profile) = selected.filter(|p| p.kind == "account") {
+                        targets.push(profile.clone());
+                    }
+                }
+                _ => {
+                    if let Some(profile) = selected.filter(|p| p.kind != "recovery") {
+                        targets.push(profile.clone());
+                    }
+                }
+            }
+        }
+        // Recovery spaces are read-only archives outside the v1 search scope.
+        targets.retain(|p| p.kind != "recovery");
+        let mut hits: Vec<crate::search::SearchHit> = Vec::new();
+        for profile in targets {
+            let database = db::open(&self.path(&profile))?;
+            for mut hit in db::search_notes(&database, query, include_deleted)? {
+                hit.profile_id = profile.id.clone();
+                hit.space_kind = profile.kind.clone();
+                hits.push(hit);
+            }
+        }
+        hits.sort_by(|a, b| {
+            b.score
+                .cmp(&a.score)
+                .then_with(|| b.updated_at.cmp(&a.updated_at))
+                .then_with(|| a.note_id.cmp(&b.note_id))
+        });
+        let truncated = hits.len() > 50;
+        hits.truncate(50);
+        Ok(json!({"hits": hits, "truncated": truncated}))
+    }
     fn changed(&self, profile: &Profile) {
         self.event.fetch_add(1, Ordering::SeqCst);
         if profile.kind == "account"
@@ -338,6 +396,9 @@ impl Engine {
                 self.changed(&profile);
             }
             return Ok(json!({"active":active}));
+        }
+        if action == "search_notes" {
+            return self.search_notes(request);
         }
         let profile = self.profile(request)?;
         if action == "state" {
