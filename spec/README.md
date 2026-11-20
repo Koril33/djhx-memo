@@ -4,6 +4,7 @@
 
 | 文档 | 定义内容 |
 |---|---|
+| [client-0.1.11.md](client-0.1.11.md) | 0.1.11快捷键（Ctrl+W关闭到托盘、Ctrl+F笔记内查找、Ctrl+Shift+F全局搜索）与本地全文搜索（相关性、高亮、片段、范围过滤）；设计见 [快捷键设计](../docs/shortcuts-design.md) 与 [搜索功能详细设计](../docs/search-design.md)，验证见 [0.1.11 记录](../docs/releases/0.1.11-validation.md) |
 | [client-0.1.10.md](client-0.1.10.md) | 0.1.10品牌更新固定流程、sunrise图标与中英文名称、单篇Markdown导出、危险操作留白 |
 | [android-install-compatibility.md](android-install-compatibility.md) | Android0.1.9系统安装器兼容入口、失败分类与恢复；该补丁发布时Windows/Linux仍0.1.8，0.1.10已统一三端 |
 | [client-0.1.8.md](client-0.1.8.md) | 0.1.8操作语义、账号入口、状态与更新排版、官网直链 |
@@ -26,7 +27,6 @@ v0.1 规划中关于冲突策略、Web 范围、共享前端的旧表述已由�
 
 ## 尚未启用的提案
 
-- [client-0.1.11.md](client-0.1.11.md)：快捷键（Ctrl+W 关闭到托盘 / Ctrl+F 笔记内查找 / Ctrl+Shift+F 全局搜索）与本地全文搜索（相关性、高亮、片段、范围过滤、性能基准）的开发前规范，决策已收敛、无遗留待决策项；设计见 [快捷键设计](../docs/shortcuts-design.md) 与 [搜索功能详细设计](../docs/search-design.md)。尚未实施或验收。
 - [client-0.2.0.md](client-0.2.0.md)：维护者已确定五项范围的开发前目标草案，包含 M2、Android 离线交互、Markdown 排版、jade-ivory 跨端/官网图标和 Windows 新装目录；尚未实施或验收，不能替代当前版本的实际能力说明。可行性、待定参数及验收矩阵见[开发准备](../docs/client-0.2.0-development.md)。
 - 自动更新规范中的 Linux AppImage/DEB 安装适配、跨协议/schema 更新和信任根桥接尚未实现，不属于本轮 Windows/Android 交付能力。
 

@@ -52,7 +52,7 @@ NoteView 同时带 generation、正文、删除/冲突元数据、本地保存�
 
 0.1.11 将 `search_notes` 从"单空间字面过滤"扩展为"跨空间本地全文搜索"，行为契约见 [client-0.1.11](client-0.1.11.md)，设计见 [搜索功能详细设计](../docs/search-design.md)。要点（与上表 `search_notes` 行是"扩展"关系，不改变 `list` 的稳定排序+单空间语义）：
 
-- 输入：`query`（字面子串，可为空）、`scope{kind: current|all_local|account, space_ids?, include_deleted}`、`limit`（每空间候选上限 200，返回 top 50）、`snippet{max_snippets, context_chars}`。
-- 输出：`hits[] / truncated`；`SearchHit` 含 `note_id / profile_id / space_kind(local|account) / deleted / title / title_segments / snippet / segments / hit_count / score / updated_at / generation`。`segments`/`title_segments` 是已切分文本 `{text, hit}`，无裸偏移。
-- 只读本地、不返回全文（两阶段：先召回打分、后对 top 50 读正文生成片段）、不做 offset 分页（top 50 + `truncated`）、不触发同步、不持全局 busy。
+- 输入：`query`（字面子串，可为空）、`scope{kind: current|all_local|account, space_ids?, include_deleted}`。
+- 输出：`hits[] / truncated`；`SearchHit` 含 `note_id / profile_id / space_kind(local|account) / deleted / title / title_segments / snippet / segments / hit_count / score / updated_at / generation`。`segments`/`title_segments` 是已切分文本 `{text, hit}`，无裸偏移；`snippet` 为围绕首个命中的单片段。
+- 只读本地、不返回全文；**全量召回（无 SQL `LIMIT` 预截断）→ 打分 → 排序 → 取 top 50**；`truncated` = 合并排序后命中数 >50 被截断。不做 offset 分页、不触发同步、不持全局 busy。
 - 匹配语义延续 v1：字面子串、ASCII 大小写不敏感、其他 Unicode 按原字符、不解释为 FTS/正则/布尔；候选检索用 FTS5 trigram（≥3 字符）与字面 LIKE 兜底（<3 字符），不构造 FTS `MATCH` 语法。v1 全局搜索范围不含恢复空间。

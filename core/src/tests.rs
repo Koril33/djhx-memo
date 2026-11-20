@@ -557,6 +557,48 @@ fn search_notes_include_deleted_scope() {
 }
 
 #[test]
+fn search_notes_trigram_path_case_special_and_miss() {
+    let app = engine();
+    invoke(
+        &app,
+        json!({"action":"create","content":"标题\nMeeting notes with Python code 100%","request_id":id()}),
+    );
+    invoke(
+        &app,
+        json!({"action":"create","content":"杂记\nnothing relevant here","request_id":id()}),
+    );
+    // >=3 chars goes through the trigram candidate path; ASCII case-insensitive.
+    let hits = invoke(
+        &app,
+        json!({"action":"search_notes","query":"MEETING","scope":{"kind":"current","include_deleted":false}}),
+    )["hits"]
+        .as_array()
+        .unwrap()
+        .clone();
+    assert_eq!(hits.len(), 1);
+    // "MEETING" is in the body (not the title), so the snippet highlights it.
+    assert!(
+        hits[0]["segments"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|s| s["hit"] == true)
+    );
+    // Special characters match literally, never interpreted as FTS syntax.
+    let percent = invoke(
+        &app,
+        json!({"action":"search_notes","query":"%","scope":{"kind":"current","include_deleted":false}}),
+    );
+    assert_eq!(percent["hits"].as_array().unwrap().len(), 1);
+    // No match yields an empty result.
+    let miss = invoke(
+        &app,
+        json!({"action":"search_notes","query":"zzzmissing","scope":{"kind":"current","include_deleted":false}}),
+    );
+    assert_eq!(miss["hits"].as_array().unwrap().len(), 0);
+}
+
+#[test]
 fn search_trigger_skips_unchanged_content_and_schema_v4() {
     let app = engine();
     let db = db::open(&app.root.join("local.sqlite")).unwrap();
