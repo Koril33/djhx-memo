@@ -1,6 +1,6 @@
 # 项目文档
 
-> 2026-11-20 当前代码基线为 `v0.1.12 / 6f12a73`（三端/core 0.1.12、Android code 13、本地 schema 4、server 0.1.4/协议 2）。部分总览与历史记录尚未同步版本或公开状态；最新交叉核对与本轮评估见 [0.1.13 开发前评估](client-0.1.13-assessment.md)。该文档仅评估，不表示已实施或发布 0.1.13。
+> 2026-11-20 当前代码基线为 `v0.1.12 / 6f12a73`（三端/core 0.1.12、Android code 13、本地 schema 4、server 0.1.4/协议 2）。0.1.13 已完成范围定稿，后续使用[开发文档](client-0.1.13-development.md)及[目标规范](../spec/client-0.1.13.md)；[早期评估](client-0.1.13-assessment.md)保留调查证据，其“全部账号”提议已撤销。文档完成不表示已实施或发布。
 
 > 状态说明：发布、模块验证和评审记录按日期保留当时状态；代码版本见上方最新基线，产品行为以 [spec](../spec/README.md) 为准，协作规则见 [AGENTS](../AGENTS.md)，试用与完整验收状态见 [validation](validation.md)。[11 月 18 日项目报告](project-status-2026-11-18.md)是历史快照；历史记录中的“7 天试用未完成/待完成”不代表当前。
 
@@ -39,6 +39,7 @@
 - [PR #27 调研报告事实核验](reviews/quality-audit-0.1.10-verification.md)：独立复核 M1/M2、测试命令及架构/规范引用，区分已复现、需修正和历史证据不足的结论。
 - [下一版客户端讨论稿](client-next-discussion.md)：0.2.0 范围确定前的历史讨论，图片仍暂缓；最新选择见下列开发前文档。
 - [0.2.0 开发前准备](client-0.2.0-development.md) / [目标规范草案](../spec/client-0.2.0.md)：已确定五项范围与三项交互/视觉取舍，评估可行性、工程待定参数和有效验收矩阵；未开始编码或发版。
-- [0.1.13 开发前评估](client-0.1.13-assessment.md)：基于 0.1.12 重新核对空白页/Ctrl+W、所有账号本地搜索及桌面挤压、Android 列表续写和原生标题栏；记录建议、待定边界、隔离验证及最新发布流程，未开发产品代码。
+- [0.1.13 开发文档](client-0.1.13-development.md) / [目标契约](../spec/client-0.1.13.md)：范围已确认，定义桌面空白页/两段式 Ctrl+W、固定本机＋当前选中账号及普通回收站搜索、来源与结果布局、Android 最小列表续写；包括接口、竞态/失败处理、实施顺序、验收用例及发布关口，未实施。
+- [0.1.13 早期评估](client-0.1.13-assessment.md)：保留 0.1.12 代码核对、桌面挤压验证与标题栏调查；“全部账号”与旧待定表为历史提议，后续开发以定稿文档为准。标题栏仅记录，不纳入本版。
 - [0.1.11 快捷键与搜索设计](shortcuts-design.md) / [搜索功能详细设计](search-design.md) / [版本规范](../spec/client-0.1.11.md)：Ctrl+W 关闭到托盘、Ctrl+F 笔记内查找、Ctrl+Shift+F 全局搜索（含 Android 笔记内查找/全局搜索 UI）。已实现并本地测试通过，验证见 [0.1.11 记录](releases/0.1.11-validation.md)。交叉评审见 [Claude 独立评审](reviews/0.1.11-shortcuts-search-claude-review.md)，开源方案调研见 [搜索实现调研](research/search-implementations-survey.md)。
 - [2026-11-18 全端静态评审](reviews/static-review-2026-11-18.md) / [项目现状报告](project-status-2026-11-18.md)：一次性只读评审，覆盖 main、0.2.0 准备分支与 CLI 调研分支；提出 X1-X4 优先缺陷、0.2.0 拆分建议与调研文档内网信息处置，不改变 spec 或产品行为。

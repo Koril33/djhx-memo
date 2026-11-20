@@ -1,8 +1,10 @@
 # djhx-memo
 
-**[0.1.10三端正式版](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.10)已发布**：中文名 **阳墨随记**、英文 **DJHX MEMO**，三端采用sunrise Logo，支持编辑页单笔记Markdown导出，并调整红底删除按钮留白。构建、发行与实际升级状态见[0.1.10记录](docs/releases/0.1.10-validation.md)，后续更名或换图标按[固定流程](docs/brand-change-workflow.md)执行；旧paper-v1完整保留。
+**当前三端正式版为 [0.1.12](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.12)**：保留0.1.11快捷键/搜索，精简桌面列表头与Android搜索过滤布局/高亮。中文名 **阳墨随记**、英文 **DJHX MEMO**，沿用0.1.10的sunrise品牌与单篇Markdown导出；品牌历史、实际升级边界见[0.1.10记录](docs/releases/0.1.10-validation.md)，换图标按[固定流程](docs/brand-change-workflow.md)执行。最新提交/公开状态核对见[0.1.13早期评估](docs/client-0.1.13-assessment.md)。
 
-core0.1.10新增纯文件名API，server仍0.1.4、协议2/schema3及签名身份不变。Android保留[0.1.9安装兼容补丁](docs/releases/0.1.9-validation.md)；Windows/Linux跳过0.1.9。完整设备矩阵仍待完成；连续7天日常试用已由维护者确认完成（逐日明细未入库，三端矩阵仍独立验收）。
+三端/core为0.1.12，Android code13；local schema因0.1.11追加迁移0004升至4，server仍0.1.4/schema2、协议2，应用/签名身份不变。Android保留[0.1.9安装兼容补丁](docs/releases/0.1.9-validation.md)。完整设备矩阵仍待完成；连续7天日常试用已由维护者确认完成（逐日明细未入库，三端矩阵仍独立验收）。
+
+**0.1.13 仅完成开发前文档，未实施或发布。** 已确认范围、接口、实施顺序与验收见[完整开发文档](docs/client-0.1.13-development.md)和[目标契约](spec/client-0.1.13.md)：桌面空白页/两段式Ctrl+W、本机＋当前选中账号及普通回收站搜索/来源/布局、Android基础列表续写；标题栏只记录。
 
 0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](docs/releases/0.1.4-validation.md)。
 
@@ -10,7 +12,7 @@ core0.1.10新增纯文件名API，server仍0.1.4、协议2/schema3及签名身�
 
 **v1 目标：Windows、Android、Linux 三端可日常使用。** 桌面端包含托盘；允许未登录记笔记，提供邀请码注册、登录、同步、搜索、回收站和 Markdown 导出。Web、Apple、全局快捷键、系统分享暂缓。
 
-0.1.4起的既有版本已公开发布，当前客户端保持其协议 2 与 schema 基线，core新增本地列表/文件入口。Windows/Linux/Android 客户端已实现，公开安装包以 Release 列出的平台为准。已执行核心/服务端联调及目标系统的部分实际使用验证；完整设备矩阵仍待完成；连续 7 天日常试用已由维护者确认完成（逐日明细未入库，三端矩阵仍独立验收），完整产品 v1 尚未正式发布。实际结果和限制见各模块验证记录。
+0.1.4起的既有版本已公开发布，当前客户端保持协议2，local schema4包含后续搜索触发器迁移，core提供本地列表/文件入口。Windows/Linux/Android 客户端已实现，公开安装包以 Release 列出的平台为准。已执行核心/服务端联调及目标系统的部分实际使用验证；完整设备矩阵仍待完成；连续 7 天日常试用已由维护者确认完成（逐日明细未入库，三端矩阵仍独立验收），完整产品 v1 尚未正式发布。实际结果和限制见各模块验证记录。
 
 ## 从这里开始
 
