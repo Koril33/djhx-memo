@@ -53,19 +53,26 @@
 - 完整发布顺序：tag push → [release.yml](../.github/workflows/release.yml) 构建 + draft → 维护者公开 → [catalog.yml](../.github/workflows/catalog.yml) 签目录 + 打包 → 本机 `deploy-website.sh` 部署 → `check-website-downloads.py` 浏览器回归（可选）。
 - 目录 `sequence` 由 `build-catalog-manifest.py` 读线上 `current.json` +1，保证严格递增；重复运行会因 sequence 已占用而拒绝（prepare-update-catalog.py 已有校验）。
 
-## 5. 风险与待决策
+## 5. 风险与决策（交叉评审后定稿）
 
-| 项 | 说明 | 状态 |
+| 项 | 决定/说明 | 状态 |
 |---|---|---|
-| sudo 密码传递 | 仅经 `ssh -t … sudo -S` stdin，不入文件/历史/日志 | 已设计 |
-| 服务器 SSH 用户与路径 | 需维护者提供可 sudo 的部署账号与 `/var/www` 布局 | 待维护者确认 |
-| 回滚可靠性 | 软链切换原子、旧目录保留、`nginx -t` 前置 | 已设计 |
-| `downloads.json` 生成 | tag 派生，不手工提交 | 已设计 |
+| sudo 密码传递 | 经 `printf | ssh "sudo -S -p '' bash 远程脚本"` stdin，不入文件/历史/日志；脚本为文件、密码为 stdin，二者不冲突。sudoers NOPASSWD（仅限 deploy 命令）留作后续硬化 | 已定 |
+| bundle↔catalog 交接 | catalog job 增补 `upload-artifact`，bundle job `download-artifact` 同 run 取目录 | 已定 |
+| `downloads.json` 每平台版本 | v1 三平台同版本（单 tag 派生）；历史单平台发版（如 0.1.9）由手工改，生成器不支持分叉 | 已定 |
+| 健康检查 reload 异步窗口 | 部署脚本已加"5 次重试 × 2s"（对应 website-deployment.md 记录） | 已定 |
+| 服务端 sequence 单调校验 | 部署脚本切换前校验 `新 sequence > 线上 sequence`，否则拒绝 | 已定 |
+| 服务器 SSH 用户与路径 | 需维护者提供可 sudo 的部署账号与 `/var/www` 布局（`DJHX_DEPLOY_SSH_TARGET`/`DJHX_DEPLOY_WWW_ROOT`） | 待维护者确认 |
+| 软链切换 + current.json 原子性 | 二者为两次原子操作、存在短暂窗口；旧目录保留、`nginx -t` 前置、失败回滚 | 已设计（已知边界） |
+| Release immutability | catalog/bundle 附着回公开 Release 依赖 `immutable=false`（当前已核）；若策略变更需改用新版本追加 | 已设计（依赖项） |
+| catalog 私钥是否带口令 | 需确认 `DJHX_CATALOG_SIGNING_KEY` 为无口令 minisign 私钥；带口令则另设 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | 待维护者确认 |
+| APK 证书交叉校验 | catalog job 已加 `keytool -printcert -jarfile` 硬校验（与常量不一致即 fail） | 已实施 |
+| 目录 30 天有效期 | prepare-update-catalog.py 默认 30 天；公开后应尽快部署，否则目录过期需重签更高序号 | 已设计 |
 | 浏览器回归 | 部署后由 `check-website-downloads.py` 或人工执行 | 待确认是否纳入脚本 |
 | 无新版本重签目录 | 脚本不做；仍按 update-publishing.md 人工 | 已定 |
 
 ## 6. 验收
 
-- CI：`bundle` job 产物含 `website/dist/` + `updates/stable/`，`downloads.json` 版本正确。
+- CI：`catalog` job 产出签名目录（附 APK 证书交叉校验）；`bundle` job 产出 `site/` + `updates/stable/` 打包，`downloads.json` 版本正确。
 - 本机脚本：在非生产 staging 先试跑（软链切换 + 回滚各一次），再对生产执行；记录摘要与回滚日志。
 - 部署后：公网 HTTPS 首页 200、三平台下载直链可达、`current.json` 可匿名获取且签名/sequence 正确。

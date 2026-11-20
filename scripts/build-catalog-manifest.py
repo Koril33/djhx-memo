@@ -23,10 +23,12 @@ APPLICATION_ID = "app.djhx.memo"
 
 def read_gradle(root: Path):
     text = (root / "android/app/build.gradle.kts").read_text(encoding="utf-8")
-    version_code = re.search(r'versionCode\s*=.*?else\s+(\d+)', text).group(1)
-    min_sdk = re.search(r'minSdk\s*=\s*(\d+)', text).group(1)
-    abis = re.findall(r'"([^"]+)"', re.search(r'abiFilters\s*\+=\s*listOf\(([^)]*)\)', text).group(1))
-    return int(version_code), int(min_sdk), abis
+    version_code = re.search(r'versionCode\s*=.*?else\s+(\d+)', text)
+    min_sdk = re.search(r'minSdk\s*=\s*(\d+)', text)
+    abis = re.search(r'abiFilters\s*\+=\s*listOf\(([^)]*)\)', text)
+    if not (version_code and min_sdk and abis):
+        raise SystemExit("Could not parse versionCode/minSdk/abis from android/app/build.gradle.kts")
+    return int(version_code.group(1)), int(min_sdk.group(1)), re.findall(r'"([^"]+)"', abis.group(1))
 
 
 def next_sequence(root: Path):

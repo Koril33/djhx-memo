@@ -1,13 +1,14 @@
-# 更新目录签名：Release 公开后生成并签署稳定更新目录。
+# 更新目录签名 + 官网部署包构建：Release 公开后执行。
 #
 # 触发：release published（维护者把草稿 Release 公开后；URL 已确定、资产可匿名下载）。
 # 与 release.yml 分离：release.yml 在 tag push 时构建并建草稿，本工作流在公开后签名目录。
 #
 # 策略（方案 A，见 docs/ci-cd-plan.md 与 docs/adr/0019-update-catalog-website-ci.md）：
-#   - 从公开 Release 下载已构建资产，用 catalog 私钥（DJHX_CATALOG_SIGNING_KEY，minisign，
-#     与 Windows .exe.sig 的 package 钥不同）经 scripts/prepare-update-catalog.py 签名目录。
-#   - sequence 读线上 current.json +1（严格递增）；产物附着到 Release 供半自动部署脚本取用。
-#   - 不部署、不替换线上目录；官网部署另见 docs/website-deployment-ci.md。
+#   - catalog job：从公开 Release 下载资产，用 catalog 私钥（DJHX_CATALOG_SIGNING_KEY，
+#     minisign，与 Windows .exe.sig 的 package 钥不同）经 prepare-update-catalog.py 签名目录；
+#     sequence 读线上 current.json +1（严格递增）；产物附着到 Release。
+#   - bundle job：构建 website/dist + 生成 downloads.json，与目录一起打成部署包，附着到 Release，
+#     供本机 scripts/deploy-website.sh 半自动部署（服务器写权限与 sudo 密码不进 CI）。
 name: catalog
 
 on:
@@ -30,6 +31,10 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: desktop/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.99.1
@@ -49,6 +54,20 @@ jobs:
             --pattern 'djhx-memo-*-windows-x64-setup.exe' \
             --pattern 'djhx-memo-*-windows-x64-setup.exe.sig' \
             --pattern 'djhx-memo-*-android.apk'
+      - name: Verify APK certificate matches catalog constant
+        run: |
+          apk="$(ls dist/catalog/assets/*-android.apk)"
+          actual="$(keytool -printcert -jarfile "$apk" 2>/dev/null \
+            | sed -n 's/.*SHA256[: ]*//p' | head -1 | tr -d ' :' | tr '[:upper:]' '[:lower:]')"
+          expected="ec8a88aa7aad47d51fa07ffddb4a17bb69c4aad71ee3c0dd4b3ad0eb4f5cdcdb"
+          if [ -z "$actual" ]; then
+            echo "::warning::keytool could not read the APK certificate; cross-check skipped"
+          elif [ "$actual" != "$expected" ]; then
+            echo "::error::APK certificate SHA256 $actual does not match $expected"
+            exit 1
+          else
+            echo "APK certificate SHA256 matches"
+          fi
       - name: Build catalog manifest
         run: |
           commit="$(git rev-parse "${GITHUB_REF_NAME}^{commit}")"
@@ -67,3 +86,54 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload "${{ github.ref_name }}" dist/catalog/out/*.json --clobber
+      - name: Upload catalog for bundle job
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalog
+          path: dist/catalog/out/
+          retention-days: 14
+
+  bundle:
+    needs: catalog
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - name: Derive version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+      - name: Build website
+        working-directory: website
+        run: |
+          npm ci
+          python ../scripts/build-downloads-manifest.py \
+            --tag "${{ github.ref_name }}" \
+            --output downloads.json
+          npm run build
+      - name: Download signed catalog
+        uses: actions/download-artifact@v4
+        with:
+          name: catalog
+          path: dist/bundle/updates/stable
+      - name: Assemble deploy bundle
+        run: |
+          mkdir -p dist/bundle/site
+          cp -a website/dist/. dist/bundle/site/
+          tar -C dist/bundle -czf "dist/deploy-bundle-${{ steps.version.outputs.version }}.tar.gz" site updates
+      - name: Attach bundle to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            "dist/deploy-bundle-${{ steps.version.outputs.version }}.tar.gz" --clobber
+      - name: Upload bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-bundle
+          path: dist/deploy-bundle-*.tar.gz
+          retention-days: 14
