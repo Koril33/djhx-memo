@@ -20,6 +20,7 @@
 |---|---|---|
 | state | 无 | `{profile,profiles,event_seq,sync,credential_persistent,local_import_count}` |
 | list | query="", deleted=false | NoteView 数组 |
+| search_notes | query, scope{kind: current\|all_local\|account, space_ids?, include_deleted} | `{hits:[SearchHit],truncated}`；见 [core-api §0.1.11 搜索扩展](core-api.md) |
 | get | id | NoteView |
 | create | content, request_id（UUID） | NoteView；重试同 request_id 返回同笔记 |
 | import_markdown | profile_id, filename, bytes_base64, request_id（UUID） | NoteView；UTF-8/BOM/行尾及大小由 core 校验，同请求幂等 |
@@ -61,6 +62,8 @@ UI 保留未提交编辑缓冲，300ms 防抖且最长 1 秒提交；切换、�
 create 的同 request_id 重试返回该笔记当前 NoteView，可能与本次发送缓冲不同（例如首次已提交但 UI 未收到确认，期间用户继续输入）。UI 只能按返回的 content/generation 确认本机基线；缓冲仍有差异时继续 save，不能将本次请求正文直接标为已保存。关闭/退出确认期间应先完成输入法组合并建立输入屏障，提交最终缓冲后再确认生命周期操作。
 
 笔记读写、列表、导入和导出请求同时携带 UI 已读取的 `profile_id`。当前空间已变化时返回 PROFILE_CHANGED，不把旧空间缓冲写入新账号。state 可返回 `redirects` 对象（原笔记 ID → 冲突副本 ID）；UI 在 event_seq 更新时消费一次映射并迁移焦点，不能因此覆盖未提交缓冲。
+
+`search_notes` 为**跨空间只读动作**，按 `scope` 枚举目标空间（经 `fixed_profile` 打开非选中库，不受 `profile()` 的 `PROFILE_CHANGED` 守卫约束；v1 范围跳过 `recovery` 空间）。它不写任何库、不触发同步；搜索期间空间被切换，本次结果按旧范围返回、下一次由 UI 以新 `event_seq` 重新发起即可，不产生脏写。
 
 state 的 event_seq 变化提示重新读取；前台可定期调用 state。不得在 UI 生成 base_rev/op_id、裁决冲突或从显示时间推导同步状态。导出 ZIP 的目标选择和原子落盘由平台完成。
 
