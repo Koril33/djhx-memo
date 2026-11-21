@@ -1,1 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F2B45C"/><stop offset="1" stop-color="#E8734A"/></linearGradient></defs><rect x="0" y="0" width="1024" height="1024" rx="229.069" fill="url(#bg)"/><g transform="translate(197.307 197.307) scale(26.224)"><path d="M13.063 3.669A8.2 8.2 0 1 0 20.131 10.737A1 1 0 0 0 19.104 9.867A5 5 0 0 1 13.933 4.696A1 1 0 0 0 13.063 3.669Z" fill="#14161A"/><path d="M12 7.4C12.1 9.4 12.43 11.82 13.35 12.59A2.1 2.1 0 1 1 10.65 12.59C11.57 11.82 11.9 9.4 12 7.4Z" fill="#F6F1E7"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 256 256"><title>DJHX MEMO</title><defs>
+    <linearGradient id="jade" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2F7A5C"/>
+      <stop offset="1" stop-color="#0A3024"/>
+    </linearGradient>
+  </defs><rect width="256" height="256" rx="72" fill="url(#jade)"/><path fill="#F3EFE2" d="M128 48C132.8 48 137.5 48.4 142.2 49.3C144.8 49.8 146.2 51.6 146.2 54.3C146.2 86.2 170.3 111 201.7 110C204.4 109.9 206 111.6 206.6 114.2C207.7 118.7 208.2 123.4 208.2 128C208.2 172.3 172.3 208.2 128 208.2C83.7 208.2 47.8 172.3 47.8 128C47.8 83.7 83.7 48 128 48Z"/><path fill="#14523A" d="M128 85.5C125.5 108 108.5 130.1 108.5 148.9C108.5 160.7 116.8 168.8 128 168.8C139.7 168.8 147.6 160.6 147.6 148.9C147.6 130 130.5 108 128 85.5Z"/></svg>

@@ -6,6 +6,8 @@ MIT 只覆盖本项目有权授权的原创部分，不改写第三方许可、�
 
 ## 随包许可
 
+2026-11-21的玉白母版根据维护者PNG参考新绘制并获确认，源文件/哈希及依据见[来源归档](../assets/brand/sources/jade-ivory-v1/README.md)。可选开发工具固定 `@resvg/resvg-js@2.6.2`（MPL-2.0），上游许可和源码获取链接保留于[工具通知](../tools/brand-render/THIRD_PARTY_NOTICES.md)；它及native模块不进入客户端/官网运行依赖或随包文件，普通构建不安装它。工具许可不被本项目MIT替代，输出资源仍按自身来源管理，见[ADR-0020](adr/0020-jade-ivory-brand-render.md)。
+
 0.1.10品牌输入为维护者提供的`assets/brand/packs/logo-pack-v1.zip`，按其选择使用sunrise。原始包、固定SHA256和旧paper-v1图形分别保留在品牌目录；不执行包内脚本，不复制其安装依赖。品牌图形按本项目原创素材管理，MIT不授予他人商标权；维护者仍对素材的可贡献性负责。平台派生及后续替换见[固定流程](brand-change-workflow.md)。
 
 | 材料 | 管理与分发 |

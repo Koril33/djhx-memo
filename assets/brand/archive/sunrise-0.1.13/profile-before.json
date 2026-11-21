@@ -1,0 +1,18 @@
+{
+  "format_version": 1,
+  "names": {
+    "zh-CN": "阳墨随记",
+    "en": "DJHX MEMO"
+  },
+  "logo": {
+    "profile": "logo-pack-v1",
+    "colorway": "sunrise",
+    "archive": "assets/brand/packs/logo-pack-v1.zip",
+    "sha256": "a8e24c2391c08f3547d47466b78f77a4eb9b8b4d5340fb945ae2c76967e28610"
+  },
+  "identity": {
+    "application_id": "app.djhx.memo",
+    "binary": "djhx-memo",
+    "windows_install_identity": "简记"
+  }
+}
