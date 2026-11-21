@@ -125,6 +125,36 @@ export class EditorSession {
     return this.flight;
   }
 
+  /**
+   * End the current document without touching the window lifecycle: freeze
+   * input, commit pending text, confirm the buffer matches the committed
+   * baseline, then clear the session back to no-document. An empty unsaved
+   * draft is allowed to close without creating a note; an existing note is
+   * never deleted by closing it. Throws on any commit failure, preserving the
+   * buffer, cursor, error and rescue surface for a later retry.
+   */
+  async closeDocument(): Promise<void> {
+    if (this.compositionWait) await this.compositionWait;
+    this.inputLocked = true;
+    this.changed();
+    try {
+      await this.flush();
+      if (this.error) throw this.error;
+      if (this.generationConflict) throw this.error ?? new Error('generation conflict unresolved');
+      if (this.unsaved) throw new Error('draft commit not acknowledged');
+      this.note = null;
+      this.content = '';
+      this.committed = '';
+      this.requestId = crypto.randomUUID();
+      this.error = null;
+      this.generationConflict = false;
+      this.changed();
+    } finally {
+      this.inputLocked = false;
+      this.changed();
+    }
+  }
+
   /** Freeze new input only after the IME commits, through the native hide/quit acknowledgement. */
   async finishLifecycle(finish: () => Promise<unknown>): Promise<void> {
     if (this.compositionWait) await this.compositionWait;

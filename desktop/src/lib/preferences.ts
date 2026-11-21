@@ -91,3 +91,35 @@ export function profileLabel(
   }
   return profile.label;
 }
+
+/** Safe host plus base path from a server URL, without userinfo, query or fragment. */
+export function serverHost(serverUrl: string | null | undefined): string | null {
+  if (!serverUrl) return null;
+  try {
+    const url = new URL(serverUrl);
+    const path = url.pathname.replace(/\/+$/, '');
+    if (!path || path === '/') return url.host;
+    return `${url.host}${path}`;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Search-hit source label. Local spaces show the fixed local-space text;
+ * account spaces show `username · server host`, falling back to the profile
+ * label when the username is missing and to a generic account-space text when
+ * no displayable host is available. Never uses credentials or filesystem paths.
+ */
+export function searchSourceLabel(
+  profile: Profile | undefined,
+  kind: 'local' | 'account',
+  t: Translator,
+): string {
+  if (kind === 'local') return t('localSpace');
+  const host = serverHost(profile?.server_url);
+  const name = profile?.username ?? profile?.label ?? null;
+  if (name && host) return `${name} · ${host}`;
+  if (name) return name;
+  return t('accountSpace');
+}

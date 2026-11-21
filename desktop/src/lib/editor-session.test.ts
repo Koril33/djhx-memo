@@ -229,6 +229,70 @@ describe('edit commit buffer', () => {
   });
 });
 
+describe('close document session', () => {
+  it('closes a saved note without another save and clears the session', async () => {
+    const { editor, invoke } = setup(async (req) => note(req.content as string, '2'));
+    await editor.open(note());
+    expect(editor.note?.id).toBe('note-a');
+    await editor.closeDocument();
+    expect(invoke).not.toHaveBeenCalled();
+    expect(editor.note).toBeNull();
+    expect(editor.content).toBe('');
+    editor.dispose();
+  });
+  it('commits unsaved content before clearing the session on close', async () => {
+    const { editor, invoke } = setup(async (req) => note(req.content as string, '2'));
+    await editor.open(note('old'));
+    editor.edit('final');
+    await editor.closeDocument();
+    expect(invoke).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'save', content: 'final' }),
+    );
+    expect(editor.note).toBeNull();
+    editor.dispose();
+  });
+  it('closes a whitespace-only draft without creating a note', async () => {
+    const { editor, invoke } = setup(async (req) => note(req.content as string, '1'));
+    editor.edit('   \n');
+    await editor.closeDocument();
+    expect(invoke).not.toHaveBeenCalled();
+    expect(editor.note).toBeNull();
+    editor.dispose();
+  });
+  it('closes an existing empty note without saving or deleting it', async () => {
+    const { editor, invoke } = setup(async (req) => note(req.content as string, '2'));
+    await editor.open(note(''));
+    await editor.closeDocument();
+    expect(invoke).not.toHaveBeenCalled();
+    expect(editor.note).toBeNull();
+    editor.dispose();
+  });
+  it('keeps the buffer, note and error when the close commit fails', async () => {
+    const { editor } = setup(async () => {
+      throw new Error('DISK_FULL');
+    });
+    await editor.open(note('old'));
+    editor.edit('must survive');
+    await expect(editor.closeDocument()).rejects.toThrow('DISK_FULL');
+    expect(editor.note?.id).toBe('note-a');
+    expect(editor.content).toBe('must survive');
+    expect(editor.status).toBe('保存失败');
+    editor.dispose();
+  });
+  it('freezes input through the close and restores it afterwards', async () => {
+    const { editor } = setup(async (req) => note(req.content as string, '2'));
+    await editor.open(note('old'));
+    editor.edit('final');
+    const closing = editor.closeDocument();
+    expect(editor.inputLocked).toBe(true);
+    editor.edit('input after close started');
+    expect(editor.content).toBe('final');
+    await closing;
+    expect(editor.inputLocked).toBe(false);
+    editor.dispose();
+  });
+});
+
 describe('remote permanent deletion', () => {
   it('retains uncommitted text, stops old writes and requires explicit rescue with a new ID', async () => {
     const { editor, invoke } = setup(async (req) => ({
