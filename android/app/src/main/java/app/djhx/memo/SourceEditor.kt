@@ -6,6 +6,7 @@ import android.text.Spannable
 import android.text.TextWatcher
 import android.text.style.ForegroundColorSpan
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ScrollView
@@ -97,12 +98,42 @@ internal fun SourceEditor(
             modifier = Modifier.weight(1f).fillMaxWidth(),
             factory = { context ->
                 val editor = object : EditText(context) {
+                    private var enterHandled = false
+
+                    /** 折叠选区、无 composing 且光标位于列表项逻辑行末时，应用一次回车续写。 */
+                    private fun handleListEnter(): Boolean {
+                        if (!isEnabled) return false
+                        val editable = getText()
+                        if (android.view.inputmethod.BaseInputConnection.getComposingSpanStart(editable) >= 0) return false
+                        if (selectionStart != selectionEnd) return false
+                        val content = editable.toString()
+                        val cursor = selectionStart.coerceAtLeast(0).coerceAtMost(content.length)
+                        val plan = planListEnter(content, cursor) ?: return false
+                        editable.replace(plan.replaceStart, plan.replaceEnd, plan.text)
+                        android.text.Selection.setSelection(editable, plan.cursor)
+                        return true
+                    }
+
+                    override fun onKeyPreIme(keyCode: Int, event: KeyEvent): Boolean {
+                        if (keyCode == KeyEvent.KEYCODE_ENTER) {
+                            if (event.action == KeyEvent.ACTION_DOWN) {
+                                enterHandled = handleListEnter()
+                                if (enterHandled) return true
+                            } else if (event.action == KeyEvent.ACTION_UP && enterHandled) {
+                                enterHandled = false
+                                return true
+                            }
+                        }
+                        return super.onKeyPreIme(keyCode, event)
+                    }
+
                     override fun onCreateInputConnection(
                         info: android.view.inputmethod.EditorInfo
                     ): android.view.inputmethod.InputConnection? {
                         val input = super.onCreateInputConnection(info) ?: return null
                         val editor = this
                         return object : android.view.inputmethod.InputConnectionWrapper(input, false) {
+                            private var keyEnterHandled = false
                             private fun composing() {
                                 val active = android.view.inputmethod.BaseInputConnection.getComposingSpanStart(
                                     editor.text
@@ -115,8 +146,30 @@ internal fun SourceEditor(
                             override fun setComposingRegion(start: Int, end: Int): Boolean =
                                 super.setComposingRegion(start, end).also { composing() }
                             override fun finishComposingText(): Boolean = super.finishComposingText().also { composing() }
-                            override fun commitText(value: CharSequence?, newCursorPosition: Int): Boolean =
-                                super.commitText(value, newCursorPosition).also { composing() }
+                            override fun commitText(value: CharSequence?, newCursorPosition: Int): Boolean {
+                                // 软键盘提交单个换行且非组合态时执行续写；候选确认等其它文本走原生路径。
+                                if (value != null && value.length == 1 && value[0] == '\n' && handleListEnter()) {
+                                    return true
+                                }
+                                return super.commitText(value, newCursorPosition).also { composing() }
+                            }
+                            override fun sendKeyEvent(event: KeyEvent?): Boolean {
+                                // IME 转发物理 Enter 的兜底路径；与 onKeyPreIme 通过状态去重，恰好消费一次。
+                                val enterDown = event != null && event.keyCode == KeyEvent.KEYCODE_ENTER &&
+                                    event.action == KeyEvent.ACTION_DOWN
+                                if (enterDown && handleListEnter()) {
+                                    keyEnterHandled = true
+                                    return true
+                                }
+                                val enterUp = event != null && event.keyCode == KeyEvent.KEYCODE_ENTER &&
+                                    event.action == KeyEvent.ACTION_UP
+                                if (enterUp && keyEnterHandled) {
+                                    keyEnterHandled = false
+                                    return true
+                                }
+                                keyEnterHandled = false
+                                return super.sendKeyEvent(event)
+                            }
                         }
                     }
                 }.apply {

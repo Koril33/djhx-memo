@@ -1,6 +1,7 @@
 package app.djhx.memo
 
 import android.app.Application
+import android.content.Context
 import android.os.SystemClock
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,9 +54,12 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         private set
     var searchTruncated by mutableStateOf(false)
         private set
-    var searchKind by mutableStateOf("current")
+    /** 请求时捕获的 profile_id → 来源展示文案快照；迟到回执与切空间后整体作废。 */
+    var searchSources by mutableStateOf(emptyMap<String, String>())
         private set
-    var searchIncludeDeleted by mutableStateOf(false)
+    var searchError by mutableStateOf(false)
+        private set
+    var searchLoading by mutableStateOf(false)
         private set
     var findOpen by mutableStateOf(false)
         private set
@@ -359,13 +363,18 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         val request = ++stateRequest
         val next = gateway.obj("state")
         if (request != stateRequest) return
-        if (currentProfileId() != next.optJSONObject("profile")?.optString("id")) {
+        val previousProfileId = currentProfileId()
+        val nextProfileId = next.optJSONObject("profile")?.optString("id")
+        state = next
+        if (previousProfileId != nextProfileId) {
             cancelSelection()
             trashUndo = null
             actionNotice = null
             markdownImport.cancel()
+            invalidateSearch()
+            val pendingQuery = searchQuery
+            if (pendingQuery.isNotBlank()) searchNotes(pendingQuery)
         }
-        state = next
         val redirects = next.optJSONObject("redirects")
         redirects?.keys()?.forEach { source ->
             val target = redirects.optString(source)
@@ -451,7 +460,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         viewModelScope.launch { runCatching { loadNotes() }.onFailure { report(it) } }
     }
 
-    /** 全局搜索入口：更新查询并防抖 150ms 后调用 core `search_notes`，晚到回执按序号丢弃。 */
+    /** 全局搜索入口：固定范围（本机 + 当前账号，含两者普通回收站），防抖 150ms 后调用 core `search_notes`。 */
     fun searchNotes(value: String) {
         searchQuery = value
         searchJob?.cancel()
@@ -459,31 +468,46 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
             searchRequest++
             searchHits = emptyList()
             searchTruncated = false
+            searchSources = emptyMap()
+            searchError = false
+            searchLoading = false
             searchJob = null
             return
         }
+        searchLoading = true
         searchJob = viewModelScope.launch {
             delay(150)
             runSearch()
         }
     }
 
-    /** 范围（空间集合 + 是否含回收站）变化时立即按当前查询重新搜索。 */
-    fun updateSearchScope(kind: String, includeDeleted: Boolean) {
-        if (searchKind == kind && searchIncludeDeleted == includeDeleted) return
-        searchKind = kind
-        searchIncludeDeleted = includeDeleted
-        searchNotes(searchQuery)
+    /** 当前查询与固定范围失败后立即重试（跳过防抖）。 */
+    fun retrySearch() {
+        if (searchQuery.isBlank()) return
+        searchJob?.cancel()
+        searchLoading = true
+        searchJob = viewModelScope.launch { runSearch() }
     }
 
     private suspend fun runSearch() {
         val request = ++searchRequest
+        // 同一快照内取得 selected 与来源，保证请求锚点与来源展示一致；晚到回执按序号作废。
+        val profileId = currentProfileId()
+        val sources = sourceSnapshot()
         try {
-            val scope = JSONObject().put("kind", searchKind).put("include_deleted", searchIncludeDeleted)
-            val result = gateway.obj("search_notes", "query" to searchQuery, "scope" to scope)
+            val scope = JSONObject().put("kind", "local_and_current_account").put("include_deleted", true)
+            val result = gateway.obj(
+                "search_notes",
+                "query" to searchQuery,
+                "profile_id" to profileId,
+                "scope" to scope
+            )
             if (request == searchRequest) {
                 searchHits = result.optJSONArray("hits")?.objects().orEmpty()
                 searchTruncated = result.optBoolean("truncated")
+                searchSources = sources
+                searchError = false
+                searchLoading = false
             }
         } catch (error: kotlinx.coroutines.CancellationException) {
             throw error
@@ -491,9 +515,41 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
             if (request == searchRequest) {
                 searchHits = emptyList()
                 searchTruncated = false
-                report(error)
+                searchSources = emptyMap()
+                searchError = true
+                searchLoading = false
             }
         }
+    }
+
+    /** 从一次 registry 快照解析各 profile 的来源展示文案，供命中结果按 profile_id 取用。 */
+    private fun sourceSnapshot(): Map<String, String> {
+        val context = getApplication<Application>()
+        return state.optJSONArray("profiles")?.objects().orEmpty().associate { profile ->
+            profile.optString("id") to sourceLabel(profile, context)
+        }
+    }
+
+    private fun sourceLabel(profile: JSONObject, context: Context): String = when (profile.optString("kind")) {
+        "account" -> {
+            val identity = accountSourceIdentity(profile.optString("username"), profile.optString("label"))
+            val host = serverHostDisplay(profile.optString("server_url"))
+            if (identity == null || host == null) context.getString(R.string.search_source_account)
+            else "$identity · $host"
+        }
+        else -> context.getString(R.string.search_source_local)
+    }
+
+    /** 空间切换、登出或快照失效时作废旧回执与来源快照，避免旧结果覆盖新状态。 */
+    private fun invalidateSearch() {
+        searchRequest++
+        searchJob?.cancel()
+        searchJob = null
+        searchHits = emptyList()
+        searchSources = emptyMap()
+        searchTruncated = false
+        searchError = false
+        searchLoading = false
     }
 
     /** 打开全局搜索命中：必要时先切空间，取全文后进入编辑器并注入查询供查找条定位首个命中。 */
@@ -735,8 +791,9 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         searchQuery = ""
         searchHits = emptyList()
         searchTruncated = false
-        searchKind = "current"
-        searchIncludeDeleted = false
+        searchSources = emptyMap()
+        searchError = false
+        searchLoading = false
         findOpen = false
         findQuery = ""
         compositionActive = false

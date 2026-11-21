@@ -16,11 +16,9 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -614,7 +612,7 @@ private fun TrashSearchField(model: MemoModel) {
     )
 }
 
-/** 全局搜索入口：M3 DockedSearchBar + 范围选择 + 高亮结果列表。 */
+/** 全局搜索入口：M3 DockedSearchBar + 固定范围常驻提示 + 高亮结果列表。 */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GlobalSearchEntry(model: MemoModel, onOpen: (JSONObject) -> Unit, onOpenSearch: (JSONObject) -> Unit) {
@@ -655,11 +653,13 @@ private fun GlobalSearchEntry(model: MemoModel, onOpen: (JSONObject) -> Unit, on
         expanded = active,
         onExpandedChange = { active = it }
     ) {
-        SearchScopeSelector(
-            kind = model.searchKind,
-            includeDeleted = model.searchIncludeDeleted,
-            onKind = { model.updateSearchScope(it, model.searchIncludeDeleted) },
-            onIncludeDeleted = { model.updateSearchScope(model.searchKind, it) }
+        val profile = model.state.optJSONObject("profile")
+        val scopeHint = if (profile?.optString("kind") == "account") R.string.search_scope_hint else R.string.search_scope_hint_local
+        Text(
+            stringResource(scopeHint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 6.dp)
         )
         if (model.searchQuery.isBlank()) {
             Text(
@@ -676,49 +676,27 @@ private fun GlobalSearchEntry(model: MemoModel, onOpen: (JSONObject) -> Unit, on
 }
 
 @Composable
-private fun SearchScopeSelector(
-    kind: String,
-    includeDeleted: Boolean,
-    onKind: (String) -> Unit,
-    onIncludeDeleted: (Boolean) -> Unit
-) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        listOf(
-            "current" to R.string.search_scope_current,
-            "all_local" to R.string.search_scope_all_local,
-            "account" to R.string.search_scope_account,
-        ).forEach { (value, label) ->
-            FilterChip(
-                selected = kind == value,
-                onClick = { onKind(value) },
-                label = { Text(stringResource(label)) }
-            )
-        }
-        FilterChip(
-            selected = includeDeleted,
-            onClick = { onIncludeDeleted(!includeDeleted) },
-            label = { Text(stringResource(R.string.search_include_deleted)) }
-        )
-    }
-    if (kind == "account") {
-        Text(
-            stringResource(R.string.search_account_local_only),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
-        )
-    }
-}
-
-@Composable
 private fun ColumnScope.SearchResults(model: MemoModel, onOpenSearch: (JSONObject) -> Unit) {
+    if (model.searchError) {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                stringResource(R.string.search_failed_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error
+            )
+            TextButton(onClick = model::retrySearch) { Text(stringResource(R.string.search_retry)) }
+        }
+        return
+    }
+    if (model.searchLoading && model.searchHits.isEmpty()) {
+        Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
     if (model.searchTruncated) {
         Text(
             stringResource(R.string.search_truncated),
@@ -733,8 +711,8 @@ private fun ColumnScope.SearchResults(model: MemoModel, onOpenSearch: (JSONObjec
         }
     } else {
         LazyColumn(Modifier.fillMaxWidth().weight(1f), contentPadding = PaddingValues(bottom = 24.dp)) {
-            items(model.searchHits, key = { it.getString("note_id") }) { hit ->
-                SearchResultItem(hit) { onOpenSearch(hit) }
+            items(model.searchHits, key = { it.getString("profile_id") to it.getString("note_id") }) { hit ->
+                SearchResultItem(hit, model.searchSources[hit.optString("profile_id")]) { onOpenSearch(hit) }
                 HorizontalDivider(
                     Modifier.padding(horizontal = 24.dp),
                     color = MaterialTheme.colorScheme.outlineVariant
@@ -744,8 +722,9 @@ private fun ColumnScope.SearchResults(model: MemoModel, onOpenSearch: (JSONObjec
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun SearchResultItem(hit: JSONObject, onClick: () -> Unit) {
+private fun SearchResultItem(hit: JSONObject, source: String?, onClick: () -> Unit) {
     val highlightStyle = SpanStyle(
         fontWeight = FontWeight.SemiBold,
         background = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
@@ -769,10 +748,10 @@ private fun SearchResultItem(hit: JSONObject, onClick: () -> Unit) {
                 modifier = Modifier.padding(top = 4.dp)
             )
         }
-        Row(
+        FlowRow(
             Modifier.padding(top = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
                 stringResource(R.string.search_hits, hit.optInt("hit_count")),
@@ -784,12 +763,13 @@ private fun SearchResultItem(hit: JSONObject, onClick: () -> Unit) {
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            val spaceLabel = if (hit.optString("space_kind") == "account") {
-                stringResource(R.string.search_space_account)
-            } else {
-                stringResource(R.string.search_space_local)
-            }
-            Text(spaceLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                source ?: stringResource(
+                    if (hit.optString("space_kind") == "account") R.string.search_source_account else R.string.search_source_local
+                ),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             if (hit.optBoolean("deleted")) {
                 Text(
                     stringResource(R.string.trash),
