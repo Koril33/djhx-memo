@@ -2,9 +2,9 @@
 
 **当前三端正式版为 [0.2.0](https://github.com/Koril33/djhx-memo/releases/tag/v0.2.0)**：大笔记性能、Android离线Devices交互、编辑排版、jade-ivory图标与Windows新装默认目录。中文名 **阳墨随记**、英文 **DJHX MEMO**。公开证据和验收边界见[0.2.0记录](docs/releases/0.2.0-validation.md)；完整设备/性能矩阵不因公开状态自动通过。
 
-三端客户端0.2.0、Android code15，core0.1.13；local schema4，server0.1.4/schema2、协议2，应用/签名身份保持。连续7天试用已由维护者确认完成，完整v1矩阵仍独立验收。
+已公开0.2.0为三端客户端0.2.0、Android code15，core0.1.13；local schema4，server0.1.4/schema2、协议2，应用/签名身份保持。连续7天试用已由维护者确认完成，完整v1矩阵仍独立验收。
 
-**0.2.1处于问题核实与方案阶段，未实施或发布。** [评估文档](docs/client-0.2.1-assessment.md)记录Windows任务栏图标、桌面空白页精简、Android搜索布局及验收方案；维护者已复核Linux重启后窗口logo和Ctrl+W正常，两项已移出缺陷范围。
+**源码正准备0.2.1 Release draft，尚未公开。** 桌面空白页与Android搜索布局两项已修复，客户端0.2.1/code16，core保持0.1.13；行为见[契约](spec/client-0.2.1.md)，实际测试及草稿状态见[验证记录](docs/releases/0.2.1-validation.md)。维护者已确认Windows干净安装任务栏图标及Linux重启后logo/Ctrl+W正常，这些不纳入修复。
 
 0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](docs/releases/0.1.4-validation.md)。
 

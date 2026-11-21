@@ -622,54 +622,58 @@ private fun GlobalSearchEntry(model: MemoModel, onOpen: (JSONObject) -> Unit, on
         active = false
         focusManager.clearFocus()
     }
-    DockedSearchBar(
-        inputField = {
-            SearchBarDefaults.InputField(
-                query = model.searchQuery,
-                onQueryChange = { model.searchNotes(it) },
-                onSearch = {
-                    active = false
-                    focusManager.clearFocus()
-                },
-                expanded = active,
-                onExpandedChange = { active = it },
-                placeholder = { Text(stringResource(R.string.search_notes)) },
-                leadingIcon = { MemoIcon(R.drawable.ic_ui_search) },
-                trailingIcon = if (model.searchQuery.isNotEmpty()) {
-                    {
-                        IconButton(onClick = { model.searchNotes("") }) {
-                            Icon(
-                                painterResource(R.drawable.ic_ui_x),
-                                contentDescription = stringResource(R.string.clear_search),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+    Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp), contentAlignment = Alignment.TopCenter) {
+        DockedSearchBar(
+            inputField = {
+                SearchBarDefaults.InputField(
+                    query = model.searchQuery,
+                    onQueryChange = { model.searchNotes(it) },
+                    onSearch = {
+                        active = false
+                        focusManager.clearFocus()
+                    },
+                    expanded = active,
+                    onExpandedChange = { active = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(stringResource(R.string.search_notes)) },
+                    leadingIcon = { MemoIcon(R.drawable.ic_ui_search) },
+                    trailingIcon = if (model.searchQuery.isNotEmpty()) {
+                        {
+                            IconButton(onClick = { model.searchNotes("") }) {
+                                Icon(
+                                    painterResource(R.drawable.ic_ui_x),
+                                    contentDescription = stringResource(R.string.clear_search),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
+                    } else {
+                        null
                     }
-                } else {
-                    null
-                }
-            )
-        },
-        expanded = active,
-        onExpandedChange = { active = it }
-    ) {
-        val profile = model.state.optJSONObject("profile")
-        val scopeHint = if (profile?.optString("kind") == "account") R.string.search_scope_hint else R.string.search_scope_hint_local
-        Text(
-            stringResource(scopeHint),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 6.dp)
-        )
-        if (model.searchQuery.isBlank()) {
+                )
+            },
+            expanded = active,
+            onExpandedChange = { active = it },
+            modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth()
+        ) {
+            val profile = model.state.optJSONObject("profile")
+            val scopeHint = if (profile?.optString("kind") == "account") R.string.search_scope_hint else R.string.search_scope_hint_local
             Text(
-                stringResource(R.string.search_start_hint),
-                style = MaterialTheme.typography.bodyMedium,
+                stringResource(scopeHint),
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp)
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 6.dp)
             )
-        } else {
-            SearchResults(model, onOpenSearch)
+            if (model.searchQuery.isBlank()) {
+                Text(
+                    stringResource(R.string.search_start_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp)
+                )
+            } else {
+                SearchResults(model, onOpenSearch)
+            }
         }
     }
     if (!active) NoteItems(model, onOpen)

@@ -1,6 +1,8 @@
 # desktop
 
-当前客户端 **0.1.10** 已公开发布，统一sunrise图形与中英文名称，支持当前笔记Markdown导出并调整删除留白；Windows日常0.1.8→0.1.10与Linux实际DEB覆盖升级通过，具体范围见[本轮记录](../docs/releases/0.1.10-validation.md)。Windows使用原签名更新目录，Linux继续DEB系统包管理。原0.1.7安装屏障与既有数据身份保持。
+公开稳定版为0.2.0；当前源码候选0.2.1（Android code16），本轮仅修复桌面空白页和Android搜索布局并准备Release draft。实际检查及未验收项见[0.2.1记录](../docs/releases/0.2.1-validation.md)，历史版本记录保留如下。
+
+历史客户端 **0.1.10** 已公开发布，统一sunrise图形与中英文名称，支持当前笔记Markdown导出并调整删除留白；Windows日常0.1.8→0.1.10与Linux实际DEB覆盖升级通过，具体范围见[本轮记录](../docs/releases/0.1.10-validation.md)。Windows使用原签名更新目录，Linux继续DEB系统包管理。原0.1.7安装屏障与既有数据身份保持。
 
 0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](../docs/releases/0.1.4-validation.md)。
 

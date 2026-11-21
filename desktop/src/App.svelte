@@ -967,6 +967,20 @@
       transitioning = false;
     }
   }
+  function closeWelcomeWindow(): void {
+    if (
+      editorPage !== 'welcome' ||
+      modalDepth > 0 ||
+      busy ||
+      booting ||
+      lifecyclePending ||
+      transitioning
+    )
+      return;
+    void native('request_hide').catch((error) => {
+      failure = error;
+    });
+  }
   function openGlobalSearch(): void {
     globalSearchOpen = true;
   }
@@ -1111,7 +1125,7 @@
       if (key === 'w' && !event.shiftKey) {
         event.preventDefault();
         if (modalOpen || event.repeat || busy || lifecyclePending || transitioning) return;
-        if (editorPage === 'welcome') void native('request_hide');
+        if (editorPage === 'welcome') closeWelcomeWindow();
         else void run(closeCurrentDocument);
         return;
       }
@@ -1376,9 +1390,9 @@
           on:click={() => run(() => openSettings('account'))}
           >{profileLabel(state.profile, t, language, preferences.timeZone)}</button
         >{/if}
-      <strong class="document-title"
-        >{editorPage === 'welcome' ? t('noteEditor') : editor.note ? title : t('newDraft')}</strong
-      >
+      {#if editorPage !== 'welcome'}<strong class="document-title"
+          >{editor.note ? title : t('newDraft')}</strong
+        >{/if}
       {#if editorPage !== 'welcome'}<div class="editor-actions">
           <div class="view-switch" aria-label={t('editorMode')}>
             <button
@@ -1559,8 +1573,6 @@
         aria-label={t('noteEditor')}
       >
         <div class="welcome-panel">
-          <span class="welcome-mark"><Icon name="file-text" size={32} /></span>
-          <h2>{t('localTagline')}</h2>
           <div class="welcome-actions">
             <button
               class="welcome-action"
@@ -1584,13 +1596,15 @@
                 >{t('searchNotes')}</span
               ><kbd>Ctrl+Shift+F</kbd>
             </button>
-            <div class="welcome-action welcome-action-close">
+            <button
+              class="welcome-action"
+              disabled={busy || booting || lifecyclePending || transitioning}
+              on:click={closeWelcomeWindow}
+            >
               <Icon name="log-out" size={20} /><span class="welcome-action-label"
                 >{t('closeWindow')}</span
-              ><kbd>Ctrl+W</kbd><span class="welcome-action-hint"
-                >{t(runtime?.tray_available ? 'hideAfterSave' : 'quitAfterSave')}</span
-              >
-            </div>
+              ><kbd>Ctrl+W</kbd>
+            </button>
           </div>
         </div>
       </div>{:else}<div class="editor-body" class:split={mode === 'split'}>

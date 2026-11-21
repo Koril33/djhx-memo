@@ -1,6 +1,6 @@
 # 项目文档
 
-> 2026-11-21 当前客户端0.2.0（`v0.2.0 / 4b10ac7`）、Android code15、core0.1.13、local schema4、server0.1.4/协议2，公开证据与验收边界见[0.2.0记录](releases/0.2.0-validation.md)。[0.2.1问题核实与方案](client-0.2.1-assessment.md)仅为评估，未修改产品代码或发布；Linux图标/Ctrl+W已由维护者复核正常。
+> 2026-11-21 公开稳定客户端为0.2.0，源码候选0.2.1/code16/core0.1.13；协议/schema保持。[0.2.1契约](../spec/client-0.2.1.md)仅修复桌面空白页及Android搜索布局，实际测试/草稿进度见[验证记录](releases/0.2.1-validation.md)。维护者确认Windows任务栏及Linux图标/Ctrl+W正常，已从[评估](client-0.2.1-assessment.md)修复范围移除。
 
 > 状态说明：发布、模块验证和评审记录按日期保留当时状态；代码版本见上方最新基线，产品行为以 [spec](../spec/README.md) 为准，协作规则见 [AGENTS](../AGENTS.md)，试用与完整验收状态见 [validation](validation.md)。[11 月 18 日项目报告](project-status-2026-11-18.md)是历史快照；历史记录中的“7 天试用未完成/待完成”不代表当前。
 

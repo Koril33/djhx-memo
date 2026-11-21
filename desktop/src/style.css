@@ -1498,21 +1498,6 @@ svg {
   width: 100%;
   text-align: center;
 }
-.welcome-mark {
-  display: grid;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  color: var(--accent);
-  background: var(--selected);
-}
-.welcome-panel h2 {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--muted);
-}
 .welcome-actions {
   display: flex;
   flex-direction: column;
@@ -1556,19 +1541,5 @@ svg {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
-  white-space: nowrap;
-}
-.welcome-action-close {
-  cursor: default;
-  color: var(--muted);
-  background: transparent;
-  border-color: transparent;
-}
-.welcome-action-close:hover {
-  background: transparent;
-}
-.welcome-action-hint {
-  font-size: 11px;
-  color: var(--muted);
   white-space: nowrap;
 }
