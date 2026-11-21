@@ -21,7 +21,7 @@ import java.util.UUID
 
 /** UI 的未提交编辑缓冲。generation 来自 core；UI 不决定同步版本或冲突。 */
 // 此处是 UI 错误边界，保留缓冲并只显示脱敏消息；协程取消仍向上抛出。
-@Suppress("TooGenericExceptionCaught", "TooManyFunctions")
+@Suppress("TooGenericExceptionCaught", "TooManyFunctions", "SwallowedException")
 class MemoModel(application: Application, private val gateway: CoreBridge) : AndroidViewModel(application) {
     constructor(application: Application) : this(application, (application as MemoApplication).gateway)
 
@@ -70,6 +70,18 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
     var busy by mutableStateOf(false)
         private set
     var devices by mutableStateOf(emptyList<JSONObject>())
+        private set
+    var devicesLoading by mutableStateOf(false)
+        private set
+    var devicesRefreshing by mutableStateOf(false)
+        private set
+    var devicesError by mutableStateOf(false)
+        private set
+    var devicesStale by mutableStateOf(false)
+        private set
+    var revoking by mutableStateOf(false)
+        private set
+    var revokeError by mutableStateOf(false)
         private set
     var selecting by mutableStateOf(false)
         private set
@@ -249,6 +261,9 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
     private var stateRequest = 0L
     private var editorProfileId = "local"
     private val observedRedirects = mutableMapOf<String, String>()
+    private var devicesSession = 0L
+    private var devicesJob: Job? = null
+    private var largeNoteNotified = false
     private var pendingExport: JSONObject? = null
     internal val noteExport = NoteExportCoordinator(
         getApplication<Application>(),
@@ -284,7 +299,17 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         if (!pending) firstUncommittedAt = SystemClock.elapsedRealtime()
         pending = true
         localStatus = UiText(R.string.save_pending)
+        noteLargeNoteIfNeeded()
         scheduleSave()
+    }
+
+    /** 大笔记降级只在首个超过阈值时给出一次轻量提示，不重复弹框。 */
+    private fun noteLargeNoteIfNeeded() {
+        if (largeNoteNotified) return
+        if (isLargeNote(content)) {
+            largeNoteNotified = true
+            actionNotice = UiText(R.string.large_note_simplified)
+        }
     }
 
     private fun scheduleSave() {
@@ -372,6 +397,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
             actionNotice = null
             markdownImport.cancel()
             invalidateSearch()
+            invalidateDevices()
             val pendingQuery = searchQuery
             if (pendingQuery.isNotBlank()) searchNotes(pendingQuery)
         }
@@ -566,6 +592,8 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         editorOpen = true
         localStatus = UiText(R.string.save_success)
         revision++
+        largeNoteNotified = false
+        noteLargeNoteIfNeeded()
         findQuery = searchQuery
         findOpen = true
         loadNotes()
@@ -607,6 +635,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         closeFind()
         localStatus = UiText(R.string.save_blank)
         revision++
+        largeNoteNotified = false
     }
 
     fun open(note: JSONObject) = action {
@@ -618,6 +647,8 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         closeFind()
         localStatus = UiText(R.string.save_success)
         revision++
+        largeNoteNotified = false
+        noteLargeNoteIfNeeded()
     }
 
     fun backToList() = action { if (flush()) { editorOpen = false; closeFind() } }
@@ -731,12 +762,79 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
 
     fun logout() = action { accounts.logout() }
 
-    fun loadDevices() = action { devices = gateway.array("devices").objects() }
-    fun revokeDevice(id: String) = action {
-        gateway.call("revoke_device", "id" to id)
-        refreshAll()
-        devices = runCatching { gateway.array("devices").objects() }.getOrDefault(emptyList())
-        message = UiText(R.string.revoke_success)
+    /**
+     * 设备列表读取独立于全局 action/busy：进入页面立即可用，请求状态只作用于设备区域。
+     * 请求携带发起时的 profile 与 [devicesSession] 锚点；晚到回执跨账号/会话作废。
+     * 已有缓存时后台刷新（不闪空），无缓存时进入加载态；失败保留旧数据并标记未刷新。
+     */
+    fun loadDevices() {
+        if (devicesLoading || devicesRefreshing || revoking) return
+        val profile = currentProfileId()
+        if (devices.isEmpty()) {
+            devicesLoading = true
+            devicesError = false
+        } else {
+            devicesRefreshing = true
+        }
+        devicesStale = false
+        val request = ++devicesSession
+        devicesJob?.cancel()
+        devicesJob = viewModelScope.launch {
+            try {
+                val found = gateway.array("devices").objects()
+                if (request != devicesSession || profile != currentProfileId()) return@launch
+                devices = found
+                devicesLoading = false
+                devicesRefreshing = false
+                devicesError = false
+                devicesStale = false
+            } catch (error: kotlinx.coroutines.CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                if (request != devicesSession || profile != currentProfileId()) return@launch
+                devicesLoading = false
+                devicesRefreshing = false
+                if (devices.isEmpty()) devicesError = true else devicesStale = true
+            }
+        }
+    }
+
+    /** 吊销保留确认对话框与局部互斥；收到服务端成功回执前不显示完成，失败行内提示。 */
+    fun revokeDevice(id: String) {
+        if (revoking) return
+        val profile = currentProfileId()
+        val session = devicesSession
+        revoking = true
+        revokeError = false
+        viewModelScope.launch {
+            try {
+                gateway.call("revoke_device", "id" to id)
+                if (session != devicesSession || profile != currentProfileId()) return@launch
+                devices = runCatching { gateway.array("devices").objects() }.getOrDefault(emptyList())
+                actionNotice = UiText(R.string.revoke_success)
+            } catch (error: kotlinx.coroutines.CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                if (session != devicesSession || profile != currentProfileId()) return@launch
+                revokeError = true
+            } finally {
+                if (session == devicesSession) revoking = false
+            }
+        }
+    }
+
+    /** 切空间、注销或同账号重新登录后作废旧回执与设备缓存。 */
+    private fun invalidateDevices() {
+        devicesSession++
+        devicesJob?.cancel()
+        devicesJob = null
+        devices = emptyList()
+        devicesLoading = false
+        devicesRefreshing = false
+        devicesError = false
+        devicesStale = false
+        revoking = false
+        revokeError = false
     }
 
     suspend fun export(): JSONObject? {
@@ -783,7 +881,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         pending = false
         creationContent = null
         notes = emptyList()
-        devices = emptyList()
+        invalidateDevices()
         listRequest++
         searchRequest++
         searchJob?.cancel()
@@ -799,6 +897,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         compositionActive = false
         query = ""
         trash = false
+        largeNoteNotified = false
         revision++
     }
 

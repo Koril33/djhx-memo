@@ -74,7 +74,7 @@
     '&': { height: '100%', fontSize: '15px', backgroundColor: 'transparent' },
     '.cm-scroller': {
       fontFamily: 'inherit',
-      lineHeight: '1.85',
+      lineHeight: '1.70',
     },
     '.cm-content': { padding: '32px 24px 96px', caretColor: 'var(--green)' },
     '.cm-line': { padding: '0 6px' },
@@ -266,6 +266,10 @@
               ),
             ),
           ),
+          // Q2 (0.2.0): CodeMirror's search match highlighter iterates only
+          // `view.visibleRanges`, so large notes already decorate just the
+          // visible/current hits. `countMatches`/`findNext`/`findPrevious` below
+          // stay full-document, keeping the complete count and navigation accurate.
           search({
             top: true,
             literal: true,

@@ -229,46 +229,58 @@ fun AccountSettings(model: MemoModel, initialTab: String = "display", onExport: 
                                         MemoIconButton(
                                             R.drawable.ic_ui_refresh_cw,
                                             stringResource(R.string.refresh_devices),
-                                            !model.busy,
+                                            !model.devicesLoading && !model.devicesRefreshing && !model.revoking,
                                             onClick = model::loadDevices
                                         )
                                     }
                                 }
-                                model.devices.forEach { entry ->
-                                    item(key = "device-${entry.optString("id")}") {
-                                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                            Column(
-                                                Modifier.weight(
-                                                    1f
-                                                ).clickable { deviceDetails = entry }.padding(vertical = 8.dp)
-                                            ) {
-                                                Text(
-                                                    entry.optString("name").ifEmpty { stringResource(R.string.device) } +
-                                                        if (entry.optBoolean("current")) stringResource(R.string.current_device) else "",
-                                                    style = MaterialTheme.typography.bodyLarge
+                                if (needsAuth) {
+                                    // 凭据失效在设备区域内提供重新登录入口，云状态如实反映，保留本地笔记。
+                                    item {
+                                        Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                                            Text(
+                                                stringResource(R.string.cloud_auth),
+                                                color = MaterialTheme.colorScheme.error
+                                            )
+                                            Button(enabled = !model.busy, onClick = {
+                                                reauth = true
+                                                reauthProfileId = profileId
+                                                register = false
+                                                authVisible = true
+                                                authRequest++
+                                                draft = AuthDraft(
+                                                    profile?.nullableString("server_url").orEmpty(),
+                                                    profile?.nullableString("username").orEmpty()
                                                 )
-                                                Text(
-                                                    formattedTime(entry.optString("last_seen_at")),
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                            MemoIconButton(
-                                                R.drawable.ic_ui_log_out,
-                                                stringResource(
-                                                    if (entry.isNull(
-                                                            "revoked_at"
-                                                        )
-                                                    ) {
-                                                        R.string.revoke
-                                                    } else {
-                                                        R.string.revoked
-                                                    }
-                                                ),
-                                                !model.busy && entry.isNull("revoked_at")
-                                            ) { revoke = entry }
+                                            }) { Text(stringResource(R.string.sign_in_again)) }
                                         }
-                                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                    }
+                                } else {
+                                    when {
+                                        model.devicesLoading -> item { DevicesLoadingRow() }
+                                        model.devicesError -> item {
+                                            DevicesErrorRow(R.string.devices_load_failed, model::loadDevices)
+                                        }
+                                        else -> {
+                                            if (model.devicesStale) {
+                                                item { DevicesStaleRow() }
+                                            }
+                                            if (model.revokeError) {
+                                                item {
+                                                    DevicesErrorRow(R.string.revoke_failed, model::loadDevices)
+                                                }
+                                            }
+                                            model.devices.forEach { entry ->
+                                                item(key = "device-${entry.optString("id")}") {
+                                                    DeviceEntryRow(
+                                                        entry,
+                                                        model.revoking,
+                                                        { deviceDetails = entry },
+                                                        { revoke = entry }
+                                                    )
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -531,6 +543,72 @@ private fun EmptySettings(label: Int, onAccount: () -> Unit) {
         Text(stringResource(label), color = MaterialTheme.colorScheme.onSurfaceVariant)
         TextButton(onClick = onAccount) { Text(stringResource(R.string.tab_spaces)) }
     }
+}
+
+/** 设备区域无缓存加载提示；只作用于本区域，其他导航保持可用。 */
+@Composable
+private fun DevicesLoadingRow() {
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 16.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+        Spacer(Modifier.width(12.dp))
+        Text(stringResource(R.string.devices_loading), color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+/** 设备区域行内脱敏错误与重试；不弹模态网络错误，不当作空设备列表。 */
+@Composable
+private fun DevicesErrorRow(label: Int, onRetry: () -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        Text(stringResource(label), color = MaterialTheme.colorScheme.error)
+        TextButton(onClick = onRetry) { Text(stringResource(R.string.devices_retry)) }
+    }
+}
+
+/** 已有缓存但刷新失败：保留旧数据并标记未刷新，不声称实时权威状态。 */
+@Composable
+private fun DevicesStaleRow() {
+    Text(
+        stringResource(R.string.devices_refresh_failed),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+    )
+}
+
+/** 单条设备行：名称、最近在线时间与吊销入口；吊销请求局部互斥。 */
+@Composable
+private fun DeviceEntryRow(
+    entry: JSONObject,
+    revoking: Boolean,
+    onDetails: () -> Unit,
+    onRevoke: () -> Unit
+) {
+    val name = entry.optString("name").ifEmpty { stringResource(R.string.device) } +
+        if (entry.optBoolean("current")) stringResource(R.string.current_device) else ""
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(
+            Modifier.weight(1f).clickable(onClick = onDetails).padding(vertical = 8.dp)
+        ) {
+            Text(name, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                formattedTime(entry.optString("last_seen_at")),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        MemoIconButton(
+            R.drawable.ic_ui_log_out,
+            stringResource(
+                if (entry.isNull("revoked_at")) R.string.revoke else R.string.revoked
+            ),
+            !revoking && entry.isNull("revoked_at")
+        ) { onRevoke() }
+    }
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 }
 
 @Composable

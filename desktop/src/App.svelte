@@ -11,6 +11,7 @@
   import { EditorSession } from './lib/editor-session';
   import { renderMarkdown } from './lib/markdown';
   import type { CodeHighlights } from './lib/code-highlights';
+  import { isLargeNote } from './lib/note-size';
   import { PreviewState, taskSnapshotMatches } from './lib/preview-state';
   import {
     createTranslator,
@@ -353,18 +354,28 @@
   $: highlightSource = previewSnapshot.source.replace(/\r\n?/g, '\n');
   $: scheduleHighlight(highlightSource);
   $: codeHighlights = highlighted?.source === highlightSource ? highlighted.result : undefined;
-  $: preview = renderMarkdown(
-    previewSnapshot.source,
-    !readOnly,
-    previewSnapshot.version,
-    language,
-    codeHighlights,
-  );
+  // Source mode hides the preview pane, so skip the expensive Markdown parse/HTML
+  // generation until preview or split is actually shown. Preview/split recompute on
+  // the next render because `mode` is a reactive dependency here.
+  $: preview =
+    mode === 'source'
+      ? ''
+      : renderMarkdown(
+          previewSnapshot.source,
+          !readOnly,
+          previewSnapshot.version,
+          language,
+          codeHighlights,
+        );
 
   function scheduleHighlight(source: string): void {
     clearTimeout(highlightTimer);
     const request = ++highlightRequest;
     if (!source.includes('```') && !source.includes('~~~')) return;
+    // Optional code coloring is skipped for large notes (D1: 128 KiB UTF-8, matching
+    // the core shared highlight cap) so we never ship a full body over the bridge for
+    // decoration the core would refuse. The body, save cadence and find stay intact.
+    if (isLargeNote(source)) return;
     highlightTimer = setTimeout(async () => {
       try {
         const result = await call<CodeHighlights>({ action: 'highlight_code', source });

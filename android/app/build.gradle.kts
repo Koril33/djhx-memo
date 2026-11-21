@@ -14,8 +14,8 @@ android {
         minSdk = 29
         targetSdk = 36
         // Only isolated device fixtures can override identity for a real upgrade preflight.
-        versionCode = if (project.hasProperty("isolatedValidation")) providers.gradleProperty("updateTestVersionCode").orNull?.toInt() ?: 14 else 14
-        versionName = if (project.hasProperty("isolatedValidation")) providers.gradleProperty("updateTestVersionName").orNull ?: "0.1.13" else "0.1.13"
+        versionCode = if (project.hasProperty("isolatedValidation")) providers.gradleProperty("updateTestVersionCode").orNull?.toInt() ?: 15 else 15
+        versionName = if (project.hasProperty("isolatedValidation")) providers.gradleProperty("updateTestVersionName").orNull ?: "0.2.0" else "0.2.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         providers.environmentVariable("DJHX_ANDROID_TEST_SERVER_URL").orNull?.let {
             testInstrumentationRunnerArguments["serverUrl"] = it
