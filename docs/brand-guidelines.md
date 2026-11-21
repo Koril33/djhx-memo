@@ -1,12 +1,12 @@
 # 阳墨随记 / DJHX MEMO 品牌规范
 
-版本2.0，2026-11-14；0.1.10实施中，实际原生显示以本轮验证为准。产品契约见[0.1.10](../spec/client-0.1.10.md)，每次更换必须执行[固定品牌更新流程](brand-change-workflow.md)。
+2026-11-21更新：维护者已确认jade-ivory-v1母版，三端/官网受管资源已替换并完成[本地检查](brand-jade-ivory-validation.md)，未发布新安装包或部署线上。当前目标见[0.2.0](../spec/client-0.2.0.md)，0.1.10/sunrise记录保留历史；每次更换执行[固定流程](brand-change-workflow.md)。
 
 ## 唯一配置与输入
 
-[profile.json](../assets/brand/profile.json)定义中文“阳墨随记”、英文“DJHX MEMO”及logo-pack-v1/sunrise。完整原包及SHA256保留，当前图形为墨盘、右上日蚀缺口和反色墨滴，朝暾底色为橙色渐变。包内已有针对小尺寸分别绘制的资源，不拿大PNG代替所有系统尺寸。
+[profile.json](../assets/brand/profile.json)定义中文“阳墨随记”、英文“DJHX MEMO”及jade-ivory-v1图形。源/包哈希与[已确认母版](../assets/brand/sources/jade-ivory-v1/README.md)对应：墨绿渐变、玉白墨盘、右上缺口及墨滴。每个尺寸直接从矢量渲染，Android各层/遮罩同源适配；不把一张大PNG复制为所有平台尺寸。旧sunrise完整包、63项活动快照和paper-v1保留。
 
-[master.svg](../assets/brand/master.svg)、[单色版](../assets/brand/monochrome.svg)、[设计板](../assets/brand/design-sheet.png)均由统一入口适配；当前设计板展示包内五套配色，活动主色仅sunrise。Logo不包含字标，中文/英文使用各平台现有字体排版，不增加字体运行依赖或启动动效。
+[master.svg](../assets/brand/master.svg)、[单色版](../assets/brand/monochrome.svg)、[设计板](../assets/brand/design-sheet.png)由统一入口适配；设计板上排为标准、圆形、adaptive及单色示意，下排为尺寸阶梯与色板。Logo不含字标，中文/英文仍使用平台字体，不新增字体运行依赖或启动动效。官网logo、SVG/ICO/PNG favicon和Apple触屏图标同时受管，黑白托盘保持原字节。
 
 ## 名称与身份
 

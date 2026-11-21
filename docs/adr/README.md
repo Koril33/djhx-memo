@@ -20,5 +20,6 @@
 - [ADR-0017：GitHub Actions CI/CD（构建、测试自动化与发布草案）](0017-github-actions-ci.md)
 - [ADR-0018：CodeMirror 笔记内查找](0018-codemirror-search.md)
 - [ADR-0019：更新目录签名与官网部署的自动化边界](0019-update-catalog-website-ci.md)
+- [ADR-0020：jade-ivory母版与可重复渲染资源包](0020-jade-ivory-brand-render.md)
 
 新增依赖前记录确切版本、理由、许可证与维护来源；工具探针的通过不能代替业务验收。

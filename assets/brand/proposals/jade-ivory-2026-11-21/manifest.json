@@ -1,0 +1,45 @@
+{
+  "format_version": 1,
+  "status": "approved-and-integrated",
+  "created_on": "2026-11-21",
+  "source": "Vector redrawn from the maintainer PNG preview; not a recovered original SVG.",
+  "previous_original_svg_expected_sha256": "b597731e5496bb1cd92fac662950668948237bee8fdae93e110eda1c2ae81f65",
+  "colors": {
+    "background": [
+      "#2F7A5C",
+      "#0A3024"
+    ],
+    "ivory": "#F3EFE2",
+    "ink": "#14523A"
+  },
+  "viewBox": [
+    0,
+    0,
+    256,
+    256
+  ],
+  "files": {
+    "master.svg": {
+      "bytes": 1120,
+      "sha256": "1970cef1201bc15581156631df4c403c217626b92f7f30944b7e0d8296771cb4"
+    },
+    "reference-preview.png": {
+      "bytes": 63281,
+      "sha256": "889ef73368248ff70a548490de78afd78db99dafabf1518d3468552cf8254ea3",
+      "size": [
+        512,
+        512
+      ]
+    },
+    "preview.png": {
+      "bytes": 62128,
+      "sha256": "ff590ea8e800cc7ff2c3328f9a72630ae433fb523aa1df23314429317fe872d8",
+      "size": [
+        512,
+        512
+      ]
+    }
+  },
+  "approved_on": "2026-11-21",
+  "active_source": "../../sources/jade-ivory-v1/master.svg"
+}

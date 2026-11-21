@@ -1,10 +1,10 @@
 # djhx-memo
 
-**当前三端正式版为 [0.1.12](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.12)**：保留0.1.11快捷键/搜索，精简桌面列表头与Android搜索过滤布局/高亮。中文名 **阳墨随记**、英文 **DJHX MEMO**，沿用0.1.10的sunrise品牌与单篇Markdown导出；品牌历史、实际升级边界见[0.1.10记录](docs/releases/0.1.10-validation.md)，换图标按[固定流程](docs/brand-change-workflow.md)执行。最新提交/公开状态核对见[0.1.13早期评估](docs/client-0.1.13-assessment.md)。
+**当前三端正式版为 [0.1.13](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.13)**：桌面空白页/两段式Ctrl+W、固定本机＋当前选中账号及普通回收站搜索、来源/布局和Android基础列表续写。中文名 **阳墨随记**、英文 **DJHX MEMO**。公开状态与尚待补齐的设备/升级证据见[0.1.13记录](docs/releases/0.1.13-validation.md)；版本公开不等于完整矩阵通过。
 
-三端/core为0.1.12，Android code13；local schema因0.1.11追加迁移0004升至4，server仍0.1.4/schema2、协议2，应用/签名身份不变。Android保留[0.1.9安装兼容补丁](docs/releases/0.1.9-validation.md)。完整设备矩阵仍待完成；连续7天日常试用已由维护者确认完成（逐日明细未入库，三端矩阵仍独立验收）。
+三端/core为0.1.13，Android code14；local schema4，server仍0.1.4/schema2、协议2，应用/签名身份不变。Android保留[0.1.9安装兼容补丁](docs/releases/0.1.9-validation.md)。完整设备矩阵仍待完成；连续7天试用已由维护者确认完成，逐日明细未入库，不替代三端矩阵。
 
-**0.1.13 仅完成开发前文档，未实施或发布。** 已确认范围、接口、实施顺序与验收见[完整开发文档](docs/client-0.1.13-development.md)和[目标契约](spec/client-0.1.13.md)：桌面空白页/两段式Ctrl+W、本机＋当前选中账号及普通回收站搜索/来源/布局、Android基础列表续写；标题栏只记录。
+**0.2.0尚未整体实施或发布。** 基于0.1.13的[计划复审](docs/reviews/client-0.2.0-plan-review.md)保留五项范围和待决策问题。维护者追加确认的jade-ivory母版、三端及官网图标资源已在开发分支接入并完成[本地检查](docs/brand-jade-ivory-validation.md)，黑白托盘保持；其余M2/离线/排版/目录尚未实施。0.1.13既有安装包和线上官网不因源码替换自动更新，不覆盖旧发行物。
 
 0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](docs/releases/0.1.4-validation.md)。
 

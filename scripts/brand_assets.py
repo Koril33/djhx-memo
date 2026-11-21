@@ -19,6 +19,8 @@ ALLOWED = {
         'tray-black.png','tray-white.png','tray-black.rgba','tray-white.rgba')
 } | {'desktop/src/lib/brand.ts','desktop/src-tauri/src/brand.rs','desktop/src-tauri/linux/djhx-memo.desktop.hbs',
      'website/logo.svg','website/brand.json'}
+WEB_ICONS = ('favicon.svg', 'favicon.ico', 'favicon-16.png', 'favicon-32.png', 'apple-touch-icon.png')
+ALLOWED |= {'website/public/'+name for name in WEB_ICONS}
 RES = 'android/app/src/main/res/'
 ALLOWED |= {RES+'drawable/'+n+'.xml' for n in ('ic_launcher_foreground','ic_launcher_monochrome','ic_memo')}
 ALLOWED |= {RES+folder+'/'+name for folder in ('mipmap-anydpi-v26','mipmap-anydpi-v33') for name in ('ic_launcher.xml','ic_launcher_round.xml')}
@@ -72,6 +74,8 @@ def rgba(data):
 
 def images(profile):
     logo = profile['logo']; output = {}
+    if logo['profile'] == 'jade-ivory-v1':
+        return jade_images(logo)
     if logo['profile'] == 'paper-v1':
         archive = ROOT / 'assets/brand/archive/paper-v1'
         original = json.loads((archive/'manifest-before.json').read_text(encoding="utf-8"))
@@ -121,7 +125,58 @@ def images(profile):
                     body = ET.tostring(xml,encoding='utf-8',xml_declaration=True)+b'\n'
                 output['android/app/src/main/res/'+relative] = body
         output['website/logo.svg'] = read('web/favicon.svg')
+        output['website/public/apple-touch-icon.png'] = read('web/apple-touch-icon-180.png')
     return output
+
+
+def jade_images(logo):
+    """Read a hash-pinned complete pack; never extract arbitrary ZIP paths."""
+    source_sha = '1970cef1201bc15581156631df4c403c217626b92f7f30944b7e0d8296771cb4'
+    assert logo['colorway'] == 'jade-ivory' and logo['source_sha256'] == source_sha
+    assert logo['archive'] == 'assets/brand/packs/jade-ivory-v1.zip'
+    archive = ROOT / logo['archive']
+    assert hashlib.sha256(archive.read_bytes()).hexdigest() == logo['sha256'], 'Brand pack hash mismatch'
+    required = {'assets/brand/'+name for name in ('master.svg','monochrome.svg','design-sheet.svg','design-sheet.png')}
+    required |= {'assets/brand/png/icon-'+str(n)+'.png' for n in (16,24,32,48,64,128,256,512,1024)}
+    required |= {'desktop/src-tauri/icons/'+name for name in
+                 ('32x32.png','128x128.png','128x128@2x.png','icon.png','icon.ico',
+                  'tray-black.png','tray-white.png','tray-black.rgba','tray-white.rgba')}
+    for density in ('mdpi','hdpi','xhdpi','xxhdpi','xxxhdpi'):
+        required |= {RES+'mipmap-'+density+'/'+name+'.png' for name in
+                     ('ic_launcher','ic_launcher_round','ic_launcher_foreground','ic_launcher_background','ic_launcher_monochrome')}
+        required.add(RES+'drawable-'+density+'/ic_stat_notify.png')
+    required |= {RES+folder+'/'+name for folder in ('mipmap-anydpi-v26','mipmap-anydpi-v33')
+                 for name in ('ic_launcher.xml','ic_launcher_round.xml')}
+    required |= {'website/logo.svg'} | {'website/public/'+name for name in WEB_ICONS}
+    output = {}
+    with ZipFile(archive) as pack:
+        members = pack.infolist()
+        assert len(members) == len({p.filename for p in members}), 'Duplicate pack member'
+        assert all(p.file_size <= 8*1024*1024 for p in members) and sum(p.file_size for p in members) <= 32*1024*1024
+        assert pack.getinfo('manifest.json').file_size <= 65536
+        manifest = json.loads(pack.read('manifest.json'))
+        assert manifest['format_version'] == 1 and manifest['profile'] == 'jade-ivory-v1'
+        assert manifest['source_sha256'] == source_sha
+        assert hashlib.sha256(pack.read('source.svg')).hexdigest() == source_sha
+        assert set(manifest['files']) == required, 'Incomplete brand output coverage'
+        assert {p.filename for p in members} == required | {'manifest.json','source.svg'}, 'Unexpected pack member'
+        for name, digest in manifest['files'].items():
+            target(name)
+            body = pack.read(name)
+            assert hashlib.sha256(body).hexdigest() == digest, 'Pack member hash mismatch: '+name
+            output[name] = body
+    return output
+
+
+def web_icons(output):
+    """Every restorable profile supplies the favicon URLs used by the website."""
+    output.setdefault('website/public/favicon.svg', output['website/logo.svg'])
+    output.setdefault('website/public/favicon.ico', output['desktop/src-tauri/icons/icon.ico'])
+    for size in (16, 32):
+        output.setdefault(f'website/public/favicon-{size}.png', output[f'assets/brand/png/icon-{size}.png'])
+    # Historical paper-v1 predates an Apple asset; its existing 256px icon is
+    # a valid fallback without adding a resampler to ordinary generation.
+    output.setdefault('website/public/apple-touch-icon.png', output['assets/brand/png/icon-256.png'])
 
 
 def names(profile,output):
@@ -172,7 +227,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__); parser.add_argument('--check',action='store_true'); args = parser.parse_args()
     profile = json.loads((ROOT/'assets/brand/profile.json').read_text(encoding="utf-8"))
     assert profile['identity'] == {'application_id':'app.djhx.memo','binary':'djhx-memo','windows_install_identity':'简记'}
-    outputs = images(profile); names(profile,outputs)
+    outputs = images(profile); web_icons(outputs); names(profile,outputs)
     for name,body in outputs.items():
         target(name)
         if name.endswith('.xml'): ET.fromstring(body)

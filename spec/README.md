@@ -1,9 +1,10 @@
 # v1 产品与技术契约
 
-代码基线：三端/core 0.1.12，保留0.1.11快捷键/搜索及0.1.10品牌/导出等增量，更新于2026-11-20；客户端local schema已因0004迁移升至4，server仍0.1.4/schema2、同步协议2，HTTP路径仍为 /v1。当前代码与公开状态核对见[0.1.13早期评估](../docs/client-0.1.13-assessment.md)，0.1.13目标列在下方尚未启用的提案中，不代表已实现。同步、鉴权、普通/彻底删除仍遵守既有契约；历史Release不变。实际检查和独立评审见[验证索引](../docs/validation.md)与各版本记录，规范中的要求不自动表示已通过。
+发行基线：三端/core0.1.13、Android code14，local schema4、server0.1.4/schema2、协议2，HTTP路径 /v1；更新于2026-11-21。0.1.13实现/公开事实与设备记录边界见[发布记录](../docs/releases/0.1.13-validation.md)。0.2.0仅W4追加授权的玉白资源已接入，其他目标仍列在下方提案；不追溯改变旧发行物。同步、鉴权和删除继续遵守既有契约，规范要求不自动表示已验收。
 
 | 文档 | 定义内容 |
 |---|---|
+| [client-0.1.13.md](client-0.1.13.md) | 已实现/公开：桌面空白页、两段式Ctrl+W、固定本机＋当前选中账号及普通回收站搜索/来源/布局、Android基础列表；验收状态见[实际记录](../docs/releases/0.1.13-validation.md) |
 | [client-0.1.11.md](client-0.1.11.md) | 0.1.11快捷键（Ctrl+W关闭到托盘、Ctrl+F笔记内查找、Ctrl+Shift+F全局搜索）与本地全文搜索（相关性、高亮、片段、范围过滤）；设计见 [快捷键设计](../docs/shortcuts-design.md) 与 [搜索功能详细设计](../docs/search-design.md)，验证见 [0.1.11 记录](../docs/releases/0.1.11-validation.md) |
 | [client-0.1.10.md](client-0.1.10.md) | 0.1.10品牌更新固定流程、sunrise图标与中英文名称、单篇Markdown导出、危险操作留白 |
 | [android-install-compatibility.md](android-install-compatibility.md) | Android0.1.9系统安装器兼容入口、失败分类与恢复；该补丁发布时Windows/Linux仍0.1.8，0.1.10已统一三端 |
@@ -27,8 +28,7 @@ v0.1 规划中关于冲突策略、Web 范围、共享前端的旧表述已由�
 
 ## 尚未启用的提案
 
-- [client-0.1.13.md](client-0.1.13.md)：维护者已确认桌面空白页/两段式Ctrl+W、固定本机＋当前选中账号及普通回收站搜索/来源/布局、Android最小列表续写。标题栏仅记录；尚未实施、验收或发布。接口、实施顺序与用例见[开发文档](../docs/client-0.1.13-development.md)；替代早期评估的“全部账号”提议。
-- [client-0.2.0.md](client-0.2.0.md)：维护者已确定五项范围的开发前目标草案，包含 M2、Android 离线交互、Markdown 排版、jade-ivory 跨端/官网图标和 Windows 新装目录；尚未实施或验收，不能替代当前版本的实际能力说明。可行性、待定参数及验收矩阵见[开发准备](../docs/client-0.2.0-development.md)。
+- [client-0.2.0.md](client-0.2.0.md)：M2、离线、排版、玉白图标、新装目录五项范围。基于0.1.13的[复审](../docs/reviews/client-0.2.0-plan-review.md)保留Q1–Q4待决策；W4母版/资源已确认并接入、本地检查通过，原生安装/线上部署及其余工作包/整版发布未完成。见[开发准备](../docs/client-0.2.0-development.md)和[品牌验证](../docs/brand-jade-ivory-validation.md)。
 - 自动更新规范中的 Linux AppImage/DEB 安装适配、跨协议/schema 更新和信任根桥接尚未实现，不属于本轮 Windows/Android 交付能力。
 
 0.1.6 的行为扩展以 [下一版本规范](client-0.1.6.md) 为准，已在0.1.6实现，实际检查见发布记录，不属于 0.1.5 已实现能力；Web 继续暂缓。

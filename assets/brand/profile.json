@@ -5,10 +5,11 @@
     "en": "DJHX MEMO"
   },
   "logo": {
-    "profile": "logo-pack-v1",
-    "colorway": "sunrise",
-    "archive": "assets/brand/packs/logo-pack-v1.zip",
-    "sha256": "a8e24c2391c08f3547d47466b78f77a4eb9b8b4d5340fb945ae2c76967e28610"
+    "profile": "jade-ivory-v1",
+    "colorway": "jade-ivory",
+    "archive": "assets/brand/packs/jade-ivory-v1.zip",
+    "sha256": "1a68e1f222f5016d8fb60c2ec8648ad301961339bfc2aa672d83d872dd6b6765",
+    "source_sha256": "1970cef1201bc15581156631df4c403c217626b92f7f30944b7e0d8296771cb4"
   },
   "identity": {
     "application_id": "app.djhx.memo",
