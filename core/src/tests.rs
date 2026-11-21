@@ -599,6 +599,55 @@ fn search_notes_trigram_path_case_special_and_miss() {
 }
 
 #[test]
+fn search_notes_local_and_current_account_scope_and_anchors() {
+    let app = engine();
+    let local_note = invoke(
+        &app,
+        json!({"action":"create","content":"本地笔记内容","request_id":id()}),
+    );
+    let account = account();
+    let account_id = account.id.clone();
+    {
+        let mut registry = app.registry.lock().unwrap();
+        registry.profiles.push(account);
+        app.persist_registry(&registry).unwrap();
+    }
+    invoke(&app, json!({"action":"switch","profile_id":account_id}));
+    let account_note = invoke(
+        &app,
+        json!({"action":"create","content":"账号笔记内容","request_id":id()}),
+    );
+    // Fixed scope from the account selection: local space plus the one account.
+    let result = invoke(
+        &app,
+        json!({"action":"search_notes","query":"内容","profile_id":account_id,"scope":{"kind":"local_and_current_account","include_deleted":false}}),
+    );
+    let hits = result["hits"].as_array().unwrap();
+    let ids: Vec<&str> = hits
+        .iter()
+        .map(|h| h["note_id"].as_str().unwrap())
+        .collect();
+    assert!(ids.contains(&local_note["id"].as_str().unwrap()));
+    assert!(ids.contains(&account_note["id"].as_str().unwrap()));
+    // Anchors: a mismatched profile_id is rejected without leaking other spaces.
+    let mismatched = app.dispatch(&json!({
+        "action":"search_notes","query":"内容","profile_id":"local",
+        "scope":{"kind":"local_and_current_account","include_deleted":false}
+    }));
+    assert_eq!(mismatched.unwrap_err().code, "PROFILE_CHANGED");
+    let missing = app.dispatch(&json!({
+        "action":"search_notes","query":"内容",
+        "scope":{"kind":"local_and_current_account","include_deleted":false}
+    }));
+    assert_eq!(missing.unwrap_err().code, "INVALID_REQUEST");
+    let mixed = app.dispatch(&json!({
+        "action":"search_notes","query":"内容","profile_id":account_id,
+        "scope":{"kind":"local_and_current_account","space_ids":["x"],"include_deleted":false}
+    }));
+    assert_eq!(mixed.unwrap_err().code, "INVALID_REQUEST");
+}
+
+#[test]
 fn search_trigger_skips_unchanged_content_and_schema_v4() {
     let app = engine();
     let db = db::open(&app.root.join("local.sqlite")).unwrap();

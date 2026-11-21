@@ -16,6 +16,8 @@ import {
   resolveTheme,
   savePreferences,
   profileLabel,
+  serverHost,
+  searchSourceLabel,
 } from './preferences';
 import { coreErrorText, errorText, InvokeError } from './bridge';
 import { renderMarkdown } from './markdown';
@@ -117,6 +119,34 @@ describe('device presentation preferences', () => {
     expect(profileLabel(recovery, t, 'en', 'Asia/Shanghai')).toBe(
       'Recovery space · owner · Nov 8, 2026, 04:05',
     );
+  });
+  it('derives a safe server host without credentials, query or fragment', () => {
+    expect(serverHost('https://memo.djhx.site')).toBe('memo.djhx.site');
+    expect(serverHost('https://memo.djhx.site/base')).toBe('memo.djhx.site/base');
+    expect(serverHost('https://memo.djhx.site/base/')).toBe('memo.djhx.site/base');
+    expect(serverHost('https://user:pass@host.test/path?x=1#f')).toBe('host.test/path');
+    expect(serverHost(null)).toBeNull();
+    expect(serverHost('not a url')).toBeNull();
+  });
+  it('labels search sources from a safe snapshot without leaking credentials', () => {
+    const t = createTranslator('zh-CN');
+    const account: Profile = {
+      ...profile,
+      id: 'a1',
+      kind: 'account',
+      username: 'tester',
+      label: 'ignored',
+      server_url: 'https://memo.djhx.site',
+    };
+    expect(searchSourceLabel(account, 'account', t)).toBe('tester · memo.djhx.site');
+    expect(searchSourceLabel({ ...account, username: null }, 'account', t)).toBe(
+      'ignored · memo.djhx.site',
+    );
+    expect(
+      searchSourceLabel({ ...account, username: null, label: 'x', server_url: null }, 'account', t),
+    ).toBe('x');
+    expect(searchSourceLabel(undefined, 'account', t)).toBe('账号空间');
+    expect(searchSourceLabel(profile, 'local', t)).toBe('本机空间');
   });
 });
 

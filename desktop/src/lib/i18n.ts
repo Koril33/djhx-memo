@@ -950,41 +950,41 @@ export const messages = {
     'zh-CN': '全局搜索',
     en: 'Global search',
   },
-  searchScope: {
-    'zh-CN': '搜索范围',
-    en: 'Search scope',
-  },
-  searchCurrentSpace: {
-    'zh-CN': '当前空间',
-    en: 'Current space',
-  },
-  searchAllLocal: {
-    'zh-CN': '全部本机空间',
-    en: 'All local spaces',
-  },
-  searchAccount: {
-    'zh-CN': '账号空间',
-    en: 'Account space',
-  },
-  includeTrash: {
-    'zh-CN': '包含回收站',
-    en: 'Include trash',
-  },
-  searchLocalOnlyHint: {
-    'zh-CN': '仅搜索已同步到本机的笔记',
-    en: 'Only searches notes synced to this device',
-  },
   searchTruncated: {
-    'zh-CN': '结果已截断，请细化关键词',
-    en: 'Results truncated — refine your query',
+    'zh-CN': '仅显示前 50 条，请细化关键词',
+    en: 'Showing the first 50 results — refine your query',
   },
   searchNoResults: {
     'zh-CN': '无匹配',
     en: 'No matches',
   },
   searchEmptyQuery: {
-    'zh-CN': '输入关键词，搜索所有笔记',
-    en: 'Type a query to search all notes',
+    'zh-CN': '输入关键词搜索',
+    en: 'Type a query to search',
+  },
+  searchFailed: {
+    'zh-CN': '搜索失败，请重试。',
+    en: 'Search failed. Try again.',
+  },
+  searchLoading: {
+    'zh-CN': '搜索中…',
+    en: 'Searching…',
+  },
+  searchScopeHintLocal: {
+    'zh-CN': '仅搜索本机内容与回收站',
+    en: 'Searches only local content and trash',
+  },
+  searchScopeHintAccount: {
+    'zh-CN': '仅搜索本机内容，含当前账号本地副本与回收站',
+    en: 'Searches only local content, including the current account\u2019s local copy and trash',
+  },
+  closeWindow: {
+    'zh-CN': '关闭窗口',
+    en: 'Close window',
+  },
+  welcomeStatus: {
+    'zh-CN': '空白页',
+    en: 'Welcome screen',
   },
   findPlaceholder: {
     'zh-CN': '查找文字',

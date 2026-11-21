@@ -76,7 +76,12 @@
     });
     purgeConfirmation = null;
     await editor.open(result.purge_state === 'purged' ? null : result);
-    if (result.purge_state === 'purged') documentKey++;
+    if (result.purge_state === 'purged') {
+      enterWelcome();
+      documentKey++;
+    } else {
+      enterNote();
+    }
     await refreshState(true);
     notify(result.purge_state === 'purged' ? 'purgeDone' : 'purgeRequested');
   }
@@ -168,6 +173,7 @@
       selecting = selection.size > 0;
       if (saved.some((n) => n.id === editor.note?.id)) {
         await editor.open(null);
+        enterWelcome();
         documentKey++;
       }
       if (saved.length) notice = null;
@@ -251,6 +257,7 @@
       }
       pendingMarkdown = null;
       await editor.open(note);
+      enterNote();
       documentKey++;
       trash = false;
       query = '';
@@ -264,6 +271,9 @@
   let query = '';
   let trash = false;
   let mode: 'source' | 'preview' | 'split' = 'source';
+  type EditorPage = 'welcome' | 'draft' | 'note';
+  let editorPage: EditorPage = 'welcome';
+  let transitioning = false;
   let booting = true;
   let busy = false;
   let lifecyclePending = false;
@@ -425,22 +435,26 @@
     });
   }
   $: saveLabel = t(
-    editor.error
-      ? 'saveFailed'
-      : editor.saving || editor.unsaved || editor.composing
-        ? 'saving'
-        : editor.note
-          ? 'saved'
-          : 'blankDraft',
+    editorPage === 'welcome'
+      ? 'welcomeStatus'
+      : editor.error
+        ? 'saveFailed'
+        : editor.saving || editor.unsaved || editor.composing
+          ? 'saving'
+          : editor.note
+            ? 'saved'
+            : 'blankDraft',
   );
   $: saveShortLabel = t(
-    editor.error
-      ? 'saveFailed'
-      : editor.saving || editor.unsaved || editor.composing
-        ? 'saving'
-        : editor.note
-          ? 'savedShort'
-          : 'draftShort',
+    editorPage === 'welcome'
+      ? 'welcomeStatus'
+      : editor.error
+        ? 'saveFailed'
+        : editor.saving || editor.unsaved || editor.composing
+          ? 'saving'
+          : editor.note
+            ? 'savedShort'
+            : 'draftShort',
   );
 
   function notify(key: MessageKey, args?: MessageArgs): void {
@@ -498,6 +512,7 @@
         return;
       }
       await editor.open(null);
+      enterWelcome();
       documentKey++;
       clearListActions();
       clearUndo();
@@ -541,6 +556,7 @@
           editor.note?.id === redirect.source
         ) {
           await editor.open(target);
+          enterNote();
           documentKey++;
           pendingRedirect = null;
           notify('conflictOpened');
@@ -554,6 +570,7 @@
     await editor.flush();
     const fresh = await call<Note>({ action: 'get', profile_id: state!.profile.id, id: note.id });
     await editor.open(fresh);
+    enterNote();
     documentKey++;
     notice = null;
   }
@@ -561,6 +578,7 @@
     clearListActions();
     if (state?.profile.read_only) throw new LocalizedError('recoveryReadOnlyError');
     await editor.open(null);
+    enterDraft();
     documentKey++;
     trash = false;
     query = '';
@@ -574,6 +592,7 @@
     trash = deleted;
     query = '';
     await editor.open(null);
+    enterWelcome();
     documentKey++;
     await refreshNotes();
   }
@@ -584,6 +603,7 @@
     stateRequestCounter++;
     await call({ action: 'switch', profile_id: id });
     await editor.open(null);
+    enterWelcome();
     documentKey++;
     query = '';
     trash = false;
@@ -630,6 +650,7 @@
         device_name: deviceName,
       });
       await editor.open(null);
+      enterWelcome();
       documentKey++;
       clearListActions();
       clearUndo();
@@ -666,6 +687,7 @@
     stateRequestCounter++;
     const result = await call<{ remote_revoked: boolean }>({ action: 'logout' });
     await editor.open(null);
+    enterWelcome();
     documentKey++;
     clearListActions();
     clearUndo();
@@ -697,6 +719,7 @@
       deleted,
     });
     await editor.open(result);
+    enterNote();
     await refreshState(true);
     notify(deleted ? 'movedToTrash' : 'restored');
   }
@@ -774,6 +797,7 @@
       latestState = null;
       editor.profileId = state.profile.id;
       activeMismatch = false;
+      enterWelcome();
       documentKey++;
       await refreshState(true);
     }
@@ -900,6 +924,38 @@
       document.querySelector<HTMLElement>('#note-list .search input');
     target?.focus();
   }
+  function focusWelcome(): void {
+    const target =
+      document.querySelector<HTMLElement>('.welcome-action:not(:disabled)') ??
+      document.querySelector<HTMLElement>('.welcome');
+    target?.focus();
+  }
+  function enterWelcome(): void {
+    editorPage = 'welcome';
+    findApi = undefined;
+    pendingFindQuery = null;
+    clearListActions();
+    void tick().then(focusWelcome);
+  }
+  function enterDraft(): void {
+    editorPage = 'draft';
+    pendingFindQuery = null;
+  }
+  function enterNote(): void {
+    editorPage = 'note';
+  }
+  async function closeCurrentDocument(): Promise<void> {
+    if (transitioning) return;
+    transitioning = true;
+    try {
+      await editor.closeDocument();
+      enterWelcome();
+    } catch (error) {
+      failure = error;
+    } finally {
+      transitioning = false;
+    }
+  }
   function openGlobalSearch(): void {
     globalSearchOpen = true;
   }
@@ -924,9 +980,10 @@
         id: hit.note_id,
       });
       await editor.open(note);
+      enterNote();
       pendingFindQuery = term;
       documentKey++;
-      trash = false;
+      trash = hit.deleted;
       clearListActions();
       await refreshNotes();
       notice = null;
@@ -998,6 +1055,7 @@
         failure = error;
       } finally {
         booting = false;
+        if (editorPage === 'welcome') void tick().then(focusWelcome);
       }
     })();
     return cleanup;
@@ -1041,7 +1099,9 @@
       }
       if (key === 'w' && !event.shiftKey) {
         event.preventDefault();
-        if (!modalOpen) void native('request_hide');
+        if (modalOpen || event.repeat || busy || lifecyclePending || transitioning) return;
+        if (editorPage === 'welcome') void native('request_hide');
+        else void run(closeCurrentDocument);
         return;
       }
       if (key === 'f' && !event.shiftKey) {
@@ -1305,84 +1365,90 @@
           on:click={() => run(() => openSettings('account'))}
           >{profileLabel(state.profile, t, language, preferences.timeZone)}</button
         >{/if}
-      <strong class="document-title">{editor.note ? title : t('newDraft')}</strong>
-      <div class="editor-actions">
-        <div class="view-switch" aria-label={t('editorMode')}>
-          <button
-            class:chosen={mode === 'source'}
-            aria-label={t('source')}
-            title={t('source')}
-            aria-pressed={mode === 'source'}
-            on:click={() => {
-              mode = 'source';
-            }}><Icon name="pencil" /></button
-          >
-          <button
-            class:chosen={mode === 'preview'}
-            aria-label={t('preview')}
-            title={t('preview')}
-            aria-pressed={mode === 'preview'}
-            on:click={() => {
-              mode = 'preview';
-            }}><Icon name="eye" /></button
-          >
-          <button
-            class:chosen={mode === 'split'}
-            aria-label={t('split')}
-            title={t('split')}
-            aria-pressed={mode === 'split'}
-            on:click={() => {
-              mode = 'split';
-            }}><Icon name="columns-2" /></button
-          >
-        </div>
-        <details class="action-menu" data-menu>
-          <!-- svelte-ignore a11y_no_redundant_roles (WebKitGTK exposes an unknown AT-SPI role without this explicit role.) -->
-          <summary
-            role="button"
-            class="icon-button"
-            aria-label={t('noteActions')}
-            title={t('noteActions')}><Icon name="ellipsis" /></summary
-          >
-          <div class="menu-panel">
-            {#if editor.note?.deleted && editor.note.purge_state !== 'purged'}<button
-                disabled={busy || state?.profile.read_only || editor.note.purge_state === 'pending'}
-                on:click={(event) => menuAction(event, () => setDeleted(false))}
-                ><Icon name="rotate-ccw" />{t('restoreNote')}</button
-              >
-              <button
-                class="danger"
-                disabled={busy || state?.profile.read_only || editor.note.purge_state === 'pending'}
-                on:click={(event) =>
-                  menuAction(event, () => {
-                    purgeConfirmation = {
-                      id: editor.note!.id,
-                      profile: state!.profile.id,
-                      generation: editor.note!.generation,
-                    };
-                  })}><Icon name="trash-2" />{t('purgeNote')}</button
-              >
-            {:else if !editor.note?.deleted}<button
-                class="danger"
-                disabled={busy || !editor.note || state?.profile.read_only}
-                on:click={(event) => menuAction(event, () => setDeleted(true))}
-                ><Icon name="trash-2" />{t('moveToTrash')}</button
-              >{/if}
+      <strong class="document-title"
+        >{editorPage === 'welcome' ? t('noteEditor') : editor.note ? title : t('newDraft')}</strong
+      >
+      {#if editorPage !== 'welcome'}<div class="editor-actions">
+          <div class="view-switch" aria-label={t('editorMode')}>
             <button
-              disabled={busy || !editor.content}
-              on:click={(event) => menuAction(event, copyBuffer)}
-              ><Icon name="copy" />{t('copyText')}</button
+              class:chosen={mode === 'source'}
+              aria-label={t('source')}
+              title={t('source')}
+              aria-pressed={mode === 'source'}
+              on:click={() => {
+                mode = 'source';
+              }}><Icon name="pencil" /></button
             >
             <button
-              disabled={busy ||
-                !editor.content.trim() ||
-                ['pending', 'purged'].includes(editor.note?.purge_state ?? '')}
-              on:click={(event) => menuAction(event, exportCurrentNote)}
-              ><Icon name="file-output" />{t('exportCurrentNote')}</button
+              class:chosen={mode === 'preview'}
+              aria-label={t('preview')}
+              title={t('preview')}
+              aria-pressed={mode === 'preview'}
+              on:click={() => {
+                mode = 'preview';
+              }}><Icon name="eye" /></button
+            >
+            <button
+              class:chosen={mode === 'split'}
+              aria-label={t('split')}
+              title={t('split')}
+              aria-pressed={mode === 'split'}
+              on:click={() => {
+                mode = 'split';
+              }}><Icon name="columns-2" /></button
             >
           </div>
-        </details>
-      </div>
+          <details class="action-menu" data-menu>
+            <!-- svelte-ignore a11y_no_redundant_roles (WebKitGTK exposes an unknown AT-SPI role without this explicit role.) -->
+            <summary
+              role="button"
+              class="icon-button"
+              aria-label={t('noteActions')}
+              title={t('noteActions')}><Icon name="ellipsis" /></summary
+            >
+            <div class="menu-panel">
+              {#if editor.note?.deleted && editor.note.purge_state !== 'purged'}<button
+                  disabled={busy ||
+                    state?.profile.read_only ||
+                    editor.note.purge_state === 'pending'}
+                  on:click={(event) => menuAction(event, () => setDeleted(false))}
+                  ><Icon name="rotate-ccw" />{t('restoreNote')}</button
+                >
+                <button
+                  class="danger"
+                  disabled={busy ||
+                    state?.profile.read_only ||
+                    editor.note.purge_state === 'pending'}
+                  on:click={(event) =>
+                    menuAction(event, () => {
+                      purgeConfirmation = {
+                        id: editor.note!.id,
+                        profile: state!.profile.id,
+                        generation: editor.note!.generation,
+                      };
+                    })}><Icon name="trash-2" />{t('purgeNote')}</button
+                >
+              {:else if !editor.note?.deleted}<button
+                  class="danger"
+                  disabled={busy || !editor.note || state?.profile.read_only}
+                  on:click={(event) => menuAction(event, () => setDeleted(true))}
+                  ><Icon name="trash-2" />{t('moveToTrash')}</button
+                >{/if}
+              <button
+                disabled={busy || !editor.content}
+                on:click={(event) => menuAction(event, copyBuffer)}
+                ><Icon name="copy" />{t('copyText')}</button
+              >
+              <button
+                disabled={busy ||
+                  !editor.content.trim() ||
+                  ['pending', 'purged'].includes(editor.note?.purge_state ?? '')}
+                on:click={(event) => menuAction(event, exportCurrentNote)}
+                ><Icon name="file-output" />{t('exportCurrentNote')}</button
+              >
+            </div>
+          </details>
+        </div>{/if}
     </header>
     {#if runtime && !runtime.tray_available}<div
         class="info-strip compact-notice"
@@ -1476,6 +1542,46 @@
       >
         {t('openFailed')}<button on:click={() => run(() => refreshState(true))}>{t('retry')}</button
         >
+      </div>{:else if editorPage === 'welcome'}<div
+        class="welcome"
+        role="region"
+        aria-label={t('noteEditor')}
+      >
+        <div class="welcome-panel">
+          <span class="welcome-mark"><Icon name="file-text" size={32} /></span>
+          <h2>{t('localTagline')}</h2>
+          <div class="welcome-actions">
+            <button
+              class="welcome-action"
+              disabled={busy ||
+                booting ||
+                !!state?.profile.read_only ||
+                activeMismatch ||
+                lifecyclePending}
+              title={state?.profile.read_only
+                ? t('recoveryReadOnlyError')
+                : busy || lifecyclePending
+                  ? t('processing')
+                  : t('newNote')}
+              on:click={() => run(newNote)}
+            >
+              <Icon name="plus" size={20} /><span class="welcome-action-label">{t('newNote')}</span
+              ><kbd>Ctrl+N</kbd>
+            </button>
+            <button class="welcome-action" on:click={openGlobalSearch}>
+              <Icon name="search" size={20} /><span class="welcome-action-label"
+                >{t('searchNotes')}</span
+              ><kbd>Ctrl+Shift+F</kbd>
+            </button>
+            <div class="welcome-action welcome-action-close">
+              <Icon name="log-out" size={20} /><span class="welcome-action-label"
+                >{t('closeWindow')}</span
+              ><kbd>Ctrl+W</kbd><span class="welcome-action-hint"
+                >{t(runtime?.tray_available ? 'hideAfterSave' : 'quitAfterSave')}</span
+              >
+            </div>
+          </div>
+        </div>
       </div>{:else}<div class="editor-body" class:split={mode === 'split'}>
         <div
           class="source-pane"
@@ -1519,13 +1625,15 @@
           title={t('statusDetails')}
         >
           <Icon
-            name={editor.error
-              ? 'circle-alert'
-              : editor.saving || editor.unsaved || editor.composing
-                ? 'refresh-cw'
-                : editor.note
-                  ? 'check'
-                  : 'file-text'}
+            name={editorPage === 'welcome'
+              ? 'file-text'
+              : editor.error
+                ? 'circle-alert'
+                : editor.saving || editor.unsaved || editor.composing
+                  ? 'refresh-cw'
+                  : editor.note
+                    ? 'check'
+                    : 'file-text'}
             size={16}
           />
           <span>{saveShortLabel}</span><span class="status-divider"></span>
@@ -1617,6 +1725,8 @@
       <GlobalSearch
         {language}
         timeZone={preferences.timeZone}
+        profileId={state?.profile.id ?? 'local'}
+        profiles={state?.profiles ?? []}
         onClose={() => {
           globalSearchOpen = false;
         }}

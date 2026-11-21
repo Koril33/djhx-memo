@@ -1,6 +1,6 @@
 # 快捷键设计：Ctrl+W / Ctrl+F / Ctrl+Shift+F
 
-- 状态：0.1.11 开发前设计草案；未实施、未验收。本文是快捷键（含关闭到托盘与搜索入口）的唯一设计来源，后续修改同步更新本文。
+- 状态：§1–9 保留 0.1.11 设计及当时定稿，功能已实现；验证边界见 [0.1.11 记录](releases/0.1.11-validation.md)。**0.1.13 的两段式 Ctrl+W 与空白页见 §10，目标已定、未实施。** 本文为快捷键详细设计入口，产品行为以对应 spec 为准，后续修改同步维护。
 - 关联文档：[搜索功能详细设计](search-design.md)、[0.1.11 目标规范](../spec/client-0.1.11.md)。
 - 范围：仅 Windows/Linux 桌面端。Android 是触摸界面，不涉及本文的 Ctrl 组合键（系统返回键已有 BackHandler 处理，见 0.1.10 现状）。
 
@@ -189,3 +189,18 @@ fn request_hide(app: tauri::AppHandle) {
 - 新增前端依赖 `@codemirror/search`（与既有 CodeMirror 6 同源，版本随桌面 `package.json` 锁定）。按 [AGENTS](../AGENTS.md) 需在引入前补一条 ADR 记录许可与锁定版本（MIT，CodeMirror 官方维护，与既有 `@codemirror/*` 一致）。
 - Ctrl+W 新增 Tauri 命令 `request_hide`（`request_lifecycle(app, Lifecycle::Hide)`）并注册进 `generate_handler!`，前端 `native('request_hide')`；**不放开 `core:window:*` 权限**（Linux 本版维持 `hide()`，不改 `finish_lifecycle`）。
 - core/Rust 侧搜索改动见 [搜索功能详细设计](search-design.md)（`db::search_notes` + `search_notes` 动作 + C4 触发器迁移）。
+
+## 10. 0.1.13 定稿增量（未实施）
+
+产品规则见 [0.1.13 §2](../spec/client-0.1.13.md#2-桌面空白页与会话)，实施与保存/过渡用例见 [开发文档 §3](client-0.1.13-development.md#3-w1桌面空白页与会话状态)。本节替代旧版“Ctrl+W 永远等同 X”的目标，其他按键与原生 lifecycle 保留。
+
+| 上下文 | Ctrl+W | Ctrl+F | Ctrl+Shift+F |
+|---|---|---|---|
+| 打开草稿/笔记 | 最终输入保存确认后关当前文档，回空白页 | 保持笔记内查找 | 全局搜索 |
+| 空白页 | 既有 request_hide；有托盘隐藏、无托盘退出 | 无动作 | 全局搜索 |
+| composing/模态框 | 忽略 | 保留既有守卫 | 保留既有守卫 |
+| 会话过渡或安装锁定中 | 忽略重复导航，不排队隐藏 | 不穿过保护 | 不穿过保护 |
+
+冷启动进入空白页，托盘恢复原页面；新建直达草稿，成功切空间/分区与删除当前笔记后回空白页，导入成功继续打开。欢迎页提示 New Note Ctrl+N、Search Notes Ctrl+Shift+F、Close Window Ctrl+W；不把 Ctrl+F 提示为全局搜索。
+
+长按/自动重复不能把一次关文档变成隐藏窗口；flush 失败保留原缓冲和救援。X、Alt+F4、任务栏关闭、托盘退出继续直接走窗口级安全 lifecycle，不增加空白页步骤。Android 不新增空白页或 Ctrl 快捷键。

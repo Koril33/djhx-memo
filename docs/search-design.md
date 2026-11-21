@@ -1,6 +1,6 @@
 # 搜索功能详细设计（0.1.11）
 
-- 状态：0.1.11 开发前设计（决策已收敛，见 §13，无遗留待决策项）；未实施、未验收、未发布。**本文是搜索功能的单一事实来源**，后续所有搜索相关修改（core、桌面、Android、测试、文档）都必须同步更新本文，不得另立零散结论。
+- 状态：§1–14 保留 0.1.11 设计与当时决定；功能已随 0.1.11 实现，当前代码为 0.1.12，实际验证边界见 [0.1.11 记录](releases/0.1.11-validation.md)和[最新评估](client-0.1.13-assessment.md)。**0.1.13 的定稿增量见 §15，未实施。** 本文为详细设计入口，产品行为以 spec 为准，后续变更同步维护两者。
 - 关联文档：[快捷键设计](shortcuts-design.md)、[0.1.11 目标规范](../spec/client-0.1.11.md)、[v1 产品行为](../spec/product-v1.md)、[数据模型](../spec/data-model.md)、[UI 与 core 接口边界](../spec/core-api.md)。
 - 范围：桌面（Windows/Linux，键盘快捷键主战场）与 Android（本版补充笔记内查找/全局搜索 UI，无键盘快捷键）；Android 侧范围见 §11。
 
@@ -336,7 +336,7 @@ search_notes {
 2. **性能基准**：blog 语料基准脚本（落 `tools/`），确认短词路径与 P95。
 3. **桌面笔记内查找**：引入 `@codemirror/search`（补 ADR），Ctrl+F 接入 + IME 守卫 + Escape 优先级链。
 4. **桌面全局搜索**：`search_notes` 动作前端封装 + 全局搜索面板 + 范围选择器 + segments 高亮/片段/跳转 + 键盘导航。
-5. **Ctrl+W**：前端 `getCurrentWindow().close()` + IME 保护（复用既有关闭链路）。
+5. **Ctrl+W**：最终采用 `native('request_hide')` + IME 保护，复用既有关闭链路；早期 `getCurrentWindow().close()` 方案已按 §13 弃用。
 6. **Android 全局搜索 UI**：`search_notes` 经 UniFFI 接入 + M3 SearchBar + segments 高亮 + 范围过滤。
 7. **Android 笔记内查找 UI**：原生 Spannable 查找条（字面匹配 + 高亮 + 上下一个 + 定位 + IME 守卫）+ 全局搜索→笔记内定位衔接 + 防抖。
 8. **交叉评审**：同步/迁移/鉴权边界变更（C4 迁移）须独立交叉评审；快捷键与搜索 UI 做 UX 交叉评审。
@@ -394,3 +394,15 @@ search_notes {
 - Helix：[pickers（全局搜索正则）](https://raw.githubusercontent.com/sarvex/helix/refs/heads/main/book/src/pickers.md)
 - fzf：[algo.go（ExactMatchNaive 加分）](https://github.com/junegunn/fzf/blob/master/src/algo/algo.go)
 - Telescope.nvim：[README（finders/sorters）](https://github.com/nvim-telescope/telescope.nvim)
+
+## 15. 0.1.13 定稿增量（未实施）
+
+维护者已确认 [0.1.13 目标规范](../spec/client-0.1.13.md)及[开发文档 §4–5](client-0.1.13-development.md#4-w2固定搜索范围与接口)。本节替代历史设计中的可选过滤、默认当前空间且不含回收站的目标口径，不追溯改变 0.1.11/0.1.12 行为。
+
+- 两端去掉范围与回收站开关，固定搜索全部本机空间＋selected 恰为账号时的该一个账号，均含普通回收站。selected 为本机/恢复空间时只搜本机，不带入上次或其他账号。此前评估中的“所有账号”不实施。
+- 新增 core 范围模式 `local_and_current_account`，新模式根 `profile_id` 作为必填锚点，与枚举用同一 registry 快照校验；不与 `space_ids` 混用。字段/错误与兼容要求以 [core-api](../spec/core-api.md#0113-搜索目标扩展未实施) 为准。
+- 纯本地、恢复归档排除、彻底删除规则、字面匹配与合并后 top 50 保持。空 query 显示输入提示，不显示全量/最近编辑。两端固定发送 `include_deleted=true`，旧接口默认值不变。
+- 账号/服务器来源与回收站状态分别展示；安全来源快照和 `(profile_id,note_id)` key 保证身份一致。失败整次可重试，不提供部分成功或分页；迟到回执按请求/范围身份作废。
+- 桌面修复结果行 Flex 收缩，列表滚动、选中项可见；Android 验证长标签/大字/键盘布局。先限制参与空间再召回，不能全账号搜索后由 UI 过滤。
+
+完整状态、跳转、故障与验收用例只在本版规范/开发文档维护。当前代码、设备和发布矩阵未因本节建立而通过。

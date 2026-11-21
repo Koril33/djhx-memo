@@ -63,9 +63,18 @@ create 的同 request_id 重试返回该笔记当前 NoteView，可能与本次�
 
 笔记读写、列表、导入和导出请求同时携带 UI 已读取的 `profile_id`。当前空间已变化时返回 PROFILE_CHANGED，不把旧空间缓冲写入新账号。state 可返回 `redirects` 对象（原笔记 ID → 冲突副本 ID）；UI 在 event_seq 更新时消费一次映射并迁移焦点，不能因此覆盖未提交缓冲。
 
-`search_notes` 为**跨空间只读动作**，按 `scope` 枚举目标空间（经 `fixed_profile` 打开非选中库，不受 `profile()` 的 `PROFILE_CHANGED` 守卫约束；v1 范围跳过 `recovery` 空间）。它不写任何库、不触发同步；搜索期间空间被切换，本次结果按旧范围返回、下一次由 UI 以新 `event_seq` 重新发起即可，不产生脏写。
+`search_notes` 为**跨空间只读动作**，按 `scope` 枚举目标空间（既有模式经 `fixed_profile` 打开非选中库，不受 `profile()` 的 `PROFILE_CHANGED` 守卫约束；v1 范围跳过 `recovery` 空间）。它不修改笔记/凭据、不触发同步，正常开库校验/迁移机制保持；搜索期间空间被切换，本次结果按旧范围返回，UI 作废旧回执并按新上下文重查，不产生脏写。下文 0.1.13 新模式另有发起时的 selected 锚点校验，不能把既有模式的无守卫解释为允许新模式错搜账号。
 
 state 的 event_seq 变化提示重新读取；前台可定期调用 state。不得在 UI 生成 base_rev/op_id、裁决冲突或从显示时间推导同步状态。导出 ZIP 的目标选择和原子落盘由平台完成。
+
+## 0.1.13 搜索目标（未实施）
+
+当前请求表描述已实现模式；[0.1.13](client-0.1.13.md)新增范围值的目标签名为 `search_notes(query, profile_id, scope{kind: local_and_current_account, include_deleted})`，详细字段与错误约束见 [core-api 的 0.1.13 扩展](core-api.md#0113-搜索目标扩展未实施)。
+
+- 新模式根 `profile_id` 必填；格式错误为 `INVALID_REQUEST`，与同一 registry 快照 selected 不同为 `PROFILE_CHANGED`。枚举全部本机＋selected 为账号时的该一个账号，不聚合其他账号，不包含 recovery。
+- 不得同时传 `scope.space_ids`；混用为 `INVALID_REQUEST`。0.1.13 UI 固定 `include_deleted=true`，该字段对旧模式仍沿用默认 false。旧接口调用兼容。
+- 响应和 SearchHit 不变；一库失败为整次错误，无部分成功 DTO。profile/note 复合身份、来源快照、请求失效与跳转规则见 [版本规范](client-0.1.13.md)。
+- 仍经 JSON 桥接调用；不新增 UniFFI 方法，不触发云搜索或同步。UI 可丢弃过期回执，但不可声称因此终止了原生调用。
 
 ## 原生更新接口（0.1.5）
 
