@@ -253,7 +253,41 @@ impl Engine {
         let registry = lock(&self.registry)?.clone();
         let kind = request["scope"]["kind"].as_str().unwrap_or("current");
         let mut targets: Vec<Profile> = Vec::new();
-        if let Some(ids) = request["scope"]["space_ids"].as_array() {
+        if kind == "local_and_current_account" {
+            // 0.1.13 fixed scope: all local spaces plus the selected account when
+            // the selection is an account, resolved from one registry snapshot.
+            if !request["scope"]["space_ids"].is_null() {
+                return Err(AppError::new(
+                    "INVALID_REQUEST",
+                    "固定范围搜索不接受显式空间列表",
+                ));
+            }
+            let selected_id = request["profile_id"]
+                .as_str()
+                .filter(|s| !s.is_empty())
+                .ok_or_else(|| AppError::new("INVALID_REQUEST", "固定范围搜索需要 profile_id"))?;
+            if selected_id != registry.selected {
+                return Err(AppError::new(
+                    "PROFILE_CHANGED",
+                    "当前空间已变化，请重新搜索",
+                ));
+            }
+            targets.extend(
+                registry
+                    .profiles
+                    .iter()
+                    .filter(|p| p.kind == "local")
+                    .cloned(),
+            );
+            if let Some(profile) = registry
+                .profiles
+                .iter()
+                .find(|p| p.id == registry.selected)
+                .filter(|p| p.kind == "account")
+            {
+                targets.push(profile.clone());
+            }
+        } else if let Some(ids) = request["scope"]["space_ids"].as_array() {
             for id in ids.iter().filter_map(Value::as_str) {
                 if let Some(profile) = registry.profiles.iter().find(|p| p.id == id) {
                     targets.push(profile.clone());
@@ -297,6 +331,7 @@ impl Engine {
                 .cmp(&a.score)
                 .then_with(|| b.updated_at.cmp(&a.updated_at))
                 .then_with(|| a.note_id.cmp(&b.note_id))
+                .then_with(|| a.profile_id.cmp(&b.profile_id))
         });
         let truncated = hits.len() > 50;
         hits.truncate(50);
