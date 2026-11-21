@@ -38,4 +38,20 @@ class SourceFindTest {
         assertEquals(emptyList<IntRange>(), findLiteralMatches("abc", ""))
         assertEquals(emptyList<IntRange>(), findLiteralMatches("abc", "abcd"))
     }
+
+    @Test fun visibleMatchIndicesOverlapsOnlyIntersectingRanges() {
+        val matches = listOf(0..2, 4..6, 8..10)
+        assertEquals(1..2, visibleMatchIndices(matches, 5..9))
+        assertEquals(0..0, visibleMatchIndices(matches, 0..2))
+        assertEquals(2..2, visibleMatchIndices(matches, 10..10))
+        assertTrue(visibleMatchIndices(matches, 3..3).isEmpty())
+        assertTrue(visibleMatchIndices(emptyList(), 0..10).isEmpty())
+    }
+
+    @Test fun clippedRangeIntersectsToOverlapOrNull() {
+        assertEquals(5..6, clippedRange(4..6, 5..9))
+        assertEquals(8..9, clippedRange(8..10, 5..9))
+        assertEquals(null, clippedRange(0..2, 5..9))
+        assertEquals(5..5, clippedRange(0..5, 5..9))
+    }
 }

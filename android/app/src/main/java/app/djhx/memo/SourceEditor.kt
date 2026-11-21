@@ -15,14 +15,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -74,6 +77,11 @@ internal fun SourceEditor(
     val findHost = remember { mutableStateOf<SourceFindHost?>(null) }
     val host = findHost.value
     val composing = remember { mutableStateOf(false) }
+
+    // 宿主离开组合时取消在途的查找计算，避免向已销毁的视图应用过期结果。
+    DisposableEffect(host) {
+        onDispose { host?.close() }
+    }
 
     // 查询/开关/宿主就绪时，重新执行字面查找；关闭时清空高亮。
     LaunchedEffect(findOpen, findQuery, host) {
@@ -175,7 +183,7 @@ internal fun SourceEditor(
                 }.apply {
                     gravity = Gravity.TOP or Gravity.START
                     textSize = 17f
-                    setLineSpacing(0f, 1.65f)
+                    setLineSpacing(0f, 1.60f)
                     typeface = Typeface.DEFAULT
                     setTextColor(textColor)
                     setHintTextColor(hintColor)
@@ -310,6 +318,7 @@ private fun FindBar(
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
     val total = host?.total ?: 0
     val current = host?.current ?: -1
+    val computing = host?.computing ?: false
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -329,11 +338,16 @@ private fun FindBar(
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(onSearch = { onNext() })
         )
-        Text(
-            stringResource(R.string.find_count, if (total == 0) 0 else current + 1, total),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        if (computing) {
+            // 大笔记的非阻塞查找进度：计数在后台完成后更新，不阻塞输入。
+            CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+        } else {
+            Text(
+                stringResource(R.string.find_count, if (total == 0) 0 else current + 1, total),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         IconButton(onClick = onPrevious, enabled = total > 0) {
             Icon(
                 painterResource(R.drawable.ic_ui_chevron_down),
@@ -368,6 +382,8 @@ private fun Editable.clearCodeColors() {
 
 private fun Editable.applyCodeColors(spans: List<CodeSpan>, dark: Boolean) {
     clearCodeColors()
+    // 大笔记暂停全量代码着色 span 应用；正文与保存不受影响。
+    if (spans.isEmpty() || isLargeNote(this)) return
     spans.forEach { span ->
         setSpan(
             CodeSyntaxColor(span.kind.color(dark).toArgb()),
@@ -380,6 +396,8 @@ private fun Editable.applyCodeColors(spans: List<CodeSpan>, dark: Boolean) {
 
 private fun highlight(editable: Editable, dark: Boolean) {
     editable.getSpans(0, editable.length, SyntaxColor::class.java).forEach { editable.removeSpan(it) }
+    // 大笔记暂停本地 Markdown 全文正则着色；先清空再返回，避免从小笔记过渡到大笔记残留旧色。
+    if (isLargeNote(editable)) return
     val patterns = listOf(
         Regex("(?m)^ {0,3}#{1,6} .*$") to (if (dark) 0xFF91D5BE else 0xFF236650).toInt(),
         Regex("(?m)^\\s*(?:[-+*]|[0-9]+[.)])\\s+(?:\\[[ xX]\\])?") to (if (dark) 0xFFDCC48C else 0xFF815822).toInt(),

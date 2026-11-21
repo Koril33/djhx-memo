@@ -44,6 +44,8 @@ private fun JSONArray.codeSpans(): List<CodeSpan> = objects().map {
 internal fun rememberCodeHighlights(source: String, model: MemoModel): CodeHighlights? {
     var highlights by remember(source) { mutableStateOf<CodeHighlights?>(null) }
     LaunchedEffect(source, model) {
+        // 大笔记暂停代码着色调用；正文与预览结构不受影响。
+        if (isLargeNote(source)) return@LaunchedEffect
         if ("```" !in source && "~~~" !in source) return@LaunchedEffect
         delay(120)
         highlights = try {
