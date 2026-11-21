@@ -1,10 +1,10 @@
 # djhx-memo
 
-**当前三端正式版为 [0.1.13](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.13)**：桌面空白页/两段式Ctrl+W、固定本机＋当前选中账号及普通回收站搜索、来源/布局和Android基础列表续写。中文名 **阳墨随记**、英文 **DJHX MEMO**。公开状态与尚待补齐的设备/升级证据见[0.1.13记录](docs/releases/0.1.13-validation.md)；版本公开不等于完整矩阵通过。
+**当前三端正式版为 [0.2.0](https://github.com/Koril33/djhx-memo/releases/tag/v0.2.0)**：大笔记性能、Android离线Devices交互、编辑排版、jade-ivory图标与Windows新装默认目录。中文名 **阳墨随记**、英文 **DJHX MEMO**。公开证据和验收边界见[0.2.0记录](docs/releases/0.2.0-validation.md)；完整设备/性能矩阵不因公开状态自动通过。
 
-三端/core为0.1.13，Android code14；local schema4，server仍0.1.4/schema2、协议2，应用/签名身份不变。Android保留[0.1.9安装兼容补丁](docs/releases/0.1.9-validation.md)。完整设备矩阵仍待完成；连续7天试用已由维护者确认完成，逐日明细未入库，不替代三端矩阵。
+三端客户端0.2.0、Android code15，core0.1.13；local schema4，server0.1.4/schema2、协议2，应用/签名身份保持。连续7天试用已由维护者确认完成，完整v1矩阵仍独立验收。
 
-**0.2.0尚未整体实施或发布。** 基于0.1.13的[计划复审](docs/reviews/client-0.2.0-plan-review.md)保留五项范围和待决策问题。维护者追加确认的jade-ivory母版、三端及官网图标资源已在开发分支接入并完成[本地检查](docs/brand-jade-ivory-validation.md)，黑白托盘保持；其余M2/离线/排版/目录尚未实施。0.1.13既有安装包和线上官网不因源码替换自动更新，不覆盖旧发行物。
+**0.2.1处于问题核实与方案阶段，未实施或发布。** [评估文档](docs/client-0.2.1-assessment.md)记录Windows任务栏图标、桌面空白页精简、Android搜索布局及验收方案；维护者已复核Linux重启后窗口logo和Ctrl+W正常，两项已移出缺陷范围。
 
 0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](docs/releases/0.1.4-validation.md)。
 

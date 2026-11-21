@@ -1,8 +1,8 @@
 # 0.2.0 客户端开发前目标规范
 
 - 日期：2026-11-16；2026-11-21 基于0.1.13复审修订，见[计划复审](../docs/reviews/client-0.2.0-plan-review.md)。
-- 状态：**五项范围已确定；Q1–Q4/D1–D6 已由维护者定稿并采用推荐方案，W4 新母版/资源/生成器已接入并完成本地检查，其余工作包进入实施；整版未验收、未发布。** 品牌证据见[接入记录](../docs/brand-jade-ivory-validation.md)，决策记录见[计划复审](../docs/reviews/client-0.2.0-plan-review.md)，待测参数和关口见[开发准备](../docs/client-0.2.0-development.md)。
-- 当前发行与代码基线为 `v0.1.13 / d73bace`，三端/core 0.1.13、Android code14、server0.1.4；现行协议2、local schema4、server schema2。不得将0.2.0目标视为当前已有能力。
+- 状态（2026-11-21补记）：**五项源码增量已实现并公开发布；本轮未补造完整性能/设备/升级验收。** tag `v0.2.0 / 4b10ac7`，证据见[发行记录](../docs/releases/0.2.0-validation.md)；后续[0.2.1评估](../docs/client-0.2.1-assessment.md)不是本版已实现行为。下文保留目标与验收条款。
+- 原开发起点为 `v0.1.13 / d73bace`；本版客户端0.2.0、Android code15、core0.1.13、server0.1.4；协议2、local schema4、server schema2不变。未取得测量/设备证据的条款不自动视为达标。
 - 基线：[product-v1](product-v1.md)、[0.1.13](client-0.1.13.md)、[0.1.10](client-0.1.10.md)、[自动更新](automatic-updates.md)。以下不追溯改变旧版本行为；Q1–Q4 已定稿（M2 含桌面、查找可见命中、日常手机+API35 预算、旧安装 `/D` 冲突保留原路径），D1–D6 按推荐值定稿。
 
 ## 1. 范围及已确认取舍
