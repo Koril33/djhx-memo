@@ -3,7 +3,7 @@
 ## 阅读顺序与当前状态
 
 - 阅读 [README](README.md)、[项目计划](djhx-memo-project-plan.md)、[spec 索引](spec/README.md) 及工作目录中的 `AGENTS.md`。
-- 当前客户端/core源码0.1.13（桌面空白页与两段式Ctrl+W、固定本机＋当前选中账号搜索含普通回收站、Android基础列表续写），保留0.1.12 UI精简、0.1.11快捷键/搜索、0.1.10品牌/导出、0.1.7安装屏障与0.1.4数据基线；local schema4、server0.1.4/schema2、协议2；完整产品 v1 尚未发布。实际检查见各模块验证记录；同步、迁移、鉴权的交叉评审见 `docs/reviews/`，不得把未完成的三端验收当作已通过；连续 7 天试用已由维护者确认完成（逐日明细未入库，三端矩阵仍独立验收）。
+- 当前源码候选客户端0.2.1、Android code16、core0.1.13（保留0.1.13空白页/两段式Ctrl+W、固定搜索及Android列表续写）；local schema4、server0.1.4/schema2、协议2。公开稳定版仍为0.2.0，证据见docs/releases/0.2.0-validation.md；0.2.1仅准备draft，实际检查见docs/releases/0.2.1-validation.md，完整产品v1/三端性能与设备矩阵仍独立验收；连续7天试用已由维护者确认完成，逐日明细未入库，不替代三端矩阵。
 - `spec/` 是产品与实现行为的唯一事实来源。改行为先改规范，规范与实现同批提交；不得把计划或占位内容当作已实现的能力。
 
 ## 工作方式
@@ -58,4 +58,4 @@
 
 - 0.1.13按 spec/client-0.1.13.md 增加桌面空白页与两段式Ctrl+W（先关笔记再关窗口，welcome/draft/note会话状态）、固定本机＋当前选中账号及普通回收站的全局搜索（core新增 local_and_current_account 及 profile 锚点校验、移除两端过滤控件、来源标注、修复桌面结果挤压），以及 Android 基础列表回车续写。client/core0.1.13、Android code14；server/协议/schema 不变。发布与 schema 兼容字段核实见 docs/releases/0.1.13-validation.md。
 
-- 0.2.0 五项开发前范围（大笔记性能M2、Android离线交互、编辑排版、jade-ivory跨端图标、Windows新装目录）已确认；其中 W4 图标母版已确认、68项资源与生成器接入并完成本地校验（ADR-0020），其余工作包待维护者决策 Q1–Q4 后实施。目标见 spec/client-0.2.0.md，计划复审见 docs/reviews/client-0.2.0-plan-review.md；尚未验收/发布。
+- 0.2.0已有五项范围的对应源码增量并公开发布（tag 4b10ac7），Q1–Q4/D1–D6已由维护者定稿；目标见spec/client-0.2.0.md，发行事实与验收边界见docs/releases/0.2.0-validation.md。0.2.1已按维护者授权实施桌面空白页精简及Android搜索布局、准备Release draft，见spec/client-0.2.1.md及docs/releases/0.2.1-validation.md；Windows干净安装任务栏图标及Linux窗口图标/Ctrl+W均已由维护者确认正常，不改图标/安装器或扩大范围，不公开Release/推广更新目录。

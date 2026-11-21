@@ -1,12 +1,12 @@
 # 项目文档
 
-> 2026-11-21 基线为 `v0.1.13 / d73bace`（三端/core0.1.13、Android code14、local schema4、server0.1.4/协议2），公开状态见[发布记录](releases/0.1.13-validation.md)，设备矩阵仍待补。0.2.0已完成[计划复审](reviews/client-0.2.0-plan-review.md)；追加授权的玉白母版/多端资源接入与[本地检查](brand-jade-ivory-validation.md)完成，其余工作包/整版发布尚未完成。
+> 2026-11-21 公开稳定客户端为0.2.0，源码候选0.2.1/code16/core0.1.13；协议/schema保持。[0.2.1契约](../spec/client-0.2.1.md)仅修复桌面空白页及Android搜索布局，实际测试/草稿进度见[验证记录](releases/0.2.1-validation.md)。维护者确认Windows任务栏及Linux图标/Ctrl+W正常，已从[评估](client-0.2.1-assessment.md)修复范围移除。
 
 > 状态说明：发布、模块验证和评审记录按日期保留当时状态；代码版本见上方最新基线，产品行为以 [spec](../spec/README.md) 为准，协作规则见 [AGENTS](../AGENTS.md)，试用与完整验收状态见 [validation](validation.md)。[11 月 18 日项目报告](project-status-2026-11-18.md)是历史快照；历史记录中的“7 天试用未完成/待完成”不代表当前。
 
 - Android0.1.9单端发行历史：[发布状态](releases/0.1.9-validation.md)、[行为](../spec/android-install-compatibility.md)、[修复验证](android-install-compatibility-validation.md)、[独立评审](reviews/android-install-compatibility-review.md)。当时Windows/Linux继续0.1.8；0.1.10已统一三端，Civi新兼容入口仍待真机验证。
 
-- 本轮：[0.1.10 品牌与单笔记导出](../spec/client-0.1.10.md)，[实际验证/发行状态](releases/0.1.10-validation.md)、[独立评审](reviews/client-0.1.10-review.md)。0.1.8界面/官网下载与0.1.6列表/导入已实现并保留；Web 暂缓。
+- 0.1.10历史：[品牌与单笔记导出](../spec/client-0.1.10.md)，[实际验证/发行状态](releases/0.1.10-validation.md)、[独立评审](reviews/client-0.1.10-review.md)。0.1.8界面/官网下载与0.1.6列表/导入已实现并保留；Web 暂缓。
 
 - [quick-start.md](quick-start.md)：0.1.10 安装、离线使用与接入自有服务器。
 - [client-release.md](client-release.md)：GitHub/Gitea 发布流程；[0.1.4 三端验证与发布](releases/0.1.4-validation.md)、[0.1.4 同步/迁移交叉评审](reviews/client-0.1.4-review.md)；历史 0.1.3 构建：[Android](releases/0.1.3-android-validation.md)、[Linux](releases/0.1.3-linux-validation.md)。

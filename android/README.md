@@ -1,5 +1,7 @@
 # Android 客户端
 
+公开稳定版为0.2.0；当前源码候选0.2.1（Android code16），本轮仅修复桌面空白页和Android搜索布局并准备Release draft。实际检查及未验收项见[0.2.1记录](../docs/releases/0.2.1-validation.md)，历史版本记录保留如下。
+
 **0.1.10/code11已公开发布**，统一品牌、单篇Markdown导出和删除留白；API35正式0.1.9→0.1.10安装/原笔记保留通过，边界见[0.1.10记录](../docs/releases/0.1.10-validation.md)。
 
 0.1.9/code10历史安装兼容补丁：PR #21已合并，增加显式系统安装器兼容入口、固定失败分类与按尝试恢复。来源见[安装兼容规范](../spec/android-install-compatibility.md)，修复检查见[验证记录](../docs/android-install-compatibility-validation.md)，正式分发与API35的0.1.8→0.1.9升级见[0.1.9发布记录](../docs/releases/0.1.9-validation.md)。Civi的浏览器覆盖成功属于0.1.8手动恢复，不等于新兼容入口已通过真机检查。
