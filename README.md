@@ -4,7 +4,7 @@
 
 已公开0.2.0为三端客户端0.2.0、Android code15，core0.1.13；local schema4，server0.1.4/schema2、协议2，应用/签名身份保持。连续7天试用已由维护者确认完成，完整v1矩阵仍独立验收。
 
-**源码正准备0.2.1 Release draft，尚未公开。** 桌面空白页与Android搜索布局两项已修复，客户端0.2.1/code16，core保持0.1.13；行为见[契约](spec/client-0.2.1.md)，实际测试及草稿状态见[验证记录](docs/releases/0.2.1-validation.md)。维护者已确认Windows干净安装任务栏图标及Linux重启后logo/Ctrl+W正常，这些不纳入修复。
+**0.2.1 Release draft已生成，保持未公开。** 桌面空白页与Android搜索布局两项已修复，客户端0.2.1/code16，core保持0.1.13；行为见[契约](spec/client-0.2.1.md)，实际测试及草稿状态见[验证记录](docs/releases/0.2.1-validation.md)。维护者已确认Windows干净安装任务栏图标及Linux重启后logo/Ctrl+W正常，这些不纳入修复。
 
 0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](docs/releases/0.1.4-validation.md)。
 
