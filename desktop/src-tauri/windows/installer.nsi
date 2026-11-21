@@ -93,6 +93,7 @@ Var UpdateMode
 Var NoShortcutMode
 Var WixMode
 Var OldMainBinaryName
+Var ExistingInstallDir
 
 Name "$(MemoBrandName)"
 BrandingText "${COPYRIGHT}"
@@ -429,6 +430,7 @@ FunctionEnd
 
 ; 5. Choose install directory page
 !define MUI_PAGE_CUSTOMFUNCTION_PRE SkipIfPassive
+!define MUI_PAGE_CUSTOMFUNCTION_LEAVE DirectoryPageLeave
 !insertmacro MUI_PAGE_DIRECTORY
 
 ; 6. Start menu shortcut page
@@ -521,6 +523,8 @@ LangString choowHowToInstall 0 ""
 {{/each}}
 LangString MemoBrandName ${LANG_SIMPCHINESE} "${BRAND_ZH}"
 LangString MemoBrandName ${LANG_ENGLISH} "${BRAND_EN}"
+LangString installDirConflict ${LANG_SIMPCHINESE} "检测到已有安装：$\r$\n$ExistingInstallDir$\r$\n$\r$\n你指定的新目录不会生效。安装将继续在现有目录升级，不会移动安装或创建第二个安装。$\r$\n$\r$\n确定继续吗？"
+LangString installDirConflict ${LANG_ENGLISH} "An existing installation was found at:$\r$\n$ExistingInstallDir$\r$\n$\r$\nThe new directory you specified will not be used. The existing installation will be upgraded in place; it will not be moved and no second installation will be created.$\r$\n$\r$\nContinue?"
 !insertmacro MUI_RESERVEFILE_LANGDLL
 {{#each language_files}}
   !include "{{this}}"
@@ -548,27 +552,65 @@ Function .onInit
 
   !insertmacro SetContext
 
-  ${If} $INSTDIR == "${PLACEHOLDER_INSTALL_DIR}"
-    ; Set default install location
-    !if "${INSTALLMODE}" == "perMachine"
-      ${If} ${RunningX64}
-        !if "${ARCH}" == "x64"
-          StrCpy $INSTDIR "$PROGRAMFILES64\${INSTALLIDENTITY}"
-        !else if "${ARCH}" == "arm64"
-          StrCpy $INSTDIR "$PROGRAMFILES64\${INSTALLIDENTITY}"
-        !else
-          StrCpy $INSTDIR "$PROGRAMFILES\${INSTALLIDENTITY}"
-        !endif
-      ${Else}
-        StrCpy $INSTDIR "$PROGRAMFILES\${INSTALLIDENTITY}"
+  !if "${INSTALLMODE}" == "both"
+    ; Per-user/per-machine installs resolve their registry context and restore any
+    ; previous location through MULTIUSER_INIT below, after the context is known.
+  !else
+    ; Detect an existing installation as an independent fact (registry identity),
+    ; before computing any language default or honoring an explicit /D.
+    Call DetectExistingInstallLocation
+
+    ${If} $ExistingInstallDir != ""
+      ; An installation already exists. Its directory always wins over a language
+      ; default so an update never creates a second installation or moves user data.
+      ${If} $INSTDIR != "${PLACEHOLDER_INSTALL_DIR}"
+        StrCpy $R0 $INSTDIR
+        StrCpy $R1 $ExistingInstallDir
+        Call CompareInstallDirs
+        ${If} $R2 != 1
+          ; The user explicitly requested a different directory. Reject that
+          ; migration and keep the existing location.
+          ${If} ${Silent}
+          ${OrIf} $PassiveMode = 1
+          ${OrIf} $UpdateMode = 1
+            ; Cannot prompt: exit with a non-zero result and install nothing.
+            SetErrorLevel 1
+            Abort
+          ${EndIf}
+          MessageBox MB_ICONEXCLAMATION|MB_OKCANCEL "$(installDirConflict)" IDOK oninit_conflict_keep_original
+            Abort
+          oninit_conflict_keep_original:
+        ${EndIf}
       ${EndIf}
-    !else if "${INSTALLMODE}" == "currentUser"
-      StrCpy $INSTDIR "$LOCALAPPDATA\${INSTALLIDENTITY}"
-    !endif
-
-    Call RestorePreviousInstallLocation
-  ${EndIf}
-
+      StrCpy $INSTDIR $ExistingInstallDir
+    ${Else}
+      ; New installation: honor an explicit /D, otherwise use the resolved
+      ; installer language as the default directory.
+      ${If} $INSTDIR == "${PLACEHOLDER_INSTALL_DIR}"
+        !if "${INSTALLMODE}" == "perMachine"
+          ${If} ${RunningX64}
+            !if "${ARCH}" == "x64"
+              StrCpy $INSTDIR "$PROGRAMFILES64\${INSTALLIDENTITY}"
+            !else if "${ARCH}" == "arm64"
+              StrCpy $INSTDIR "$PROGRAMFILES64\${INSTALLIDENTITY}"
+            !else
+              StrCpy $INSTDIR "$PROGRAMFILES\${INSTALLIDENTITY}"
+            !endif
+          ${Else}
+            StrCpy $INSTDIR "$PROGRAMFILES\${INSTALLIDENTITY}"
+          ${EndIf}
+        !else if "${INSTALLMODE}" == "currentUser"
+          ; The resolved installer language ($LANGUAGE) decides the default folder;
+          ; the in-app language is never read here.
+          ${If} $LANGUAGE == ${LANG_SIMPCHINESE}
+            StrCpy $INSTDIR "$LOCALAPPDATA\阳墨随记"
+          ${Else}
+            StrCpy $INSTDIR "$LOCALAPPDATA\djhxmemo"
+          ${EndIf}
+        !endif
+      ${EndIf}
+    ${EndIf}
+  !endif
 
   !if "${INSTALLMODE}" == "both"
     !insertmacro MULTIUSER_INIT
@@ -1033,6 +1075,83 @@ Function RestorePreviousInstallLocation
   ReadRegStr $4 SHCTX "${MANUPRODUCTKEY}" ""
   StrCmp $4 "" +2 0
     StrCpy $INSTDIR $4
+FunctionEnd
+
+; Detect a previous installation from its registry identity and store its directory
+; in $ExistingInstallDir ("" when none). This is the single source of truth for
+; "an installation already exists"; it never infers that fact from $INSTDIR.
+Function DetectExistingInstallLocation
+  StrCpy $ExistingInstallDir ""
+  ReadRegStr $R0 SHCTX "${UNINSTKEY}" "UninstallString"
+  ${If} $R0 == ""
+    Return
+  ${EndIf}
+  ReadRegStr $ExistingInstallDir SHCTX "${MANUPRODUCTKEY}" ""
+  ${If} $ExistingInstallDir == ""
+    ; Fall back to the quoted InstallLocation value and strip its surrounding quotes.
+    ReadRegStr $R0 SHCTX "${UNINSTKEY}" "InstallLocation"
+    StrCpy $ExistingInstallDir $R0
+    StrCpy $R1 $ExistingInstallDir 1
+    ${If} $R1 == "$\""
+      StrCpy $ExistingInstallDir $ExistingInstallDir "" 1
+    ${EndIf}
+    StrCpy $R1 $ExistingInstallDir "" -1
+    ${If} $R1 == "$\""
+      StrCpy $ExistingInstallDir $ExistingInstallDir -1
+    ${EndIf}
+  ${EndIf}
+FunctionEnd
+
+; Normalize an install directory for comparison: remove trailing path separators.
+; Case is handled by NSIS's case-insensitive string compare at the call site.
+; Input/output: $R0
+Function NormalizeInstallDir
+  normalize_trim_trailing_separator:
+    StrCpy $R1 $R0 "" -1
+    ${If} $R1 == "\"
+    ${OrIf} $R1 == "/"
+      StrCpy $R0 $R0 -1
+      Goto normalize_trim_trailing_separator
+    ${EndIf}
+FunctionEnd
+
+; Compare two install directories after normalization. The comparison is
+; case-insensitive and ignores trailing separators, so the result does not depend
+; on the installer language or on how the path was spelled.
+; Input: $R0 (A), $R1 (B). Output: $R2 = 1 when equal, 0 otherwise.
+Function CompareInstallDirs
+  Call NormalizeInstallDir
+  Push $R0
+  StrCpy $R0 $R1
+  Call NormalizeInstallDir
+  StrCpy $R1 $R0
+  Pop $R0
+  StrCpy $R2 0
+  StrCmp $R0 $R1 cmpdir_equal cmpdir_done
+  cmpdir_equal:
+    StrCpy $R2 1
+  cmpdir_done:
+FunctionEnd
+
+; Reject an interactive directory-page change away from an existing installation,
+; keeping the original path and blocking the migration.
+Function DirectoryPageLeave
+  ; Re-read the registry so an "uninstall before installing" choice on the
+  ; reinstall page is honored: once the old install is gone, any new path is valid.
+  Call DetectExistingInstallLocation
+  ${If} $ExistingInstallDir == ""
+    Return
+  ${EndIf}
+  StrCpy $R0 $INSTDIR
+  StrCpy $R1 $ExistingInstallDir
+  Call CompareInstallDirs
+  ${If} $R2 = 1
+    Return
+  ${EndIf}
+  MessageBox MB_ICONEXCLAMATION|MB_OKCANCEL "$(installDirConflict)" IDOK directory_conflict_keep_original
+    Abort
+  directory_conflict_keep_original:
+    StrCpy $INSTDIR $ExistingInstallDir
 FunctionEnd
 
 Function Skip
