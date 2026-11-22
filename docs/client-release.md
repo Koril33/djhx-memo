@@ -1,5 +1,7 @@
 # 客户端公开发布
 
+> 0.2.2实施补充：个人源文件、两源核验、Linux别名与安全推广顺序见[下载镜像运行手册](download-mirror-deployment.md)及[验证记录](releases/0.2.2-validation.md)。以下历史部署/回滚说明不授权将已推广的签名current回退低序号；0.2.2使用独立持久feed与文件区。当前未执行生产部署。
+
 0.1.10统一发布Windows EXE、Linux DEB、原证书Android APK（code11），以及Windows更新签名和SHA256SUMS。实际分发、官网签名目录及升级结果以[0.1.10记录](releases/0.1.10-validation.md)为准；图形与名称的固定变更入口见[品牌流程](brand-change-workflow.md)。Windows/Linux跳过0.1.9，Android保留0.1.9系统安装器兼容入口。
 
 下文旧版章节保留历史，不代表当前Android仍缺原证书。官网下载数据由[静态清单](../website/downloads.json)统一生成，同批部署完整构建并执行浏览器JS检查。保持旧标签/附件，不覆盖已公开版本。

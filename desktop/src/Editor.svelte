@@ -2,6 +2,8 @@
   import { createTranslator, type Language, type Translator } from './lib/i18n';
   import type { CodeHighlights } from './lib/code-highlights';
   import { onMount } from 'svelte';
+  import { LintController, type LintState } from './lib/lint-controller';
+  import { ruleDescriptions } from './lib/markdown-lint';
   import {
     EditorState,
     Transaction,
@@ -49,6 +51,60 @@
   export let onFindApi: ((api: EditorFindApi) => void) | undefined = undefined;
   let host: HTMLDivElement;
   let view: EditorView | undefined;
+  export let lintEnabled = false;
+  export let onView: ((view: EditorView | undefined) => void) | undefined = undefined;
+  export let onLintApi: ((open: (() => void) | undefined) => void) | undefined = undefined;
+  let lintState: LintState = { phase: 'off', issues: [], truncated: false };
+  let lintPanel = false;
+  let lintModule: typeof import('@codemirror/lint') | undefined;
+  let lintLoader: Promise<void> | undefined;
+  const lintConfig = new Compartment();
+  const lintController = new LintController((next) => {
+    lintState = next;
+    if (view && lintModule)
+      view.dispatch({
+        effects: lintModule.setDiagnosticsEffect.of(
+          next.issues.map((issue) => ({
+            from: issue.from,
+            to: issue.to,
+            severity: 'warning' as const,
+            message: `${issue.rule} · ${ruleDescriptions[issue.rule]?.[language === 'zh-CN' ? 0 : 1] ?? issue.rule}`,
+          })),
+        ),
+      });
+  });
+  async function configureLint(enabled: boolean) {
+    if (!enabled) {
+      view?.dispatch({ effects: lintConfig.reconfigure([]) });
+      lintPanel = false;
+      return;
+    }
+    lintLoader ??= import('@codemirror/lint').then((module) => {
+      lintModule = module;
+    });
+    try {
+      await lintLoader;
+      if (view && lintEnabled && lintModule)
+        view.dispatch({ effects: lintConfig.reconfigure(lintModule.linter(null)) });
+    } catch {
+      lintState = { phase: 'failed', issues: [], truncated: false };
+    }
+  }
+  $: t = createTranslator(language);
+  $: if (view) void configureLint(lintEnabled);
+  $: lintController.update(value, lintEnabled, composing);
+  $: if (view && lintEnabled && lintModule && language) {
+    view.dispatch({
+      effects: lintModule.setDiagnosticsEffect.of(
+        lintState.issues.map((issue) => ({
+          from: issue.from,
+          to: issue.to,
+          severity: 'warning' as const,
+          message: `${issue.rule} · ${ruleDescriptions[issue.rule]?.[language === 'zh-CN' ? 0 : 1] ?? issue.rule}`,
+        })),
+      ),
+    });
+  }
   const writable = new Compartment();
   const localized = new Compartment();
   const setCodeColors = StateEffect.define<DecorationSet>();
@@ -282,6 +338,7 @@
           theme,
           localized.of(languageExtensions(language)),
           writable.of(EditorState.readOnly.of(readonly)),
+          lintConfig.of([]),
           EditorView.updateListener.of((update) => {
             if (
               update.docChanged &&
@@ -308,6 +365,10 @@
       }),
     });
     view = editor;
+    onView?.(editor);
+    onLintApi?.(() => {
+      lintPanel = true;
+    });
     onFindApi?.({
       open: () => openSearchPanel(editor),
       run: (query) => {
@@ -321,7 +382,12 @@
       },
       focus: () => editor.focus(),
     });
-    return () => editor.destroy();
+    return () => {
+      lintController.cancel();
+      onView?.(undefined);
+      onLintApi?.(undefined);
+      editor.destroy();
+    };
   });
 
   $: normalizedValue = value.replace(/\r\n?/g, '\n');
@@ -345,12 +411,98 @@
   $: if (view) view.dispatch({ effects: localized.reconfigure(languageExtensions(language)) });
 </script>
 
-<div class="code-editor" bind:this={host}></div>
+<div class="editor-source-content">
+  {#if lintEnabled}<div class="lint-status" aria-live="polite">
+      <button
+        type="button"
+        class="text-button"
+        aria-expanded={lintPanel}
+        on:click={() => {
+          lintPanel = !lintPanel;
+        }}
+      >
+        {t('lintProblems')} · {lintState.phase === 'ready'
+          ? `${lintState.issues.length}${lintState.truncated ? '+' : ''}`
+          : t(
+              lintState.phase === 'paused'
+                ? 'lintPaused'
+                : lintState.phase === 'failed'
+                  ? 'lintFailed'
+                  : lintState.phase === 'checking'
+                    ? 'lintChecking'
+                    : 'lintPending',
+            )}
+      </button>
+      {#if lintState.phase === 'paused' || lintState.phase === 'failed'}<button
+          type="button"
+          class="text-button"
+          on:click={() => lintController.update(value, lintEnabled, composing, true)}
+          >{t('lintCheck')}</button
+        >{/if}
+    </div>{/if}
+  <div class="code-editor" bind:this={host}></div>
+  {#if lintEnabled && lintPanel}<section class="lint-panel" aria-label={t('lintProblems')}>
+      <button
+        type="button"
+        class="text-button"
+        on:click={() => {
+          lintPanel = false;
+          view?.focus();
+        }}>{t('close')}</button
+      >
+      {#if lintState.phase === 'ready' && !lintState.issues.length}<p>{t('lintClear')}</p>{/if}
+      {#each lintState.issues as issue (`${issue.rule}:${issue.from}:${issue.to}`)}<button
+          type="button"
+          class="lint-issue"
+          on:click={() => {
+            if (!view || view.state.doc.toString() !== value.replace(/\r\n?/g, '\n')) return;
+            view.dispatch({
+              selection: { anchor: issue.from, head: issue.to },
+              scrollIntoView: true,
+            });
+            view.focus();
+          }}
+          >{issue.rule} · {issue.line}:{issue.column} · {ruleDescriptions[issue.rule]?.[
+            language === 'zh-CN' ? 0 : 1
+          ] ?? issue.rule}</button
+        >{/each}
+      {#if lintState.truncated}<p>{t('lintTruncated')}</p>{/if}
+    </section>{/if}
+</div>
 
 <style>
   .code-editor {
-    height: 100%;
+    flex: 1;
     min-height: 0;
     overflow: hidden;
+  }
+  .editor-source-content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .lint-status {
+    display: flex;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+    padding: 4px 16px;
+  }
+  .lint-panel {
+    max-height: 180px;
+    overflow: auto;
+    border-top: 1px solid var(--border);
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+  .lint-issue {
+    display: block;
+    width: 100%;
+    text-align: left;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    padding: 5px;
+    cursor: pointer;
   }
 </style>

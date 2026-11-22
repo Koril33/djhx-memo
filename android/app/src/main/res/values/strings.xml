@@ -272,4 +272,11 @@
     <string name="devices_refresh_failed">Could not refresh. Showing the last loaded list.</string>
     <string name="devices_retry">Retry</string>
     <string name="revoke_failed">Revoke did not complete. Retry.</string>
+    <string name="update_source">Download source</string>
+    <string name="update_source_wait">Stopping the transfer and changing source…</string>
+    <string name="update_source_help">Switch source and retry if a download fails.</string>
+    <string name="update_source_failed">Could not save the download source. Try again.</string>
+    <string name="update_source_received">This package was downloaded from: %1$s</string>
+    <string name="update_release_page">View releases on GitHub</string>
+    <string name="update_browser_failed">Could not open your browser. Try again.</string>
 </resources>

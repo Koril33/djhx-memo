@@ -56,8 +56,11 @@ def digest(path):
         raise ValueError("Expected a regular artifact file")
     if not 0 < path.stat().st_size <= 512 * 1024 * 1024:
         raise ValueError("Invalid artifact size")
+    checksum = hashlib.sha256()
     with path.open('rb') as stream:
-        return hashlib.file_digest(stream, 'sha256').hexdigest()
+        while chunk := stream.read(65536):
+            checksum.update(chunk)
+    return checksum.hexdigest()
 
 
 def verify(directory):

@@ -2,7 +2,7 @@
 # Semi-automatic website + update-catalog deployment (orchestration, runs on the
 # maintainer's machine). CI builds everything; this downloads the bundle, shows
 # a summary, then after confirmation + sudo password uploads and switches the
-# server via scripts/deploy-remote.sh. No SSH key or sudo password enters CI.
+# server via scripts/deploy-remote-v2.sh. No SSH key or sudo password enters CI.
 set -euo pipefail
 
 TAG="${1:?usage: deploy-website.sh <tag>}"
@@ -16,7 +16,13 @@ trap 'rm -rf "$WORK"' EXIT
 
 echo "==> downloading ${BUNDLE} from release ${TAG}"
 gh release download "$TAG" --pattern "${BUNDLE}" --dir "$WORK" --clobber
-tar -xzf "$WORK/${BUNDLE}" -C "$WORK"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+python3 "$SCRIPT_DIR/prepare-download-assets.py" --extract "$WORK/${BUNDLE}" "$WORK"
+python3 "$SCRIPT_DIR/prepare-download-assets.py" --verify "$WORK/downloads"
+cargo run --offline --locked --release --manifest-path "$SCRIPT_DIR/../core/Cargo.toml" \
+  --bin validate-update-catalog -- "$WORK/updates/stable/current.json" \
+  --asset windows-x86_64-nsis "$WORK/downloads/releases/$TAG/djhx-memo-$VERSION-windows-x64-setup.exe" \
+  --asset android-universal-apk "$WORK/downloads/releases/$TAG/djhx-memo-$VERSION-android.apk"
 
 echo ""
 echo "Deploy summary for ${TAG}:"
@@ -36,18 +42,18 @@ echo ""
 
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)-${TAG}"
 REMOTE_STAGING="/tmp/djhx-deploy/${STAMP}"
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo "==> uploading bundle to ${SSH_TARGET} staging"
-ssh "$SSH_TARGET" "mkdir -p '${REMOTE_STAGING}'"
-scp -r "$WORK/site" "$WORK/updates" "${SSH_TARGET}:${REMOTE_STAGING}/"
-scp "$SCRIPT_DIR/deploy-remote.sh" "${SSH_TARGET}:/tmp/djhx-deploy-remote.sh"
+ssh "$SSH_TARGET" "umask 077; mkdir -p '${REMOTE_STAGING}'"
+scp -r "$WORK/site" "$WORK/updates" "$WORK/downloads" "${SSH_TARGET}:${REMOTE_STAGING}/"
+scp "$SCRIPT_DIR/prepare-download-assets.py" "$SCRIPT_DIR/publish-download-assets.py" "${SSH_TARGET}:${REMOTE_STAGING}/"
+scp "$SCRIPT_DIR/deploy-remote-v2.sh" "${SSH_TARGET}:${REMOTE_STAGING}/deploy-remote.sh"
 
 echo "==> switching site (sudo)"
 # sudo password passes on stdin only; the remote script is a file, not stdin.
 printf '%s\n' "$SUDO_PASSWORD" | ssh "$SSH_TARGET" \
-    "sudo -S -p '' bash /tmp/djhx-deploy-remote.sh '${STAMP}' '${REMOTE_STAGING}' '${WWW_ROOT}'"
+    "sudo -S -p '' bash '${REMOTE_STAGING}/deploy-remote.sh' '${STAMP}' '${REMOTE_STAGING}' '${WWW_ROOT}'"
 
-ssh "$SSH_TARGET" "rm -rf '${REMOTE_STAGING}' /tmp/djhx-deploy-remote.sh"
+ssh "$SSH_TARGET" "rm -rf '${REMOTE_STAGING}'"
 echo ""
 echo "Deploy complete. The previous release directory is kept for manual rollback; verify then clean up."

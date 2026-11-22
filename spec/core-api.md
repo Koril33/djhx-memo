@@ -57,9 +57,9 @@ NoteView 同时带 generation、正文、删除/冲突元数据、本地保存�
 - 只读本地、不返回全文；**全量召回（无 SQL `LIMIT` 预截断）→ 打分 → 排序 → 取 top 50**；`truncated` = 合并排序后命中数 >50 被截断。不做 offset 分页、不触发同步、不持全局 busy。
 - 匹配语义延续 v1：字面子串、ASCII 大小写不敏感、其他 Unicode 按原字符、不解释为 FTS/正则/布尔；候选检索用 FTS5 trigram（≥3 字符）与字面 LIKE 兜底（<3 字符），不构造 FTS `MATCH` 语法。v1 全局搜索范围不含恢复空间。
 
-## 0.1.13 搜索目标扩展（未实施）
+## 0.1.13 搜索目标扩展
 
-以下为 [0.1.13 目标契约](client-0.1.13.md)的接口增量，尚未在 0.1.12 实现；实施细节见 [开发文档 §4](../docs/client-0.1.13-development.md#4-w2固定搜索范围与接口)。旧模式与既有调用不变。
+以下为 [0.1.13 契约](client-0.1.13.md)已实现的接口增量，实施细节见 [开发文档 §4](../docs/client-0.1.13-development.md#4-w2固定搜索范围与接口)。旧模式与既有调用不变。
 
 - `scope.kind` 新增 `local_and_current_account`：从同一 registry 快照取全部 `local` profile，加 selected 恰为 `account` 时的该一个 profile；去重并排除 recovery。selected 为本机/恢复空间时只取 local，不读取上次账号或其他账号。先限定集合，再召回/排序/截断。
 - 新模式要求根 `profile_id` 为非空字符串；缺少或格式不符返回 `INVALID_REQUEST`，与该快照 selected 不同返回 `PROFILE_CHANGED`。校验与枚举使用同一快照，不长时间持 registry 锁。旧模式不增加此必填约束。
@@ -69,3 +69,13 @@ NoteView 同时带 generation、正文、删除/冲突元数据、本地保存�
 - 任一目标库失败则整次返回既有稳定错误，不新增部分成功响应、不伪报空结果。查询中切换空间允许旧快照计算完成，UI 作废迟到响应；搜索不修改正文/凭据、不触发同步，正常开库/迁移机制保持。
 
 该增量仍使用 `MemoApp.invoke` JSON action，无新 UniFFI 方法、数据库迁移或服务端搜索接口。上线时必须同步 core 与两端，不能只让 UI 发送新 kind 并依赖旧实现的默认分支。
+
+## 0.2.2 更新传输入口
+
+更新器仍独立于笔记action。`UpdateService.set_download_source(source: String) -> String`只接受`memo`/`github`，返回与`snapshot`相同的JSON。设置时取消在途传输，等待原生operation锁释放后持久化；不自动重新下载。准备安装或安全状态损坏时不改变来源。调用可能等待网络当前阻塞读取返回，平台必须在后台执行并保持返回/编辑可用，不能把发出cancel视为传输已结束。
+
+`manual_download_url() -> String`仅为可信原生浏览器适配器返回固定Linux最新amd64DEB入口；不产生安装候选、不访问网络。非x86_64返回对应官网下载页/GitHub Release页，snapshot的`manual_download_supported=false`须提示架构边界。
+
+snapshot新增`download_source`、`source_error`、`source_changing`、`downloaded_from`、`manual_download_supported`。来源失败用`UPDATE_SOURCE`；准备安装时切源为`UPDATE_BUSY`，损坏安全状态继续保留`UPDATE_STORAGE`。`downloaded_from`只表示本进程实际校验完成缓存的传输来源，重启后未知就不显示来源，不猜测。
+
+偏好文件`transport-preferences.json`（version1/source）与原`state.json`独立；损坏偏好默认memo并提示，不能清防回放sequence/digest。固定路径、签名与缓存行为见[0.2.2](client-0.2.2.md)。

@@ -67,9 +67,9 @@ create 的同 request_id 重试返回该笔记当前 NoteView，可能与本次�
 
 state 的 event_seq 变化提示重新读取；前台可定期调用 state。不得在 UI 生成 base_rev/op_id、裁决冲突或从显示时间推导同步状态。导出 ZIP 的目标选择和原子落盘由平台完成。
 
-## 0.1.13 搜索目标（未实施）
+## 0.1.13 搜索目标
 
-当前请求表描述已实现模式；[0.1.13](client-0.1.13.md)新增范围值的目标签名为 `search_notes(query, profile_id, scope{kind: local_and_current_account, include_deleted})`，详细字段与错误约束见 [core-api 的 0.1.13 扩展](core-api.md#0113-搜索目标扩展未实施)。
+当前请求表与[0.1.13](client-0.1.13.md)已实现范围合并使用；新增签名为 `search_notes(query, profile_id, scope{kind: local_and_current_account, include_deleted})`，详细字段与错误约束见 [core-api 的 0.1.13 扩展](core-api.md#0113-搜索目标扩展)。
 
 - 新模式根 `profile_id` 必填；格式错误为 `INVALID_REQUEST`，与同一 registry 快照 selected 不同为 `PROFILE_CHANGED`。枚举全部本机＋selected 为账号时的该一个账号，不聚合其他账号，不包含 recovery。
 - 不得同时传 `scope.space_ids`；混用为 `INVALID_REQUEST`。0.1.13 UI 固定 `include_deleted=true`，该字段对旧模式仍沿用默认 false。旧接口调用兼容。
@@ -81,3 +81,9 @@ state 的 event_seq 变化提示重新读取；前台可定期调用 state。不
 更新独立于笔记 JSON action 和账号 HTTP 协议。`UpdateService(root,target,version,version_code,application_id)` 使用编译时公钥，公开 `snapshot/check/download/cancel/preferences/defer`；平台 UI 只能提交固定意图。`prepare_install` 返回路径/包身份仅供可信原生安装适配器，不作为 WebView 可调用动作。返回的更新状态与固定错误码见 [自动更新](automatic-updates.md)。
 
 `MemoApp.pause_for_update()` 在 UI 最终保存后阻止新调用、等待已有工作并 checkpoint；失败自动恢复并返回 Storage。`resume_after_update()` 释放取消/失败的屏障。暂停期间普通 JSON action 返回 `UPDATE_BUSY`，不读取或改写同步语义，不删除未发送操作。该接口由原生安装协调器使用，不能由 Markdown 触发。
+
+## 0.2.2 原生更新意图
+
+`UpdateService`新增`set_download_source(source)`、`manual_download_url()`，字段/错误见[core API](core-api.md#022-更新传输入口)。Android直接从后台调用UniFFI，更新偏好等待跨设置页生命周期保持；笔记JSON桥接无新action。
+
+Tauri `update_invoke`新增固定意图`source`（字段`downloadSource`只为memo/github）、`download_page`（Linux最新入口）、`release_page`（固定GitHub发布页）。不接受UI传URL或路径；浏览器打开失败为`UPDATE_BROWSER`。Windows安装仍走已有保存/IME/outbox屏障，Linux浏览器操作不进入安装屏障。

@@ -18,6 +18,7 @@ class Page(HTMLParser):
     def __init__(self):
         super().__init__()
         self.links = {}
+        self.backups = {}
         self.attributes = {}
         self.versions = {}
         self.main_version = ""
@@ -30,6 +31,11 @@ class Page(HTMLParser):
         attrs = dict(pairs)
         if tag == "html":
             self.attributes = attrs
+        if tag == "a" and "data-backup" in attrs:
+            platform = attrs['data-backup']
+            if platform in self.backups:
+                raise ValueError('Duplicate backup link')
+            self.backups[platform] = attrs.get('href')
         if tag == "a" and "data-platform" in attrs:
             platform = attrs["data-platform"]
             if platform in self.links:
@@ -68,7 +74,7 @@ class QuietHandler(SimpleHTTPRequestHandler):
             # putting a testing API in the shipped website or changing release links.
             probe = """<script>
 window.addEventListener('load', () => {
- const links = () => [...document.querySelectorAll('[data-platform]')].map(a => a.href).join('|');
+ const links = () => [...document.querySelectorAll('[data-platform],[data-backup]')].map(a => a.href).join('|');
  const initial = links();
  try {
   for (const radio of document.querySelectorAll('#lang-switch input[name=lang]')) {
@@ -119,7 +125,7 @@ def main():
     if not browser or not browser.is_file():
         raise SystemExit("Specify an installed Chromium/Edge browser with --browser")
     data = json.loads(args.manifest.read_text(encoding="utf-8"))
-    expected = {platform: f"https://github.com/Koril33/djhx-memo/releases/download/v{item['version']}/{item['asset']}"
+    expected = {platform: f"https://memo.djhx.site/downloads/releases/v{item['version']}/{item['asset']}"
                 for platform, item in data["platforms"].items()}
     local = ROOT / ".local/website-browser"
     local.mkdir(parents=True, exist_ok=True)
@@ -165,6 +171,10 @@ def main():
             errors.append(f"{platform}: rendered link {page.links.get(platform)!r} differs from release manifest")
         if data["platforms"][platform]["version"] not in page.versions.get(platform, "").split():
             errors.append(f"{platform}: rendered version differs from release manifest")
+        item = data['platforms'][platform]
+        backup = f"https://github.com/Koril33/djhx-memo/releases/download/v{item['version']}/{item['asset']}"
+        if page.backups.get(platform) != backup:
+            errors.append(f'{platform}: backup link differs from release manifest')
     if page.main_version.strip() != "v" + data["version"]:
         errors.append("rendered main version differs from release manifest")
     if set(page.links) != set(expected):

@@ -1,5 +1,7 @@
 # Windows / Android 自动更新发布
 
+> 0.2.2实施补充：个人源文件、两源核验、Linux别名与安全推广顺序见[下载镜像运行手册](download-mirror-deployment.md)及[验证记录](releases/0.2.2-validation.md)。以下历史部署/回滚说明不授权将已推广的签名current回退低序号；0.2.2使用独立持久feed与文件区。当前未执行生产部署。
+
 0.1.5 已接入客户端和本地发行工具。原开发轮未部署目录或发布 Release；2026-11-13 的实际整合、三端包与部署状态以[发布记录](releases/0.1.5-validation.md)为准。产品规则见 [spec](../spec/automatic-updates.md)，实测与限制见 [验证记录](client-updates-0.1.5-validation.md)。Linux 更新安装仍交后续主机实现；当前工具只推广 Windows / Android。
 
 ## 1. 用户入口与首次升级

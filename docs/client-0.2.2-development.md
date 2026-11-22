@@ -1,8 +1,8 @@
 # 0.2.2 开发文档
 
-- 日期：2026-11-22；状态：**范围已确认，开发前方案；本轮仅文档，未实施产品代码、修改版本或发布 0.2.2**。
+- 日期：2026-11-22；状态：**范围与兼容边界已确认，源码已实现；测试/草稿发行进行中，未公开或部署，实际证据见[本轮记录](releases/0.2.2-validation.md)**。
 - 目标行为以 [spec/client-0.2.2.md](../spec/client-0.2.2.md)为准，本文供后续开发、测试、评审和发行使用。
-- 基线为已公开 `v0.2.1 / 9e4c84208d003b7615d7e23bfb31d0556aada32a`；本轮起点两远程 main 均为文档提交 `fd0ea4c`。客户端 0.2.1、Android code16、core0.1.13、server0.1.4、协议2、local schema4/server schema2。
+- 基线为已公开 `v0.2.1 / 9e4c84208d003b7615d7e23bfb31d0556aada32a`；设计起点两远程 main 为 `fd0ea4c`，实施起点为 PR #33 合入的 `8e7a154`。客户端 0.2.1、Android code16、core0.1.13、server0.1.4、协议2、local schema4/server schema2。
 - 0.2.1 于上海时间 2026-11-22 08:12:58 公开；API 列出三端包、Windows `.sig`、server 归档、SHA256SUMS、catalog-12/current 和部署包共9项。此处只确认公开状态与附件列表，签名和原生测试沿用[实际记录](releases/0.2.1-validation.md)，不推断官网已部署目录12。
 
 ## 1 复审结论与范围
@@ -31,7 +31,7 @@
 | [官网生成器](../website/scripts/downloads.mjs)、[下载清单生成](../scripts/build-downloads-manifest.py)、[浏览器回归](../scripts/check-website-downloads.py) | 下载直链硬编码到 GitHub，受版本化清单控制 | 单一清单生成主/备用地址；静态 HTML 与 JS 执行后保持一致 |
 | [release.yml](../.github/workflows/release.yml)、[catalog.yml](../.github/workflows/catalog.yml)、[部署脚本](../scripts/deploy-website.sh) | CI 构建草稿；公开后目录及部署包；本机上传服务器 | 增加 Linux 别名、正式文件区、同包核验与推广次序；不把服务器写权限交给 CI |
 
-后续实施目标版本为三端客户端/core `0.2.2`，Android code暂定17（打包前核对最高已发布值）；core 更新因共享更新器/UniFFI变化，不意味着笔记迁移。server0.1.4、协议2、local schema4/server schema2、包名、证书、keyring、安装兼容身份和公钥保持。本轮不修改这些实际版本文件。
+本轮源码版本为三端客户端/core `0.2.2`，Android code17（上个公开值16）；core 更新因共享更新器/UniFFI变化，不意味着笔记迁移。server0.1.4、协议2、local schema4/server schema2、包名、证书、keyring、安装兼容身份和公钥保持。已同步实际版本文件，发布包身份仍以产物核验为准。
 
 ## 3 桌面 Markdown 格式检查设计
 
@@ -43,13 +43,13 @@
 
 ### 3.2 引擎和规则
 
-候选为 `markdownlint 0.42.2`＋`@codemirror/lint 6.9.8`，理由、许可、精确版本与兼容探针见 [ADR 0021](adr/0021-desktop-markdownlint.md)。运行包必须离线可用，不在用户机器启动 Node、联网检查链接或加载远程规则。
+已锁定 `markdownlint 0.42.2`＋`@codemirror/lint 6.9.8`，理由、许可、精确版本与兼容探针见 [ADR 0021](adr/0021-desktop-markdownlint.md)。运行包必须离线可用，不在用户机器启动 Node、联网检查链接或加载远程规则。
 
 首版按[规范白名单](../spec/client-0.2.2.md#23-首版规则白名单)生成固定配置 `default: false`，只启用MD009、MD018/019、MD023、MD037/038、MD039、MD042；MD009保留合法双空格硬换行。不要调用上游完整默认集，也不强迫随记符合仓库README的排版习惯。嵌套引用/代码块按解析上下文识别；若发现与本软件Markdown语义冲突，须同步修订规范和回归用例。关闭规则不改变渲染器的危险HTML、图片和链接安全限制。
 
 ### 3.3 后台调度与预算
 
-采用独立 module Worker，延迟加载和单任务合并；停输750ms后检查。任务携带 `{profileId, documentKey, revision, rulesVersion}`，只接收当前快照回执；正文更新时立即撤销旧标记或显示待检查，不能把过期问题应用到新文本。中文组合输入结束后重新计时。
+采用独立 module Worker，延迟加载和单任务合并；停输750ms后检查。每个Editor实例绑定空间/文档会话，规则随包固定；控制器以单调serial绑定正文快照，销毁实例终止Worker，只接收当前快照回执；正文更新时立即撤销旧标记或显示待检查，不能把过期问题应用到新文本。中文组合输入结束后重新计时。
 
 大于128KiB UTF-8时停止实时检查，提示“大笔记已暂停实时格式检查”及“检查一次”；不降低1MiB正文上限。最多展示200条诊断，超出显示“200+”和截断说明，不把截断数当完整总数。手动检查也由 Worker 执行，编辑、切笔记、关闭开关、离开编辑会话均可取消；超时显示可重试状态。
 
@@ -63,7 +63,7 @@ markdownlint 的解析规则与当前 Marked 预览可能存在差别，因此�
 
 ### 4.1 映射和协调
 
-为当前渲染快照输出块索引：源文档范围/行范围、稳定的本次渲染块ID，以及预览元素。优先复用 Marked token/renderer 的位置追踪，嵌套列表、引用和代码需要精确推进游标；不得把任务勾选的字符串查找启发式直接扩展为整篇映射。相同段落重复出现时仍要定位到各自源码范围。
+为当前渲染快照输出顶层块索引：源码UTF-16范围及对应预览元素的data-source-from/to数字属性。Marked只lexer一次，按每个顶层token.raw精确推进游标；嵌套列表/引用整体作为一块，在块内近似插值，不承诺嵌套项逐像素对齐。任务勾选的字符串查找不参与滚动映射；重复段落仍具有不同源码范围。
 
 预览只增加程序生成的固定属性/数字ID，不把正文作为未转义属性或HTML写入DOM；原始HTML转义、图片阻止、受限链接及任务按钮快照校验继续执行。
 
@@ -151,11 +151,11 @@ Linux 保持 system-managed，无自动检查/下载/安装调度，也不将DEB
 
 当前 [deploy-remote.sh](../scripts/deploy-remote.sh) 只做首页健康检查，且失败可回切旧站点/目录。扩展后不得在新current已被客户端读取后回退到较低sequence：文件健康检查尽量在推广current前完成；推广后的撤回/修复发更高序号，并保留所需资产。仅站点外观失败可回切页面，但必须独立保留最新签名目录和正式文件区。
 
-本版需实际改造部署包、脚本及检查器，不能只修改README。发布前维护者按仓库规则审阅workflow；本文不授权本轮打tag、部署服务器或公开0.2.2。
+本版需实际改造部署包、脚本及检查器，不能只修改README。发布前维护者按仓库规则审阅workflow；后续维护者已授权实现、测试与Release draft；根AGENTS要求workflow经维护者审阅后才打tag。本轮不部署服务器或公开Release。部署细节以[0.2.2运行手册](download-mirror-deployment.md)为准。
 
 ## 8 验收矩阵
 
-以下均为后续实施用例，不是本轮测试结果。使用合成笔记、独立应用/数据与更新目录；每项记录平台、步骤、实际/预期、证据及未执行原因。
+以下是验收要求，实际已测/未测以[0.2.2验证记录](releases/0.2.2-validation.md)逐项区分。使用合成笔记、独立应用/数据与更新目录；每项记录平台、步骤、实际/预期、证据及未执行原因。
 
 | ID | 场景 | 必须满足 |
 |---|---|---|
@@ -198,7 +198,7 @@ Linux 保持 system-managed，无自动检查/下载/安装调度，也不将DEB
 2. W1/W2在桌面独立实现并验证；W4先完成core来源偏好、路径校验、取消状态和测试，再接三端更新页。W3只接浏览器入口，不复用自动安装任务。
 3. 同批更新官网生成器、Linux别名、CI部署包与服务器部署脚本；在隔离本地静态服务验证完整发行顺序、错误和撤回，再进行维护者授权的目标系统验收。
 4. 行为实现时更新core API/bridge、自动更新规范、模块README/许可与验证记录；规范与代码同批提交。涉及保存/鉴权/迁移职责变化时按协作规范补独立交叉评审，不能把本文自查当作已交叉评审。
-5. 模块与平台验收达到本版要求后，按既有流程申请后续发布；产品代码、版本文件、workflow、服务器操作和0.2.2 Release均由后续开发任务实施。
+5. 模块检查完成后提交独立分支/PR；维护者审阅workflow后按授权创建0.2.2 Release draft。公开、服务器首次配置、双源实际下载及覆盖升级由后续推广任务验收，不把草稿当正式完成。
 
 当前无产品方向待确认项。750ms/2秒/200条等为可测量初值；服务器文件区路径、磁盘/带宽预算和部署环境是实施参数。若实测迫使降低正文上限、取消双向同步、改变信任根/签名格式或扩大到Linux自动安装，必须回到维护者确认，不能作为微调自行改变范围。
 
@@ -209,4 +209,4 @@ Linux 保持 system-managed，无自动检查/下载/安装调度，也不将DEB
 - [GitHub 固定名最新附件链接](https://docs.github.com/en/repositories/releasing-projects-on-github/linking-to-releases)：Linux备用latest地址依赖每个适用Release确实具有固定名别名。
 - [Nginx静态HTTP模块](https://nginx.org/en/docs/http/ngx_http_core_module.html)、[下载请求限流](https://nginx.org/en/docs/http/ngx_http_limit_req_module.html)：具体资源预算需在目标服务器测量。
 
-本轮只读核对源码/发布API与候选npm元数据，检查Markdown目标和本地锚点、契约引用、Git差异及公开源码/历史/提交元信息密钥扫描。产品测试、性能、包安装、生产带宽、服务器部署及0.2.2发布均未执行；验收矩阵保持待执行状态。
+开发前阶段只读检查结论保留历史含义；本轮已实施代码并运行模块及隔离原生探针，完整结果和未验收项见[0.2.2记录](releases/0.2.2-validation.md)。不将Windows探针、Android模拟器、CI构建或附件校验等同Linux GUI、真机/系统安装或生产部署验收。

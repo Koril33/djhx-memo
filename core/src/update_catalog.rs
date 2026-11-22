@@ -21,6 +21,8 @@ use std::{
 const MAX_FEED: u64 = 1_048_576;
 const MAX_PACKAGE: u64 = 512 * 1_048_576;
 const TRUST: &str = include_str!("../../config/update-trust.json");
+#[cfg(test)]
+mod source_tests;
 type Result<T> = std::result::Result<T, &'static str>;
 
 #[derive(Clone, Deserialize)]
@@ -153,6 +155,42 @@ struct Runtime {
     candidate: Option<Release>,
     downloaded: u64,
     error: Option<&'static str>,
+    source: DownloadSource,
+    source_error: Option<&'static str>,
+    downloaded_from: Option<DownloadSource>,
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+enum DownloadSource {
+    #[default]
+    Memo,
+    Github,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct TransportPreferences {
+    version: u32,
+    source: DownloadSource,
+}
+
+fn load_source(root: &Path) -> (DownloadSource, Option<&'static str>) {
+    let path = root.join("transport-preferences.json");
+    if !path.exists() {
+        return (DownloadSource::Memo, None);
+    }
+    let result = (|| {
+        let bytes = fs::read(path).ok()?;
+        if bytes.len() > 1024 {
+            return None;
+        }
+        let saved: TransportPreferences = serde_json::from_slice(&bytes).ok()?;
+        (saved.version == 1).then_some(saved.source)
+    })();
+    result.map_or((DownloadSource::Memo, Some("UPDATE_SOURCE")), |source| {
+        (source, None)
+    })
 }
 
 /// Per-device updater, isolated from notes, accounts and synchronization.
@@ -167,6 +205,7 @@ pub struct UpdateService {
     state: Mutex<Runtime>,
     operation: Mutex<()>,
     canceled: AtomicBool,
+    source_changing: AtomicBool,
 }
 
 #[uniffi::export]
@@ -197,6 +236,9 @@ impl UpdateService {
             return json!({"phase":"failed","error":"UPDATE_STORAGE"}).to_string();
         };
         json!({"phase":s.phase,"candidate":s.candidate,"downloaded":s.downloaded,"error":s.error,
+            "download_source":s.source,"source_error":s.source_error,"downloaded_from":s.downloaded_from,
+            "source_changing":self.source_changing.load(Ordering::Acquire),
+            "manual_download_supported":cfg!(target_arch = "x86_64"),
             "configured":!self.trust.catalog_keys.is_empty(),"current_version":self.version,"target":self.target,
             "last_checked":s.saved.last_checked,"auto_check":s.saved.auto_check,
             "download_policy":s.saved.download_policy,"deferred":s.saved.deferred}).to_string()
@@ -204,6 +246,9 @@ impl UpdateService {
 
     /// Checks the signed static feed. False respects the daily device preference.
     pub fn check(&self, manual: bool) -> String {
+        if self.source_changing.load(Ordering::Acquire) {
+            return self.snapshot();
+        }
         if !matches!(
             self.target.as_str(),
             "windows-x86_64-nsis" | "android-universal-apk"
@@ -228,6 +273,9 @@ impl UpdateService {
 
     /// Downloads into a private file with bounded streaming and full verification.
     pub fn download(&self, manual: bool, unmetered: bool) -> String {
+        if self.source_changing.load(Ordering::Acquire) {
+            return self.snapshot();
+        }
         let Ok(_op) = self.operation.try_lock() else {
             return self.snapshot();
         };
@@ -253,6 +301,9 @@ impl UpdateService {
             }
         }
         self.canceled.store(false, Ordering::Release);
+        if self.source_changing.load(Ordering::Acquire) {
+            return self.snapshot();
+        }
         self.run("downloading", || self.download_inner());
         self.snapshot()
     }
@@ -260,6 +311,81 @@ impl UpdateService {
     /// Cancels a streaming download at the next chunk; partial files are not installed.
     pub fn cancel(&self) {
         self.canceled.store(true, Ordering::Release);
+    }
+
+    /// Cancels a transfer and waits for its real receipt before persisting a fixed
+    /// device-only source. Never rewrites the replay ledger or an install session.
+    pub fn set_download_source(&self, source: String) -> String {
+        let selected = match source.as_str() {
+            "memo" => DownloadSource::Memo,
+            "github" => DownloadSource::Github,
+            _ => {
+                if let Ok(mut s) = self.state.lock() {
+                    s.source_error = Some("UPDATE_SOURCE");
+                }
+                return self.snapshot();
+            }
+        };
+        if self.source_changing.swap(true, Ordering::AcqRel) {
+            return self.snapshot();
+        }
+        self.cancel();
+        {
+            let _op = self.operation.lock().unwrap_or_else(|p| p.into_inner());
+            let mut s = self.state.lock().unwrap_or_else(|p| p.into_inner());
+            if s.phase == "preparing" || s.error == Some("UPDATE_STORAGE") {
+                s.source_error = Some("UPDATE_BUSY");
+            } else {
+                let result = {
+                    let temporary = self
+                        .root
+                        .join(format!("transport-{}.tmp", uuid::Uuid::new_v4()));
+                    let result = (|| {
+                        let bytes = serde_json::to_vec(&TransportPreferences {
+                            version: 1,
+                            source: selected,
+                        })
+                        .map_err(|_| "UPDATE_SOURCE")?;
+                        let mut file = private_file(&temporary)?;
+                        file.write_all(&bytes)
+                            .and_then(|_| file.sync_all())
+                            .map_err(|_| "UPDATE_SOURCE")?;
+                        drop(file);
+                        fs::rename(&temporary, self.root.join("transport-preferences.json"))
+                            .map_err(|_| "UPDATE_SOURCE")
+                    })();
+                    let _ = fs::remove_file(temporary);
+                    result
+                };
+                if result.is_ok() {
+                    s.source = selected;
+                    s.source_error = None;
+                    if s.error == Some("UPDATE_CANCELED") {
+                        s.error = None;
+                        s.phase = if s.candidate.is_some() {
+                            "available"
+                        } else {
+                            "idle"
+                        };
+                    }
+                } else {
+                    s.source_error = Some("UPDATE_SOURCE");
+                }
+            }
+        }
+        self.source_changing.store(false, Ordering::Release);
+        self.snapshot()
+    }
+
+    /// Fixed browser-only Linux entry. It never produces an installable candidate.
+    pub fn manual_download_url(&self) -> String {
+        let source = self.state.lock().map_or(DownloadSource::Memo, |s| s.source);
+        match (source, cfg!(target_arch = "x86_64")) {
+            (DownloadSource::Memo, true) => "https://memo.djhx.site/downloads/latest/djhx-memo-linux-amd64.deb",
+            (DownloadSource::Github, true) => "https://github.com/Koril33/djhx-memo/releases/latest/download/djhx-memo-linux-amd64.deb",
+            (DownloadSource::Memo, false) => "https://memo.djhx.site/",
+            (DownloadSource::Github, false) => "https://github.com/Koril33/djhx-memo/releases/latest",
+        }.into()
     }
 
     /// Persists device-only preferences. Invalid policies are rejected without mutation.
@@ -305,6 +431,9 @@ impl UpdateService {
     /// Returned JSON is native-only: platforms must not expose this method to Markdown/UI IPC.
     pub fn prepare_install(&self) -> String {
         let result = (|| {
+            if self.source_changing.load(Ordering::Acquire) {
+                return Err("UPDATE_BUSY");
+            }
             let _op = self.operation.try_lock().map_err(|_| "UPDATE_BUSY")?;
             if self.state.lock().map_err(|_| "UPDATE_STORAGE")?.error == Some("UPDATE_STORAGE") {
                 return Err("UPDATE_STORAGE");
@@ -401,6 +530,7 @@ impl UpdateService {
             }
         })();
         let error = loaded.as_ref().err().copied();
+        let (source, source_error) = load_source(&root);
         let mut saved = loaded.unwrap_or_default();
         let phase = if error.is_some() {
             "failed"
@@ -423,9 +553,13 @@ impl UpdateService {
                 candidate: None,
                 downloaded: 0,
                 error,
+                source,
+                source_error,
+                downloaded_from: None,
             }),
             operation: Mutex::new(()),
             canceled: AtomicBool::new(false),
+            source_changing: AtomicBool::new(false),
         }
     }
     fn candidate(&self) -> Result<Release> {
@@ -484,6 +618,9 @@ impl UpdateService {
         }
     }
     fn client(&self) -> Result<reqwest::blocking::Client> {
+        self.transport_client(false)
+    }
+    fn transport_client(&self, mirror: bool) -> Result<reqwest::blocking::Client> {
         let tls = rustls::ClientConfig::builder_with_provider(Arc::new(
             rustls::crypto::ring::default_provider(),
         ))
@@ -498,8 +635,8 @@ impl UpdateService {
             .connect_timeout(Duration::from_secs(10))
             .timeout(Duration::from_secs(600))
             .user_agent(format!("djhx-memo-updater/{}", self.version))
-            .redirect(reqwest::redirect::Policy::custom(|attempt| {
-                if attempt.previous().len() >= 5 || !allowed_url(attempt.url()) {
+            .redirect(reqwest::redirect::Policy::custom(move |attempt| {
+                if mirror || attempt.previous().len() >= 5 || !allowed_url(attempt.url()) {
                     attempt.error("untrusted update redirect")
                 } else {
                     attempt.follow()
@@ -579,18 +716,21 @@ impl UpdateService {
     }
     fn download_inner(&self) -> Result<()> {
         let release = self.candidate()?;
+        let source = self.state.lock().map_err(|_| "UPDATE_STORAGE")?.source;
+        let url = download_url(&release, &self.target, source)?;
         let partial = self
             .root
             .join(format!("package-{}.part", uuid::Uuid::new_v4()));
         let result = (|| {
             let mut response = self
-                .client()?
-                .get(&release.url)
+                .transport_client(source == DownloadSource::Memo)?
+                .get(url)
                 .send()
                 .map_err(|_| "UPDATE_NETWORK")?;
-            if !response.status().is_success()
-                || response.content_length().is_some_and(|n| n != release.size)
-            {
+            if !response.status().is_success() {
+                return Err("UPDATE_NETWORK");
+            }
+            if response.content_length().is_some_and(|n| n != release.size) {
                 return Err("UPDATE_PACKAGE");
             }
             let mut file = private_file(&partial)?;
@@ -609,6 +749,10 @@ impl UpdateService {
             self.verify_desktop_signature(&partial, &release)?;
             fs::rename(&partial, self.package_path()).map_err(|_| "UPDATE_STORAGE")?;
             self.state.lock().map_err(|_| "UPDATE_STORAGE")?.phase = "ready";
+            self.state
+                .lock()
+                .map_err(|_| "UPDATE_STORAGE")?
+                .downloaded_from = Some(source);
             Ok(())
         })();
         let _ = fs::remove_file(partial);
@@ -638,6 +782,28 @@ impl UpdateService {
     fn verify_desktop_signature(&self, path: &Path, release: &Release) -> Result<()> {
         verify_package_signature(path, release, &self.target, &self.trust)
     }
+}
+
+fn download_url(release: &Release, target: &str, source: DownloadSource) -> Result<String> {
+    let suffix = match target {
+        "windows-x86_64-nsis" => "windows-x64-setup.exe",
+        "android-universal-apk" => "android.apk",
+        _ => return Err("UPDATE_UNSUPPORTED"),
+    };
+    let filename = format!("djhx-memo-{}-{suffix}", release.version);
+    let tag = format!("v{}", release.version);
+    if release.tag != tag
+        || release.url
+            != format!("https://github.com/Koril33/djhx-memo/releases/download/{tag}/{filename}")
+    {
+        return Err("UPDATE_CATALOG");
+    }
+    Ok(match source {
+        DownloadSource::Github => release.url.clone(),
+        DownloadSource::Memo => {
+            format!("https://memo.djhx.site/downloads/releases/{tag}/{filename}")
+        }
+    })
 }
 
 fn verify_package_signature(

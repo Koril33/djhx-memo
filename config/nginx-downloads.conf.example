@@ -1,0 +1,23 @@
+# Include INSIDE the memo.djhx.site server block after adapting /var/www if
+# DJHX_DEPLOY_WWW_ROOT differs. Preserve /v1, SSE and /healthz.
+# First define these zones in http{} (not server{}):
+# limit_conn_zone $binary_remote_addr zone=memo_download_ip:1m;
+# limit_conn_zone $server_name zone=memo_download_total:1m;
+# Adjust example limits to the server's measured bandwidth budget.
+location ^~ /downloads/releases/ {
+    alias /var/www/memo.djhx.site-downloads/releases/;
+    autoindex off;
+    default_type application/octet-stream;
+    add_header Content-Disposition attachment;
+    add_header Cache-Control "public, max-age=31536000, immutable";
+    limit_conn memo_download_ip 2;
+    limit_conn memo_download_total 4;
+    limit_rate 1m;
+    sendfile on;
+}
+location = /downloads/latest/djhx-memo-linux-amd64.deb {
+    add_header Cache-Control no-store always;
+    # Before first deployment create this file with "return 503;".
+    include /var/www/memo.djhx.site-downloads/latest-deb.conf;
+}
+location /downloads/ { return 404; }

@@ -1,5 +1,7 @@
 # 官网部署 CI 构建 + 半自动脚本设计
 
+> 0.2.2实施补充：个人源文件、两源核验、Linux别名与安全推广顺序见[下载镜像运行手册](download-mirror-deployment.md)及[验证记录](releases/0.2.2-validation.md)。以下历史部署/回滚说明不授权将已推广的签名current回退低序号；0.2.2使用独立持久feed与文件区。当前未执行生产部署。
+
 - 状态：**设计草案，待交叉评审后再实施**。决策见 [ADR-0019](adr/0019-update-catalog-website-ci.md)。
 - 范围：把"CI 构建 + 半自动部署"落地。所有可自动的步骤进 CI；推送服务器保留为维护者本机一条脚本，**查看摘要、确认后输入服务器 sudo 密码**完成，失败自动回滚。
 - 现状基线：[website-deployment](website-deployment.md)（手工 SSH + Nginx 软链 + 健康检查）、[update-publishing](update-publishing.md)（目录签名与部署顺序）。

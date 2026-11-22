@@ -1,6 +1,21 @@
 // Local presentation only. Never translate note content or user-provided names.
 export type Language = 'zh-CN' | 'en';
 export const messages = {
+  editorSettings: { 'zh-CN': '编辑器', en: 'Editor' },
+  markdownLint: { 'zh-CN': 'Markdown 格式检查', en: 'Markdown style checks' },
+  splitScrollSync: { 'zh-CN': '对照同步滚动', en: 'Sync split scrolling' },
+  lintHelp: {
+    'zh-CN': '离线检查并提示格式问题，不自动修改正文。',
+    en: 'Offline style suggestions. Your text is never changed automatically.',
+  },
+  lintCheck: { 'zh-CN': '检查一次', en: 'Check once' },
+  lintProblems: { 'zh-CN': '格式提示', en: 'Style suggestions' },
+  lintPending: { 'zh-CN': '等待检查', en: 'Waiting to check' },
+  lintChecking: { 'zh-CN': '正在检查', en: 'Checking' },
+  lintPaused: { 'zh-CN': '大笔记已暂停实时检查', en: 'Live checks paused for this large note' },
+  lintFailed: { 'zh-CN': '检查未完成，可重试', en: 'Check did not complete. Try again.' },
+  lintClear: { 'zh-CN': '没有格式提示', en: 'No style suggestions' },
+  lintTruncated: { 'zh-CN': '仅显示前 200 条提示', en: 'Only the first 200 suggestions are shown' },
   close: { 'zh-CN': '关闭', en: 'Close' },
   spaceSettings: { 'zh-CN': '空间设置', en: 'Space settings' },
   signInTitle: { 'zh-CN': '登录', en: 'Sign in' },

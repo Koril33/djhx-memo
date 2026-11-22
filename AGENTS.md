@@ -3,7 +3,7 @@
 ## 阅读顺序与当前状态
 
 - 阅读 [README](README.md)、[项目计划](djhx-memo-project-plan.md)、[spec 索引](spec/README.md) 及工作目录中的 `AGENTS.md`。
-- 当前公开客户端0.2.1、Android code16、core0.1.13（保留0.1.13空白页/两段式Ctrl+W、固定搜索及Android列表续写）；local schema4、server0.1.4/schema2、协议2，发行与实际检查见docs/releases/0.2.1-validation.md。0.2.2仅完成开发前文档，见docs/client-0.2.2-development.md和spec/client-0.2.2.md，不把计划当已实现。完整产品v1/三端性能与设备矩阵仍独立验收；连续7天试用已由维护者确认完成，逐日明细未入库，不替代三端矩阵。
+- 当前公开客户端0.2.1、Android code16、core0.1.13（保留0.1.13空白页/两段式Ctrl+W、固定搜索及Android列表续写）；local schema4、server0.1.4/schema2、协议2，发行与实际检查见docs/releases/0.2.1-validation.md。0.2.2源码已接入桌面lint/同步滚动、三端下载源和Linux最新DEB浏览器入口，客户端/core0.2.2、Android code17；测试与发行边界见docs/releases/0.2.2-validation.md。未公开或部署，不把CI构建当Linux GUI/真实覆盖升级已验收。完整产品v1/三端性能与设备矩阵仍独立验收；连续7天试用已由维护者确认完成，逐日明细未入库，不替代三端矩阵。
 - `spec/` 是产品与实现行为的唯一事实来源。改行为先改规范，规范与实现同批提交；不得把计划或占位内容当作已实现的能力。
 
 ## 工作方式

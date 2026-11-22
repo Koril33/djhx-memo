@@ -1,10 +1,10 @@
 # core
 
-当前源码版本为 **0.1.10**，新增供三端单笔记导出共用的纯函数`markdown_export_filename`，不读写数据库；契约见[core API](../spec/core-api.md)。保留0.1.7安装屏障修正和0.1.6批量普通删除/撤销及单Markdown导入；账号协议2、local schema3保持不变。既有发布与设备边界见各版本记录。
+当前源码版本为 **0.2.2**，新增共享更新器的设备下载源偏好、固定镜像解析及Linux浏览器地址；笔记协议2、local schema4/server schema2、server0.1.4不变，见[0.2.2规范](../spec/client-0.2.2.md)与[验证](../docs/releases/0.2.2-validation.md)。以下0.1.10历史能力保持：新增供三端单笔记导出共用的纯函数`markdown_export_filename`，不读写数据库；契约见[core API](../spec/core-api.md)。保留0.1.7安装屏障修正和0.1.6批量普通删除/撤销及单Markdown导入；当时账号协议2、local schema3保持不变（当前schema4）。既有发布与设备边界见各版本记录。
 
 Rust 本地优先核心，负责 SQLite 存储与迁移、持久 outbox、客户端同步状态机、搜索、回收站、导出和空间隔离。Android 经 UniFFI 调用，Tauri Rust 后端直接链接。
 
-已实现可构建的 `djhx-memo-core` 0.1.10；依赖锁定于 Cargo.lock，SQLite 随库构建。平台入口为 `MemoApp`，JSON 调用见 [桥接契约](../spec/core-bridge.md)，不向 UI 返回 token。
+已实现可构建的 `djhx-memo-core` 0.2.2；依赖锁定于 Cargo.lock，SQLite 随库构建。平台入口为 `MemoApp`，JSON 调用见 [桥接契约](../spec/core-bridge.md)，不向 UI 返回 token。
 
 ```sh
 cargo fmt --check

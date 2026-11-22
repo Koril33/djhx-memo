@@ -49,6 +49,7 @@ pub(crate) async fn update_invoke(
     action: String,
     auto_check: Option<bool>,
     download_policy: Option<String>,
+    download_source: Option<String>,
 ) -> Result<String, String> {
     if window.label() != "main" {
         return Err("UPDATE_UNSUPPORTED".into());
@@ -57,6 +58,16 @@ pub(crate) async fn update_invoke(
         return Ok(state.snapshot());
     }
     let state = state.inner().clone();
+    if action == "download_page" || action == "release_page" {
+        let url = if action == "download_page" {
+            state.service.manual_download_url()
+        } else {
+            "https://github.com/Koril33/djhx-memo/releases/latest".into()
+        };
+        super::open_external(window.app_handle().clone(), url)
+            .map_err(|_| "UPDATE_BROWSER".to_string())?;
+        return Ok(state.snapshot());
+    }
     tauri::async_runtime::spawn_blocking(move || {
         if action == "snapshot" {
             return state.snapshot();
@@ -64,6 +75,11 @@ pub(crate) async fn update_invoke(
         if action == "cancel" {
             state.service.cancel();
             return state.snapshot();
+        }
+        if action == "source" {
+            return state
+                .service
+                .set_download_source(download_source.unwrap_or_default());
         }
         let Some(operation) = state.operation.enter() else {
             return state.snapshot();

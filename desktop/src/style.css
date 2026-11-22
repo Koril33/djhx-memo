@@ -954,6 +954,18 @@ svg {
   font-size: 11px;
   line-height: 1.6;
 }
+.field:has(input[type='checkbox']) {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--ink);
+}
+.field input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  accent-color: var(--green);
+}
 .field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
