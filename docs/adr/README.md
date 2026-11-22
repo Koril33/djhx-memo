@@ -21,5 +21,7 @@
 - [ADR-0018：CodeMirror 笔记内查找](0018-codemirror-search.md)
 - [ADR-0019：更新目录签名与官网部署的自动化边界](0019-update-catalog-website-ci.md)
 - [ADR-0020：jade-ivory母版与可重复渲染资源包](0020-jade-ivory-brand-render.md)
+- [ADR 0021：桌面Markdown格式检查，0.2.2候选依赖/待兼容验证](0021-desktop-markdownlint.md)
+- [ADR 0022：个人服务器主下载源，0.2.2传输/部署设计待实施评审](0022-primary-download-source.md)
 
 新增依赖前记录确切版本、理由、许可证与维护来源；工具探针的通过不能代替业务验收。

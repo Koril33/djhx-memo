@@ -1,5 +1,7 @@
 # 客户端自动更新
 
+> 2026-11-22补充：0.2.2的[目标规范](client-0.2.2.md)计划增加固定个人镜像传输和三端切源，保持本页v1目录及旧客户端兼容；Linux仅提供最新DEB浏览器入口，不启用自动更新。该目标尚未实施，下文历史版本及冻结格式不因文档建立而改变。
+
 - 状态：**0.1.5 客户端已公开发布，Windows 发行目录已上线；Android 正式签名 APK 待补齐**；2026-11-13。Linux 自动安装适配继续为提案；2026-11-13 发布轮在 Ubuntu 24.04 虚拟机单独检查并打包 DEB，结果以发布记录为准。
 - 本轮实现：Windows NSIS、Android APK、共享验证器与离线发布工具；协议 2 / core schema 3 不变。旧 0.1.3/0.1.4 安装不因新源码自动取得更新器。
 - 依据：[17 个软件调研](../docs/research/rust-gui-auto-update-survey.md)、[技术设计](../docs/automatic-update-design.md)、[ADR-0016](../docs/adr/0016-automatic-updates.md)。通过后续实现 PR 启用；不把提案加入现有版本的已完成清单。
