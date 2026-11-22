@@ -171,6 +171,31 @@ fi''')
         self.assertTrue(promoted)
         self.assertIn('remote deployment', result.stderr)
 
+    def test_remote_python_imports_leave_staging_free_of_bytecode(self):
+        temporary_root = ROOT / '.local'
+        temporary_root.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix='deploy-cache-', dir=temporary_root) as directory:
+            fixture = Path(directory)
+            self.prepare_upload_fixture(fixture, lambda *_: None)
+            tools = fixture / 'tools'
+            tools.mkdir()
+            for name in ['prepare-download-assets.py', 'publish-download-assets.py']:
+                shutil.copyfile(ROOT / 'scripts' / name, tools / name)
+            # Execute the actual privileged script's initialization, then the real
+            # importer on synthetic assets. Without the export, Python creates a
+            # cache here that would belong to root on the production server.
+            preamble = (ROOT / 'scripts/deploy-remote-v2.sh').read_text().split('STAMP="$1"', 1)[0]
+            result = subprocess.run(
+                [BASH, '--noprofile', '--norc', '-c',
+                 preamble + '\n"$1" "$2/publish-download-assets.py" --source "$3" --destination "$4"',
+                 'cache-test', shell_path(sys.executable), shell_path(tools),
+                 shell_path(fixture / 'bundle/downloads'), shell_path(fixture / 'published')],
+                capture_output=True, timeout=15,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr.decode(errors='replace'))
+            self.assertFalse((tools / '__pycache__').exists())
+            self.assertTrue((fixture / 'published/releases/v0.2.2/SHA256SUMS').is_file())
+
 
 if __name__ == '__main__':
     unittest.main()
