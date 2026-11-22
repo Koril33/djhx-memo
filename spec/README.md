@@ -1,10 +1,11 @@
 # v1 产品与技术契约
 
-发行基线：客户端0.2.0、Android code15、core0.1.13，local schema4、server0.1.4/schema2、协议2，HTTP路径 /v1；更新于2026-11-22。[0.2.0公开记录](../docs/releases/0.2.0-validation.md)区分发行与实际验收。0.2.1候选已实现空白页/搜索布局修正，draft已生成，见[验证记录](../docs/releases/0.2.1-validation.md)；同步、鉴权与删除继续遵守既有契约。
+发行基线：客户端0.2.1、Android code16、core0.1.13，local schema4、server0.1.4/schema2、协议2，HTTP路径 /v1；更新于2026-11-22。[0.2.1公开记录](../docs/releases/0.2.1-validation.md)区分发行与实际验收。0.2.2仅形成[目标规范](client-0.2.2.md)和[开发文档](../docs/client-0.2.2-development.md)，尚未实施；同步、鉴权与删除继续遵守既有契约。
 
 | 文档 | 定义内容 |
 |---|---|
-| [client-0.2.1.md](client-0.2.1.md) | 候选：桌面空白页精简/三个按钮，Android搜索区域水平约束；draft已生成，未公开 |
+| [client-0.2.2.md](client-0.2.2.md) | 开发前目标：桌面可选lint/双向同步滚动，Linux最新DEB入口，个人服务器主源/GitHub备用与三端切源；未实施 |
+| [client-0.2.1.md](client-0.2.1.md) | 已实现/公开：桌面空白页精简/三个按钮，Android搜索区域水平约束；实际矩阵见发布记录 |
 | [client-0.2.0.md](client-0.2.0.md) | 已实现/公开：大笔记、Android离线交互、排版、jade图标及Windows默认目录；完整矩阵仍以[实际记录](../docs/releases/0.2.0-validation.md)为准 |
 | [client-0.1.13.md](client-0.1.13.md) | 已实现/公开：桌面空白页、两段式Ctrl+W、固定本机＋当前选中账号及普通回收站搜索/来源/布局、Android基础列表；验收状态见[实际记录](../docs/releases/0.1.13-validation.md) |
 | [client-0.1.11.md](client-0.1.11.md) | 0.1.11快捷键（Ctrl+W关闭到托盘、Ctrl+F笔记内查找、Ctrl+Shift+F全局搜索）与本地全文搜索（相关性、高亮、片段、范围过滤）；设计见 [快捷键设计](../docs/shortcuts-design.md) 与 [搜索功能详细设计](../docs/search-design.md)，验证见 [0.1.11 记录](../docs/releases/0.1.11-validation.md) |
@@ -30,6 +31,6 @@ v0.1 规划中关于冲突策略、Web 范围、共享前端的旧表述已由�
 
 ## 尚未启用的提案
 
-- 自动更新规范中的 Linux AppImage/DEB 安装适配、跨协议/schema 更新和信任根桥接尚未实现，不属于本轮 Windows/Android 交付能力。
+- 自动更新规范中的 Linux AppImage/DEB 安装适配、跨协议/schema 更新和信任根桥接尚未实现；0.2.2仅计划Linux最新DEB下载入口，不启用自动检查/下载/安装。
 
 0.1.6 的行为扩展以 [下一版本规范](client-0.1.6.md) 为准，已在0.1.6实现，实际检查见发布记录，不属于 0.1.5 已实现能力；Web 继续暂缓。

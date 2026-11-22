@@ -1,5 +1,7 @@
 # 0.2.1 界面修正契约
 
+> 2026-11-22状态更新：0.2.1已公开，见[发行记录](../docs/releases/0.2.1-validation.md)。下文“只创建draft”的授权边界保留为原实施轮历史，不表示Release目前仍未公开；后续0.2.2按其[独立目标规范](client-0.2.2.md)准备。
+
 - 日期：2026-11-21；基线`v0.2.0 / 4b10ac7`。维护者授权实施、测试并创建`v0.2.1` Release draft；不公开Release或推广官网/更新目录。
 - 范围：Windows/Linux空白页精简、Android全局搜索布局。维护者已确认干净Windows安装0.2.0任务栏图标正确，Linux重启后窗口图标与Ctrl+W正常；三项移出修复范围。
 - 客户端0.2.1、Android code16；core0.1.13、server0.1.4、协议2、local schema4/server schema2保持。继承[0.1.13](client-0.1.13.md)、[0.2.0](client-0.2.0.md)和[自动更新](automatic-updates.md)未被本条替代的行为。

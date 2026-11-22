@@ -1,6 +1,6 @@
 # Android 客户端
 
-公开稳定版为0.2.0；当前源码候选0.2.1（Android code16），本轮仅修复桌面空白页和Android搜索布局并准备Release draft。实际检查及未验收项见[0.2.1记录](../docs/releases/0.2.1-validation.md)，历史版本记录保留如下。
+公开稳定版为0.2.1（Android code16），已修复桌面空白页和Android搜索布局；实际检查及未验收项见[0.2.1记录](../docs/releases/0.2.1-validation.md)。[0.2.2开发文档](../docs/client-0.2.2-development.md)计划接入更新下载源选择，不包含Android lint，尚未实施；历史版本记录保留如下。
 
 **0.1.10/code11已公开发布**，统一品牌、单篇Markdown导出和删除留白；API35正式0.1.9→0.1.10安装/原笔记保留通过，边界见[0.1.10记录](../docs/releases/0.1.10-validation.md)。
 
