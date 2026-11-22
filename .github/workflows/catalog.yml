@@ -131,10 +131,20 @@ jobs:
           name: catalog
           path: dist/bundle/updates/stable
       - name: Assemble deploy bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          mkdir -p dist/mirror-assets
+          gh release download "$TAG" --dir dist/mirror-assets \
+            --pattern 'djhx-memo-*-windows-x64-setup.exe*' \
+            --pattern 'djhx-memo-*-android.apk' \
+            --pattern 'djhx-memo-*-linux-amd64.deb' \
+            --pattern 'djhx-memo-linux-amd64.deb' --pattern 'SHA256SUMS'
+          python scripts/prepare-download-assets.py --tag "$TAG" \
+            --assets dist/mirror-assets --output dist/bundle/downloads
           mkdir -p dist/bundle/site
           cp -a website/dist/. dist/bundle/site/
-          tar -C dist/bundle -czf "dist/deploy-bundle-${{ steps.version.outputs.version }}.tar.gz" site updates
+          tar -C dist/bundle -czf "dist/deploy-bundle-${{ steps.version.outputs.version }}.tar.gz" site updates downloads
       - name: Attach bundle to release
         env:
           GH_TOKEN: ${{ github.token }}
