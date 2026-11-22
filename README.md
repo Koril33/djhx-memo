@@ -4,7 +4,7 @@
 
 已公开0.2.1为三端客户端0.2.1、Android code16，core0.1.13；local schema4，server0.1.4/schema2、协议2，应用/签名身份保持。连续7天试用已由维护者确认完成，完整v1矩阵仍独立验收。
 
-**0.2.2源码已实现，发行验证进行中，尚未公开或部署。** 新增桌面可选markdownlint、对照同步滚动、Linux最新DEB入口和个人服务器主下载源/三端切源；见[开发文档](docs/client-0.2.2-development.md)及[目标规范](spec/client-0.2.2.md)。Linux仍手动安装，Android不做lint。
+**[0.2.2 Release draft](https://github.com/Koril33/djhx-memo/releases/tag/untagged-a73c6af0d870a7ed33f2)已生成并核验附件，尚未公开或部署。** 新增桌面可选markdownlint、对照同步滚动、Linux最新DEB入口和个人服务器主下载源/三端切源；见[开发文档](docs/client-0.2.2-development.md)及[目标规范](spec/client-0.2.2.md)。Linux仍手动安装，Android不做lint。
 
 0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](docs/releases/0.1.4-validation.md)。
 

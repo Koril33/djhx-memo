@@ -1,6 +1,6 @@
 # 0.2.2 开发文档
 
-- 日期：2026-11-22；状态：**范围与兼容边界已确认，源码已实现；测试/草稿发行进行中，未公开或部署，实际证据见[本轮记录](releases/0.2.2-validation.md)**。
+- 日期：2026-11-22；状态：**范围与兼容边界已确认，源码已实现；Release draft及附件已核验，未公开或部署，实际证据见[本轮记录](releases/0.2.2-validation.md)**。
 - 目标行为以 [spec/client-0.2.2.md](../spec/client-0.2.2.md)为准，本文供后续开发、测试、评审和发行使用。
 - 基线为已公开 `v0.2.1 / 9e4c84208d003b7615d7e23bfb31d0556aada32a`；设计起点两远程 main 为 `fd0ea4c`，实施起点为 PR #33 合入的 `8e7a154`。客户端 0.2.1、Android code16、core0.1.13、server0.1.4、协议2、local schema4/server schema2。
 - 0.2.1 于上海时间 2026-11-22 08:12:58 公开；API 列出三端包、Windows `.sig`、server 归档、SHA256SUMS、catalog-12/current 和部署包共9项。此处只确认公开状态与附件列表，签名和原生测试沿用[实际记录](releases/0.2.1-validation.md)，不推断官网已部署目录12。

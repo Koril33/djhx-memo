@@ -1,6 +1,6 @@
 # 项目文档
 
-> 2026-11-22 公开稳定客户端为0.2.1/code16/core0.1.13；协议/schema保持，发行与实际测试见[验证记录](releases/0.2.1-validation.md)。0.2.2已完成[开发前文档](client-0.2.2-development.md)及[目标规范](../spec/client-0.2.2.md)，尚未实施；桌面lint/同步滚动、Linux最新DEB入口及个人服务器主源/三端切源属于后续目标。
+> 2026-11-22 公开稳定客户端为0.2.1/code16/core0.1.13；协议/schema保持，发行与实际测试见[验证记录](releases/0.2.1-validation.md)。0.2.2源码、CI与Release draft已完成，新增桌面lint/同步滚动、Linux最新DEB入口及三端下载源选择；见[开发文档](client-0.2.2-development.md)、[规范](../spec/client-0.2.2.md)和[实际验证](releases/0.2.2-validation.md)，未公开或部署，设备/升级矩阵仍独立验收。
 
 > 状态说明：发布、模块验证和评审记录按日期保留当时状态；代码版本见上方最新基线，产品行为以 [spec](../spec/README.md) 为准，协作规则见 [AGENTS](../AGENTS.md)，试用与完整验收状态见 [validation](validation.md)。[11 月 18 日项目报告](project-status-2026-11-18.md)是历史快照；历史记录中的“7 天试用未完成/待完成”不代表当前。
 
