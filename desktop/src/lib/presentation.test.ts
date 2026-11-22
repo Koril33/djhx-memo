@@ -55,7 +55,13 @@ describe('device presentation preferences', () => {
         data.set(key, value);
       },
     };
-    const chosen = { language: 'en', theme: 'dark', timeZone: 'UTC' } as const;
+    const chosen = {
+      language: 'en',
+      theme: 'dark',
+      timeZone: 'UTC',
+      markdownLintEnabled: true,
+      splitScrollSync: false,
+    } as const;
     savePreferences(storage, chosen);
     expect(loadPreferences(storage)).toEqual(chosen);
     expect([...data.keys()]).toEqual([PREFERENCES_KEY]);

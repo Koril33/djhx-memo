@@ -48,6 +48,7 @@ fun UpdateSettings(model: MemoModel) {
                 )
             }
         }
+        UpdateSourcePreference(updates, working)
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = if (phase == "up_to_date") MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
@@ -218,7 +219,7 @@ private fun UpdateFailureNotice(error: String, information: Boolean) {
 }
 
 @Composable
-private fun UpdateCard(content: @Composable ColumnScope.() -> Unit) {
+internal fun UpdateCard(content: @Composable ColumnScope.() -> Unit) {
     Surface(
         Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -278,6 +279,7 @@ private fun updatePhase(phase: String): Int = when (phase) {
 }
 
 internal fun updateError(code: String): Int = when (code) {
+    "UPDATE_BROWSER" -> R.string.update_browser_failed
     "UPDATE_INSTALL_RECOVERY" -> R.string.update_install_recovery
     "UPDATE_INSTALL_BLOCKED" -> R.string.update_install_blocked
     "UPDATE_INSTALL_CONFLICT" -> R.string.update_install_conflict

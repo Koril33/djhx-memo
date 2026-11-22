@@ -7,11 +7,15 @@ export interface Preferences {
   language: 'system' | Language;
   theme: 'system' | 'light' | 'dark';
   timeZone: 'Asia/Shanghai' | 'UTC' | 'system';
+  markdownLintEnabled: boolean;
+  splitScrollSync: boolean;
 }
 export const defaultPreferences: Readonly<Preferences> = {
   language: 'system',
   theme: 'system',
   timeZone: 'Asia/Shanghai',
+  markdownLintEnabled: false,
+  splitScrollSync: true,
 };
 type StorageReader = Pick<Storage, 'getItem'>;
 type StorageWriter = Pick<Storage, 'setItem'>;
@@ -19,6 +23,9 @@ export function loadPreferences(storage: StorageReader): Preferences {
   try {
     const value = JSON.parse(storage.getItem(PREFERENCES_KEY) ?? '{}') as Partial<Preferences>;
     return {
+      markdownLintEnabled:
+        typeof value?.markdownLintEnabled === 'boolean' ? value.markdownLintEnabled : false,
+      splitScrollSync: typeof value?.splitScrollSync === 'boolean' ? value.splitScrollSync : true,
       language: ['system', 'zh-CN', 'en'].includes(value?.language ?? '')
         ? value.language!
         : defaultPreferences.language,

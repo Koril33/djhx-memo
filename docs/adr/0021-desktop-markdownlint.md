@@ -1,18 +1,22 @@
 # ADR 0021 桌面 Markdown 格式检查
 
-- 日期：2026-11-22；状态：**提议用于 0.2.2，产品范围已确认；依赖兼容探针和实施评审尚未完成**。
+- 日期：2026-11-22；状态：**0.2.2已接入，构建/单元探针通过，原生及发行验证进行中**。
 - 目标：[0.2.2 规范](../../spec/client-0.2.2.md)与[开发文档](../client-0.2.2-development.md)。
 
 ## 选择
 
 桌面使用 markdownlint 的浏览器实现检查正文，以 CodeMirror 官方 lint 扩展展示问题；独立 Worker 离线运行，默认关闭，首版只提示。Android 原生编辑器不引入 JS 运行时，也不扩展本版 lint 范围。
 
-| 候选直接依赖 | 拟锁定版本 | 许可与维护来源 | 用途 |
+| 直接依赖 | 锁定版本 | 许可与维护来源 | 用途 |
 |---|---|---|---|
 | markdownlint | 0.42.2 | MIT；[作者仓库](https://github.com/DavidAnson/markdownlint)、[固定版本元数据](https://www.npmjs.com/package/markdownlint/v/0.42.2) | 浏览器中的规则引擎；发布元数据要求 Node >=22，与现有开发工具链范围相容 |
 | @codemirror/lint | 6.9.8 | MIT；[官方仓库](https://github.com/codemirror/lint)、[固定版本元数据](https://www.npmjs.com/package/@codemirror/lint/v/6.9.8) | 范围提示、问题列表及定位 |
 
-2026-11-22 已只读核对 npm 的版本、MIT 和完整性元数据。以上为候选精确版本，不代表已安装、锁定或验证与 Vite/两个系统 WebView 兼容；实施时重新核查安全公告和传递依赖，若需换版本应更新本 ADR，不批量升级依赖树。
+2026-11-22 已只读核对 npm 的版本、MIT 和完整性元数据。上述精确版本已安装并锁定，Vite构建、单元及Windows WebView2探针通过；Linux WebKit原生验收仍单独记录。引入时核查安全公告与传递许可，不批量升级依赖树。
+
+2026-11-22实施补充：上述两包已精确锁定；增加仅开发用`@types/node 22.20.5`（MIT，[DefinitelyTyped](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node)维护），为Vite配置使用Node标准URL API提供类型，避免自行实现Windows/UNC路径换算。markdownlint传递依赖的KaTeX按[上游安全公告](https://github.com/KaTeX/KaTeX/security/advisories/GHSA-238p-pmpm-9mq7)以override精确锁定0.18.2（MIT），消除新引入的旧版本告警，不改其他既有工具链版本。
+
+Worker构建选用`decode-named-character-reference`包的官方无DOM default/worker入口；其browser入口在模块加载时访问document，实际WebView2探针已发现该问题。Vite仅固定该已锁定模块的入口，仍使用markdownlint的浏览器I/O替身；未加载Node文件系统、在线规则或启用unsafe-eval。Worker的传递依赖纳入实际构建模块清单与随包许可。
 
 ## 接入条件
 

@@ -52,7 +52,7 @@ describe('restricted Markdown preview', () => {
     const html = renderMarkdown(
       '# 标题\n\n**粗体** `- [ ] code`\n\n<button data-task-line="0" onclick="alert(1)">bad</button>',
     );
-    expect(html).toContain('<h1>标题</h1>');
+    expect(html).toContain('<h1 data-source-from="0" data-source-to="4">标题</h1>');
     expect(html).toContain('<strong>粗体</strong>');
     expect(html).not.toContain('<button');
   });

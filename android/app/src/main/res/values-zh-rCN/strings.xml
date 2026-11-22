@@ -272,4 +272,11 @@
     <string name="devices_refresh_failed">刷新失败，显示上次加载的设备列表。</string>
     <string name="devices_retry">重试</string>
     <string name="revoke_failed">吊销未完成，请重试。</string>
+    <string name="update_source">下载源</string>
+    <string name="update_source_wait">正在停止下载并切换来源…</string>
+    <string name="update_source_help">下载失败时可切换来源重试。</string>
+    <string name="update_source_failed">下载源未能保存，请重试。</string>
+    <string name="update_source_received">本包下载来源：%1$s</string>
+    <string name="update_release_page">在 GitHub 查看发行版本</string>
+    <string name="update_browser_failed">无法打开浏览器，请重试。</string>
 </resources>

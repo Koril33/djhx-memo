@@ -3,7 +3,12 @@
   import Icon from './Icon.svelte';
   import { brandNames } from './lib/brand';
   import { native } from './lib/bridge';
-  import { runUpdateCommand, updateCommandPending } from './lib/update-commands';
+  import {
+    runUpdateCommand,
+    runSourceChange,
+    updateCommandPending,
+    sourceChangePending,
+  } from './lib/update-commands';
   import { formatTime, type Preferences } from './lib/preferences';
   export let language: 'zh-CN' | 'en';
   export let timeZone: Preferences['timeZone'];
@@ -19,6 +24,11 @@
     auto_check: boolean;
     download_policy: string;
     operation_pending?: boolean;
+    download_source?: string;
+    source_error?: string;
+    source_changing?: boolean;
+    downloaded_from?: string;
+    manual_download_supported?: boolean;
   };
   let status: Status | null = null;
   let installing = false;
@@ -42,6 +52,8 @@
     completed: ['更新已完成', 'Update completed'],
   };
   const errors: Record<string, [string, string]> = {
+    UPDATE_SOURCE: ['下载源未能保存，请重试。', 'Could not save the download source. Try again.'],
+    UPDATE_BROWSER: ['无法打开浏览器，请重试。', 'Could not open your browser. Try again.'],
     UPDATE_NETWORK: [
       '更新服务暂时不可达，可稍后重试。',
       'Update service unavailable. Try again later.',
@@ -90,6 +102,8 @@
   $: zh = language === 'zh-CN';
   $: busy =
     installing ||
+    $sourceChangePending ||
+    !!status?.source_changing ||
     !!status?.operation_pending ||
     commandPending ||
     ['checking', 'downloading', 'preparing'].includes(status?.phase ?? '');
@@ -138,6 +152,18 @@
       preferencesPending = false;
     }
   }
+  async function changeSource(source: string) {
+    installError = '';
+    try {
+      const result = await runSourceChange(
+        () => native('update_invoke', { action: 'cancel' }),
+        () => native<string>('update_invoke', { action: 'source', downloadSource: source }),
+      );
+      if (result !== undefined) status = JSON.parse(result);
+    } catch {
+      installError = 'UPDATE_SOURCE';
+    }
+  }
   onMount(() => {
     void action('snapshot');
     const poll = setInterval(() => {
@@ -175,6 +201,43 @@
       >{managed ? (zh ? '手动更新' : 'Manual updates') : label(names[phase])}</span
     >
   </div>
+  <div class="update-card">
+    <label class="update-preference"
+      ><span>{zh ? '下载源' : 'Download source'}</span><select
+        value={status?.download_source ?? 'memo'}
+        disabled={!status ||
+          installing ||
+          phase === 'preparing' ||
+          $sourceChangePending ||
+          !!status.source_changing ||
+          (busy && phase !== 'downloading')}
+        on:change={(event) => changeSource(event.currentTarget.value)}
+      >
+        <option value="memo">memo.djhx.site</option><option value="github">GitHub</option>
+      </select></label
+    >
+    <p class="update-muted">
+      {$sourceChangePending || status?.source_changing
+        ? zh
+          ? '正在停止下载并切换来源…'
+          : 'Stopping the transfer and changing source…'
+        : zh
+          ? '下载失败时可切换来源重试。'
+          : 'Switch source and retry if a download fails.'}
+    </p>
+    {#if phase === 'ready' && status?.downloaded_from}<p class="update-muted">
+        {zh ? '本包下载来源：' : 'This package was downloaded from: '}{status.downloaded_from ===
+        'memo'
+          ? 'memo.djhx.site'
+          : 'GitHub'}
+      </p>{/if}
+    {#if status?.source_error}<p class="update-error" role="alert">
+        {label(errors[status.source_error])}
+      </p>{/if}
+    <button class="text-button" on:click={() => action('release_page')}
+      >{zh ? '在 GitHub 查看发行版本' : 'View releases on GitHub'}</button
+    >
+  </div>
   {#if status?.last_checked && !managed}<p class="update-last">
       {zh ? '上次检查' : 'Last checked'} · {formatTime(
         new Date(status.last_checked * 1000).toISOString(),
@@ -191,6 +254,15 @@
           ? '从官网下载适合本机的 DEB，覆盖安装即可保留原有笔记。'
           : 'Download the DEB from the website and install it over this version to keep your notes.'}
       </p>
+      {#if status?.manual_download_supported === false}<p class="update-muted">
+          {zh
+            ? '此架构暂无 DEB，请查看下载页。'
+            : 'No DEB is available for this architecture. Visit the download page.'}
+        </p>{/if}
+      <button class="primary-button" on:click={() => action('download_page')}
+        >{zh ? '下载最新 DEB（在浏览器中打开）' : 'Download latest DEB (opens browser)'}</button
+      >
+      {#if errorCode}<p class="update-error" role="alert">{label(errors[errorCode])}</p>{/if}
     </div>
   {:else}
     <div class="update-card">

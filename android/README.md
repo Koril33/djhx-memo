@@ -1,6 +1,6 @@
 # Android 客户端
 
-公开稳定版为0.2.1（Android code16），已修复桌面空白页和Android搜索布局；实际检查及未验收项见[0.2.1记录](../docs/releases/0.2.1-validation.md)。[0.2.2开发文档](../docs/client-0.2.2-development.md)计划接入更新下载源选择，不包含Android lint，尚未实施；历史版本记录保留如下。
+公开稳定版为0.2.1（Android code16），已修复桌面空白页和Android搜索布局；实际检查及未验收项见[0.2.1记录](../docs/releases/0.2.1-validation.md)。0.2.2源码（code17/core0.2.2）已接入固定下载源选择，不包含Android lint；见[开发文档](../docs/client-0.2.2-development.md)及[验证记录](../docs/releases/0.2.2-validation.md)，尚未公开/部署；历史版本记录保留如下。
 
 **0.1.10/code11已公开发布**，统一品牌、单篇Markdown导出和删除留白；API35正式0.1.9→0.1.10安装/原笔记保留通过，边界见[0.1.10记录](../docs/releases/0.1.10-validation.md)。
 
@@ -107,3 +107,7 @@ UI、网络恢复触发及 WorkManager 共享应用单例 core；后台仅尽力
 源码为0.1.10/code11，显示名和sunrise资源由[统一品牌配置](../assets/brand/profile.json)生成；不要手工改applicationId来刷新图标。编辑页更多菜单导出点击时的Markdown快照，列表和设置保留空间ZIP。使用系统SAF创建单个`.md`，Activity重建/切换笔记不会重定向当前请求，写入关闭后才报告成功；进程丢失快照需重新发起，不把正文放进Bundle。契约见[0.1.10](../spec/client-0.1.10.md)。
 
 `NoteExportTest`验证真实ContentResolver写入、失败与请求隔离，文档fixture只在测试APK中声明。`NoteExportPickerTest`需显式参数`-e nativeNoteExport 1`，在专用测试设备打开真实系统文件选择器并重建Activity/切换笔记；宿主还需读取其合成输出，核对测试回执的文件名和SHA256。默认不自动向设备共享目录写入文件。
+
+## 0.2.2 下载源设置
+
+软件更新固定提供memo.djhx.site/GitHub，来源由core持久保存、跨账号共用。下载中切源会先取消并等待原生完成回执，不自动重新下载；等待期间仍可返回/编辑，准备安装时禁用。目录验签/撤回仍使用memo固定feed。Android不增加markdownlint/对照滚动。`UpdateSourceTest`通过真实JNI验证切源与Activity重建后的来源保留；隔离模拟器结果及系统覆盖升级边界见[本轮记录](../docs/releases/0.2.2-validation.md)。

@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.net.toUri
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -153,6 +154,29 @@ class AppUpdates internal constructor(
                 preferencesPending = false
             }
         }
+    }
+
+    /** A source edit cancels the old transfer and waits for Rust's operation gate. */
+    fun changeSource(source: String) {
+        if (source !in setOf("memo", "github")) return
+        if (preferencesPending || installing || recoveryRequired) return
+        preferencesPending = true
+        scope.launch {
+            try {
+                status = withContext(Dispatchers.IO) { JSONObject(service.setDownloadSource(source)) }
+            } finally { preferencesPending = false }
+        }
+    }
+
+    /** Browser recovery is separate from the trusted in-app installation path. */
+    fun openReleasePage() {
+        try {
+            val intent = Intent(
+                Intent.ACTION_VIEW,
+                "https://github.com/Koril33/djhx-memo/releases/latest".toUri()
+            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            app.startActivity(intent)
+        } catch (_: ActivityNotFoundException) { showInstallError("UPDATE_BROWSER") }
     }
 
     /** Revalidates the candidate, asks for source permission, and saves before a native handoff. */

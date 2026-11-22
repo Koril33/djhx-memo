@@ -51,6 +51,13 @@ Upstream: git+https://code.haverbeke.berlin/codemirror/language.git
 License file: LICENSE — full text 05c6130cda97e760
 
 ========================================================================
+@codemirror/lint 6.9.8
+SPDX: MIT
+Source: https://www.npmjs.com/package/@codemirror/lint/v/6.9.8
+Upstream: git+https://code.haverbeke.berlin/codemirror/lint.git
+License file: LICENSE — full text 05c6130cda97e760
+
+========================================================================
 @codemirror/search 6.7.2
 SPDX: MIT
 Source: https://www.npmjs.com/package/@codemirror/search/v/6.7.2
@@ -137,6 +144,20 @@ License file: LICENSE-MIT — full text 9dd42ea92cff2ede
 License file: LICENSE.spdx — full text 5e834fe9788c5242
 
 ========================================================================
+ansi-regex 6.6.0
+SPDX: MIT
+Source: https://www.npmjs.com/package/ansi-regex/v/6.6.0
+Upstream: chalk/ansi-regex
+License file: license — full text 5c932d88256b4ab9
+
+========================================================================
+character-entities 2.0.2
+SPDX: MIT
+Source: https://www.npmjs.com/package/character-entities/v/2.0.2
+Upstream: wooorm/character-entities
+License file: license — full text 63cb98b3f6abfb3c
+
+========================================================================
 clsx 2.1.1
 SPDX: MIT
 Source: https://www.npmjs.com/package/clsx/v/2.1.1
@@ -151,11 +172,200 @@ Upstream: git+https://code.haverbeke.berlin/marijn/crelt.git
 License file: LICENSE — full text 23852ebf6aef7fad
 
 ========================================================================
+decode-named-character-reference 1.3.0
+SPDX: MIT
+Source: https://www.npmjs.com/package/decode-named-character-reference/v/1.3.0
+Upstream: wooorm/decode-named-character-reference
+License file: license — full text dd1081884a929528
+
+========================================================================
+get-east-asian-width 1.7.0
+SPDX: MIT
+Source: https://www.npmjs.com/package/get-east-asian-width/v/1.7.0
+Upstream: sindresorhus/get-east-asian-width
+License file: license — full text 5c932d88256b4ab9
+
+========================================================================
+markdownlint 0.42.2
+SPDX: MIT
+Source: https://www.npmjs.com/package/markdownlint/v/0.42.2
+Upstream: github:DavidAnson/markdownlint
+License file: LICENSE — full text cdc3c1fb00ee1394
+
+========================================================================
 marked 18.1.3
 SPDX: MIT
 Source: https://www.npmjs.com/package/marked/v/18.1.3
 Upstream: git+https://github.com/markedjs/marked.git
 License file: LICENSE — full text 8e3a3f82f59a6095
+
+========================================================================
+micromark 4.0.3
+SPDX: MIT
+Source: https://www.npmjs.com/package/micromark/v/4.0.3
+Upstream: https://github.com/micromark/micromark/tree/main/packages/micromark
+License file: license — full text dd1081884a929528
+
+========================================================================
+micromark-core-commonmark 2.0.4
+SPDX: MIT
+Source: https://www.npmjs.com/package/micromark-core-commonmark/v/2.0.4
+Upstream: https://github.com/micromark/micromark/tree/main/packages/micromark-core-commonmark
+License file: license — full text dd1081884a929528
+
+========================================================================
+micromark-extension-directive 4.0.0
+SPDX: MIT
+Source: https://www.npmjs.com/package/micromark-extension-directive/v/4.0.0
+Upstream: micromark/micromark-extension-directive
+License file: license — full text dd1081884a929528
+
+========================================================================
+micromark-extension-gfm-autolink-literal 2.1.0
+SPDX: MIT
+Source: https://www.npmjs.com/package/micromark-extension-gfm-autolink-literal/v/2.1.0
+Upstream: micromark/micromark-extension-gfm-autolink-literal
+License file: license — full text 536804b3adbff17d
+
+========================================================================
+micromark-extension-gfm-footnote 2.1.0
+SPDX: MIT
+Source: https://www.npmjs.com/package/micromark-extension-gfm-footnote/v/2.1.0
+Upstream: micromark/micromark-extension-gfm-footnote
+License file: license — full text 807a88522a850092
+
+========================================================================
+micromark-extension-gfm-table 2.1.2
+SPDX: MIT
+Source: https://www.npmjs.com/package/micromark-extension-gfm-table/v/2.1.2
+Upstream: micromark/micromark-extension-gfm-table
+License file: license — full text dd1081884a929528
+
+========================================================================
+micromark-extension-math 3.1.0
+SPDX: MIT
+Source: https://www.npmjs.com/package/micromark-extension-math/v/3.1.0
+Upstream: micromark/micromark-extension-math
+License file: license — full text 536804b3adbff17d
+
+========================================================================
+micromark-factory-destination 2.0.1
+SPDX: MIT
+Source: https://www.npmjs.com/package/micromark-factory-destination/v/2.0.1
+Upstream: https://github.com/micromark/micromark/tree/main/packages/micromark-factory-destination
+License file: license — full text dd1081884a929528
+
+========================================================================
+micromark-factory-label 2.0.1
+SPDX: MIT
+Source: https://www.npmjs.com/package/micromark-factory-label/v/2.0.1
+Upstream: https://github.com/micromark/micromark/tree/main/packages/micromark-factory-label
+License file: license — full text dd1081884a929528
+
+========================================================================
+micromark-factory-space 2.1.0
+SPDX: MIT
+Source: https://www.npmjs.com/package/micromark-factory-space/v/2.1.0
+Upstream: https://github.com/micromark/micromark/tree/main/packages/micromark-factory-space
+License file: license — full text dd1081884a929528
+
+========================================================================
+micromark-factory-title 2.0.1
+SPDX: MIT
+Source: https://www.npmjs.com/package/micromark-factory-title/v/2.0.1
+Upstream: https://github.com/micromark/micromark/tree/main/packages/micromark-factory-title
+License file: license — full text dd1081884a929528
+
+========================================================================
+micromark-factory-whitespace 2.0.1
+SPDX: MIT
+Source: https://www.npmjs.com/package/micromark-factory-whitespace/v/2.0.1
+Upstream: https://github.com/micromark/micromark/tree/main/packages/micromark-factory-whitespace
+License file: license — full text dd1081884a929528
+
+========================================================================
+micromark-util-character 2.1.1
+SPDX: MIT
+Source: https://www.npmjs.com/package/micromark-util-character/v/2.1.1
+Upstream: https://github.com/micromark/micromark/tree/main/packages/micromark-util-character
+License file: license — full text dd1081884a929528
+
+========================================================================
+micromark-util-chunked 2.0.1
+SPDX: MIT
+Source: https://www.npmjs.com/package/micromark-util-chunked/v/2.0.1
+Upstream: https://github.com/micromark/micromark/tree/main/packages/micromark-util-chunked
+License file: license — full text dd1081884a929528
+
+========================================================================
+micromark-util-classify-character 2.0.1
+SPDX: MIT
+Source: https://www.npmjs.com/package/micromark-util-classify-character/v/2.0.1
+Upstream: https://github.com/micromark/micromark/tree/main/packages/micromark-util-classify-character
+License file: license — full text dd1081884a929528
+
+========================================================================
+micromark-util-combine-extensions 2.0.1
+SPDX: MIT
+Source: https://www.npmjs.com/package/micromark-util-combine-extensions/v/2.0.1
+Upstream: https://github.com/micromark/micromark/tree/main/packages/micromark-util-combine-extensions
+License file: license — full text dd1081884a929528
+
+========================================================================
+micromark-util-edit-map 1.0.0
+SPDX: MIT
+Source: https://www.npmjs.com/package/micromark-util-edit-map/v/1.0.0
+Upstream: https://github.com/micromark/micromark/tree/main/packages/micromark-util-edit-map
+License file: license — full text dd1081884a929528
+
+========================================================================
+micromark-util-html-tag-name 2.0.1
+SPDX: MIT
+Source: https://www.npmjs.com/package/micromark-util-html-tag-name/v/2.0.1
+Upstream: https://github.com/micromark/micromark/tree/main/packages/micromark-util-html-tag-name
+License file: license — full text dd1081884a929528
+
+========================================================================
+micromark-util-normalize-identifier 2.0.1
+SPDX: MIT
+Source: https://www.npmjs.com/package/micromark-util-normalize-identifier/v/2.0.1
+Upstream: https://github.com/micromark/micromark/tree/main/packages/micromark-util-normalize-identifier
+License file: license — full text dd1081884a929528
+
+========================================================================
+micromark-util-resolve-all 2.0.1
+SPDX: MIT
+Source: https://www.npmjs.com/package/micromark-util-resolve-all/v/2.0.1
+Upstream: https://github.com/micromark/micromark/tree/main/packages/micromark-util-resolve-all
+License file: license — full text dd1081884a929528
+
+========================================================================
+micromark-util-subtokenize 2.1.0
+SPDX: MIT
+Source: https://www.npmjs.com/package/micromark-util-subtokenize/v/2.1.0
+Upstream: https://github.com/micromark/micromark/tree/main/packages/micromark-util-subtokenize
+License file: license — full text dd1081884a929528
+
+========================================================================
+re2js 2.9.1
+SPDX: MIT
+Source: https://www.npmjs.com/package/re2js/v/2.9.1
+Upstream: git+https://github.com/le0pard/re2js.git
+License file: LICENSE — full text b80a94f2c3c0b8bd
+
+========================================================================
+string-width 8.3.0
+SPDX: MIT
+Source: https://www.npmjs.com/package/string-width/v/8.3.0
+Upstream: sindresorhus/string-width
+License file: license — full text 5c932d88256b4ab9
+
+========================================================================
+strip-ansi 7.2.0
+SPDX: MIT
+Source: https://www.npmjs.com/package/strip-ansi/v/7.2.0
+Upstream: chalk/strip-ansi
+License file: license — full text 5c932d88256b4ab9
 
 ========================================================================
 style-mod 4.1.4
@@ -423,6 +633,33 @@ THE SOFTWARE.
 
 
 ========================================================================
+License text 536804b3adbff17d
+
+(The MIT License)
+
+Copyright (c) 2020 Titus Wormer <tituswormer@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+========================================================================
 License text 54bd812a6d334e0c
 
 MIT License
@@ -475,6 +712,20 @@ THE SOFTWARE.
 
 
 ========================================================================
+License text 5c932d88256b4ab9
+
+MIT License
+
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+========================================================================
 License text 5e834fe9788c5242
 
 SPDXVersion: SPDX-2.1
@@ -497,6 +748,60 @@ PackageDownloadLocation: git://github.com/tauri-apps/tauri
 PackageDownloadLocation: git+https://github.com/tauri-apps/tauri.git
 PackageDownloadLocation: git+ssh://github.com/tauri-apps/tauri.git
 Creator: Person: Daniel Thompson-Yvetot
+
+
+========================================================================
+License text 63cb98b3f6abfb3c
+
+(The MIT License)
+
+Copyright (c) 2015 Titus Wormer <tituswormer@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+========================================================================
+License text 807a88522a850092
+
+(The MIT License)
+
+Copyright (c) 2021 Titus Wormer <tituswormer@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 ========================================================================
@@ -639,6 +944,32 @@ SOFTWARE.
 
 
 ========================================================================
+License text b80a94f2c3c0b8bd
+
+MIT License
+
+Copyright (c) 2023 Oleksii Vasyliev
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+========================================================================
 License text cb4474e265473971
 
 Copyright (C) 2018 by Marijn Haverbeke <marijn@haverbeke.berlin> and others
@@ -660,3 +991,56 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+
+
+========================================================================
+License text cdc3c1fb00ee1394
+
+The MIT License (MIT)
+
+Copyright (c) David Anson
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+
+========================================================================
+License text dd1081884a929528
+
+(The MIT License)
+
+Copyright (c) Titus Wormer <tituswormer@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

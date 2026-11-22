@@ -76,6 +76,7 @@ export function renderMarkdown(
   language: Language = 'zh-CN',
   highlights?: CodeHighlights,
 ): string {
+  source = source.replace(/\r\n?/g, '\n');
   const t = createTranslator(language);
   const parser = new Marked({ gfm: true, breaks: false, async: false });
   const codeBlocks = new Map(
@@ -123,5 +124,19 @@ export function renderMarkdown(
   });
   const tokens = parser.lexer(source);
   locateTasks(parser, tokens, source);
-  return parser.parser(tokens);
+  // Lex once, then render complete top-level blocks in order. Nested lists and
+  // quotes remain one source block, with local interpolation for their height.
+  // Offsets come from token.raw, never from searching repeated paragraph text.
+  let position = 0;
+  return tokens
+    .map((token) => {
+      const from = position;
+      position += token.raw.length;
+      const html = parser.parser([token]);
+      return html.replace(
+        /^<([a-z][\w-]*)(?=[\s>])/,
+        `$& data-source-from="${from}" data-source-to="${position}"`,
+      );
+    })
+    .join('');
 }

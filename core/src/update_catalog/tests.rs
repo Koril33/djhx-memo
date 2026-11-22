@@ -1,7 +1,7 @@
 use super::*;
 use serde_json::Value;
 
-fn fixture() -> (Trust, Vec<u8>, Vec<u8>) {
+pub(super) fn fixture() -> (Trust, Vec<u8>, Vec<u8>) {
     let f: Value =
         serde_json::from_str(include_str!("../../tests/fixtures/update/signed.json")).unwrap();
     (
@@ -12,7 +12,7 @@ fn fixture() -> (Trust, Vec<u8>, Vec<u8>) {
             .unwrap(),
     )
 }
-fn now() -> i64 {
+pub(super) fn now() -> i64 {
     DateTime::parse_from_rfc3339("2026-11-13T00:00:00Z")
         .unwrap()
         .timestamp()
@@ -110,7 +110,7 @@ fn startup_removes_only_its_own_crashed_staging_files() {
     );
     fs::remove_dir_all(root).unwrap();
 }
-fn root() -> PathBuf {
+pub(super) fn root() -> PathBuf {
     let p = std::env::temp_dir().join(format!("memo-updater-{}", uuid::Uuid::new_v4()));
     fs::create_dir(&p).unwrap();
     p

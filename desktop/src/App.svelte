@@ -4,6 +4,8 @@
   import { onMount, onDestroy, tick } from 'svelte';
   import { listen, type UnlistenFn } from '@tauri-apps/api/event';
   import Editor from './Editor.svelte';
+  import type { EditorView } from '@codemirror/view';
+  import { splitScroll } from './lib/split-scroll';
   import GlobalSearch from './GlobalSearch.svelte';
   import Icon from './Icon.svelte';
   import Updates from './Updates.svelte';
@@ -281,7 +283,10 @@
   let notice: Message | null = null;
   let failure: unknown = null;
   let settings = false;
-  let settingsTab: 'account' | 'devices' | 'data' | 'appearance' | 'updates' = 'appearance';
+  let settingsTab: 'account' | 'devices' | 'data' | 'appearance' | 'editor' | 'updates' =
+    'appearance';
+  let sourceView: EditorView | undefined;
+  let openLint: (() => void) | undefined;
   let authMode: 'login' | 'register' = 'login';
   let authVisible = false;
   let reauthProfile: Profile | null = null;
@@ -1423,6 +1428,22 @@
               }}><Icon name="columns-2" /></button
             >
           </div>
+          {#if mode === 'split'}<button
+              class="text-button"
+              aria-pressed={preferences.splitScrollSync}
+              title={t('splitScrollSync')}
+              on:click={() => {
+                preferences.splitScrollSync = !preferences.splitScrollSync;
+                updatePreferences();
+              }}>{t('splitScrollSync')} {preferences.splitScrollSync ? '✓' : ''}</button
+            >{/if}
+          {#if preferences.markdownLintEnabled}<button
+              class="text-button"
+              on:click={() => {
+                mode = 'source';
+                openLint?.();
+              }}>{t('lintProblems')}</button
+            >{/if}
           <details class="action-menu" data-menu>
             <!-- svelte-ignore a11y_no_redundant_roles (WebKitGTK exposes an unknown AT-SPI role without this explicit role.) -->
             <summary
@@ -1607,7 +1628,15 @@
             </button>
           </div>
         </div>
-      </div>{:else}<div class="editor-body" class:split={mode === 'split'}>
+      </div>{:else}<div
+        class="editor-body"
+        class:split={mode === 'split'}
+        use:splitScroll={{
+          enabled: mode === 'split' && preferences.splitScrollSync,
+          view: sourceView,
+          version: previewSnapshot.version,
+        }}
+      >
         <div
           class="source-pane"
           class:concealed={mode === 'preview'}
@@ -1618,6 +1647,13 @@
               highlights={codeHighlights}
               composing={editor.composing}
               {language}
+              lintEnabled={preferences.markdownLintEnabled}
+              onView={(view) => {
+                sourceView = view;
+              }}
+              onLintApi={(open) => {
+                openLint = open;
+              }}
               readonly={readOnly}
               onEdit={(text) => editor.edit(text)}
               onComposition={(active) => editor.setComposing(active)}
@@ -1788,6 +1824,10 @@
         >
       </header>
       <nav class="settings-tabs" aria-label={t('settingsSections')}>
+        <button
+          class:chosen={settingsTab === 'editor'}
+          on:click={() => run(() => openSettings('editor'))}>{t('editorSettings')}</button
+        >
         <button
           class:chosen={settingsTab === 'appearance'}
           on:click={() => run(() => openSettings('appearance'))}>{t('appearanceTab')}</button
@@ -2016,6 +2056,24 @@
             </div>{/if}
         {:else if settingsTab === 'updates'}
           <Updates {language} timeZone={preferences.timeZone} install={installUpdate} />
+        {:else if settingsTab === 'editor'}
+          <label class="field"
+            >{t('markdownLint')}<input
+              type="checkbox"
+              role="switch"
+              bind:checked={preferences.markdownLintEnabled}
+              on:change={updatePreferences}
+            /></label
+          >
+          <p class="help-text">{t('lintHelp')}</p>
+          <label class="field"
+            >{t('splitScrollSync')}<input
+              type="checkbox"
+              role="switch"
+              bind:checked={preferences.splitScrollSync}
+              on:change={updatePreferences}
+            /></label
+          >
         {:else if settingsTab === 'appearance'}
           <label class="field"
             >{t('language')}<select bind:value={preferences.language} on:change={updatePreferences}>

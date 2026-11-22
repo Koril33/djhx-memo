@@ -1,10 +1,10 @@
 # v1 产品与技术契约
 
-发行基线：客户端0.2.1、Android code16、core0.1.13，local schema4、server0.1.4/schema2、协议2，HTTP路径 /v1；更新于2026-11-22。[0.2.1公开记录](../docs/releases/0.2.1-validation.md)区分发行与实际验收。0.2.2仅形成[目标规范](client-0.2.2.md)和[开发文档](../docs/client-0.2.2-development.md)，尚未实施；同步、鉴权与删除继续遵守既有契约。
+发行基线：客户端0.2.1、Android code16、core0.1.13，local schema4、server0.1.4/schema2、协议2，HTTP路径 /v1；更新于2026-11-22。[0.2.1公开记录](../docs/releases/0.2.1-validation.md)区分发行与实际验收。0.2.2源码已实现（客户端/core0.2.2、Android code17），见[规范](client-0.2.2.md)、[开发文档](../docs/client-0.2.2-development.md)和[本轮验证](../docs/releases/0.2.2-validation.md)，尚未公开/部署；同步、鉴权与删除继续遵守既有契约。
 
 | 文档 | 定义内容 |
 |---|---|
-| [client-0.2.2.md](client-0.2.2.md) | 开发前目标：桌面可选lint/双向同步滚动，Linux最新DEB入口，个人服务器主源/GitHub备用与三端切源；未实施 |
+| [client-0.2.2.md](client-0.2.2.md) | 已接入：桌面可选lint/双向同步滚动，Linux最新DEB入口，个人服务器主源/GitHub备用与三端切源；实际平台/部署边界见验证记录 |
 | [client-0.2.1.md](client-0.2.1.md) | 已实现/公开：桌面空白页精简/三个按钮，Android搜索区域水平约束；实际矩阵见发布记录 |
 | [client-0.2.0.md](client-0.2.0.md) | 已实现/公开：大笔记、Android离线交互、排版、jade图标及Windows默认目录；完整矩阵仍以[实际记录](../docs/releases/0.2.0-validation.md)为准 |
 | [client-0.1.13.md](client-0.1.13.md) | 已实现/公开：桌面空白页、两段式Ctrl+W、固定本机＋当前选中账号及普通回收站搜索/来源/布局、Android基础列表；验收状态见[实际记录](../docs/releases/0.1.13-validation.md) |
@@ -31,6 +31,6 @@ v0.1 规划中关于冲突策略、Web 范围、共享前端的旧表述已由�
 
 ## 尚未启用的提案
 
-- 自动更新规范中的 Linux AppImage/DEB 安装适配、跨协议/schema 更新和信任根桥接尚未实现；0.2.2仅计划Linux最新DEB下载入口，不启用自动检查/下载/安装。
+- 自动更新规范中的 Linux AppImage/DEB 安装适配、跨协议/schema 更新和信任根桥接尚未实现；0.2.2仅增加Linux最新DEB浏览器入口，不启用自动检查/下载/安装。
 
 0.1.6 的行为扩展以 [下一版本规范](client-0.1.6.md) 为准，已在0.1.6实现，实际检查见发布记录，不属于 0.1.5 已实现能力；Web 继续暂缓。

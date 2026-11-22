@@ -1,17 +1,17 @@
 {
-  "version": "0.1.10",
+  "version": "0.2.2",
   "platforms": {
     "windows": {
-      "version": "0.1.10",
-      "asset": "djhx-memo-0.1.10-windows-x64-setup.exe"
+      "version": "0.2.2",
+      "asset": "djhx-memo-0.2.2-windows-x64-setup.exe"
     },
     "android": {
-      "version": "0.1.10",
-      "asset": "djhx-memo-0.1.10-android.apk"
+      "version": "0.2.2",
+      "asset": "djhx-memo-0.2.2-android.apk"
     },
     "linux": {
-      "version": "0.1.10",
-      "asset": "djhx-memo-0.1.10-linux-amd64.deb"
+      "version": "0.2.2",
+      "asset": "djhx-memo-0.2.2-linux-amd64.deb"
     }
   }
 }

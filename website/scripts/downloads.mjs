@@ -11,7 +11,8 @@ export function downloads(file = new URL('../downloads.json', import.meta.url)) 
     const item = data.platforms[platform];
     if (!version.test(item.version) || item.asset !== `djhx-memo-${item.version}-${suffix}`) throw new Error(`Invalid ${platform} release asset`);
     values[`MEMO_${platform.toUpperCase()}_VERSION`] = item.version;
-    values[`MEMO_${platform.toUpperCase()}_URL`] = `https://github.com/Koril33/djhx-memo/releases/download/v${item.version}/${item.asset}`;
+    values[`MEMO_${platform.toUpperCase()}_URL`] = `https://memo.djhx.site/downloads/releases/v${item.version}/${item.asset}`;
+    values[`MEMO_${platform.toUpperCase()}_GITHUB_URL`] = `https://github.com/Koril33/djhx-memo/releases/download/v${item.version}/${item.asset}`;
   }
   return { data, values };
 }

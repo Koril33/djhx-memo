@@ -1,6 +1,6 @@
 # desktop
 
-公开稳定版为0.2.1（Android code16），已修复桌面空白页和Android搜索布局；实际检查及未验收项见[0.2.1记录](../docs/releases/0.2.1-validation.md)。[0.2.2开发文档](../docs/client-0.2.2-development.md)仅为后续目标，尚未实施；历史版本记录保留如下。
+公开稳定版为0.2.1（Android code16），已修复桌面空白页和Android搜索布局；实际检查及未验收项见[0.2.1记录](../docs/releases/0.2.1-validation.md)。0.2.2源码新增默认关闭的Markdown格式检查、默认开启的对照双向同步滚动，以及两源更新设置/Linux最新DEB浏览器入口；实现见[开发文档](../docs/client-0.2.2-development.md)，实际结果见[验证记录](../docs/releases/0.2.2-validation.md)，尚未公开/部署；历史版本记录保留如下。
 
 历史客户端 **0.1.10** 已公开发布，统一sunrise图形与中英文名称，支持当前笔记Markdown导出并调整删除留白；Windows日常0.1.8→0.1.10与Linux实际DEB覆盖升级通过，具体范围见[本轮记录](../docs/releases/0.1.10-validation.md)。Windows使用原签名更新目录，Linux继续DEB系统包管理。原0.1.7安装屏障与既有数据身份保持。
 
@@ -68,3 +68,9 @@ Windows 安装器使用 `src-tauri/windows/installer.nsi`，来自已锁定 `@ta
 ## 0.1.10品牌与单笔记导出
 
 [版本契约](../spec/client-0.1.10.md)规定编辑页菜单导出点击时的UTF-8 Markdown正文，包含未保存编辑；列表/设置仍导出空间ZIP。文件名由core纯函数生成，原生文件对话框取消不提示成功。品牌配置/旧资源恢复遵循[固定流程](../docs/brand-change-workflow.md)。Windows可运行`python scripts/check-brand-installer.py --help`查看真实NSIS助手组件测试参数；正式覆盖安装仍需单独验收。
+
+## 0.2.2 编辑器与下载源
+
+设置→编辑器：Markdown格式检查默认关闭，只给提示；对照同步滚动默认开，工具栏可随时关闭。检查在随包Worker运行，750ms停输调度、2秒超时、最多200条；超过128KiB暂停实时检查，可检查一次，正文上限仍为1MiB。关闭时不启动引擎，不读取`.markdownlint*`或重写正文。新增依赖/许可见[ADR0021](../docs/adr/0021-desktop-markdownlint.md)。
+
+软件更新中的memo/GitHub选择仅改变安装包路径，签名目录仍用memo；Linux只打开系统浏览器下载最新DEB。旧客户端仍使用GitHub更新一次，主源正式启用需要独立部署，见[运行手册](../docs/download-mirror-deployment.md)。
