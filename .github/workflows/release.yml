@@ -252,6 +252,7 @@ jobs:
       - name: Generate checksums
         run: |
           cd dist
+          cp djhx-memo-*-linux-amd64.deb djhx-memo-linux-amd64.deb
           sha256sum djhx-memo-* > SHA256SUMS
           ls -l
       - name: Create draft release
