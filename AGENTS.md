@@ -60,4 +60,4 @@
 
 - 0.2.0已有五项范围的对应源码增量并公开发布（tag 4b10ac7），Q1–Q4/D1–D6已由维护者定稿；目标见spec/client-0.2.0.md，发行事实与验收边界见docs/releases/0.2.0-validation.md。0.2.1已实施桌面空白页精简及Android搜索布局并于2026-11-22公开，见spec/client-0.2.1.md及docs/releases/0.2.1-validation.md；Windows干净安装任务栏图标及Linux窗口图标/Ctrl+W均已由维护者确认正常，不属于本版修复。
 
-- 0.2.2仅准备文档：桌面markdownlint默认关闭、对照按内容双向同步滚动默认开启，Android不做lint；Linux仅增加最新DEB浏览器入口，仍不自动检查/下载/安装；memo.djhx.site为主下载源、GitHub备用，三端更新页可切源。按spec/client-0.2.2.md及docs/client-0.2.2-development.md实施，候选依赖/传输方案见ADR0021/0022。保持旧v1目录兼容、固定镜像路径和原签名，不因切源重置防回放；本轮不开发代码、修改workflow或发版部署。
+- 0.2.2已实现桌面markdownlint默认关闭、对照按内容双向同步滚动默认开启，Android不做lint；Linux仅增加最新DEB浏览器入口，仍不自动检查/下载/安装；memo.djhx.site为主下载源、GitHub备用，三端更新页可切源。行为见spec/client-0.2.2.md，依赖/传输边界见ADR0021/0022，实际检查与未验收项见docs/releases/0.2.2-validation.md。维护者已审阅并合并PR #34中的workflow，授权继续草稿发行；不公开Release或部署生产服务器。保持旧v1目录兼容、固定镜像路径和原签名，不因切源重置防回放。
