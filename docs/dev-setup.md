@@ -64,8 +64,6 @@ SDK/JDK 绝对路径、`.local/`、`android/local.properties`、签名材料、�
 
 以下材料保留当时的安装路径、探针组合和处理过程，供追溯使用；不作为新主机配置步骤，也不表示当前设备矩阵已完成：
 
-- [Linux 本机安装与环境探针（2026-11-03）](dev-setup-linux.md)。其中 `~/.config/djhx-dev/env.sh` 只存在于原主机。
-- [另一台 Windows 主机的环境探针（2026-11-03）](dev-setup-windows-history.md)。
 - [M0 UniFFI 绑定探针](../tools/native-probe/README.md)。
 - [桌面实现验证](desktop-validation.md)、[0.1.1 界面验证](desktop-ui-preview-validation.md)及[0.1.2 修正验证](client-fixes-0.1.2-validation.md)。
 

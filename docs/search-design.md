@@ -1,6 +1,6 @@
 # 搜索功能详细设计（0.1.11）
 
-- 状态：§1–14 保留 0.1.11 设计与当时决定；功能已随 0.1.11 实现，当前代码为 0.1.12，实际验证边界见 [0.1.11 记录](releases/0.1.11-validation.md)和[最新评估](client-0.1.13-assessment.md)。**0.1.13 的定稿增量见 §15，未实施。** 本文为详细设计入口，产品行为以 spec 为准，后续变更同步维护两者。
+- 状态：§1–14 保留 0.1.11 设计与当时决定；功能已随 0.1.11 实现，当前代码为 0.1.12，实际验证边界见 [0.1.11 记录](releases/0.1.11-validation.md)和[0.1.13 记录](releases/0.1.13-validation.md)。**0.1.13 的定稿增量见 §15，未实施。** 本文为详细设计入口，产品行为以 spec 为准，后续变更同步维护两者。
 - 关联文档：[快捷键设计](shortcuts-design.md)、[0.1.11 目标规范](../spec/client-0.1.11.md)、[v1 产品行为](../spec/product-v1.md)、[数据模型](../spec/data-model.md)、[UI 与 core 接口边界](../spec/core-api.md)。
 - 范围：桌面（Windows/Linux，键盘快捷键主战场）与 Android（本版补充笔记内查找/全局搜索 UI，无键盘快捷键）；Android 侧范围见 §11。
 
@@ -49,8 +49,8 @@
 
 | 编号 | 来源 | 问题 | 影响 | 0.1.11 处理 |
 |---|---|---|---|---|
-| C4 | static-review-2026-11-18 | `notes_update` 触发器在仅元数据更新（ack / set_deleted / purge_state）时也整篇删除重建 FTS 索引 | 1MiB 笔记每次同步多做 1-2 次重建 | 追加迁移 0004，触发器加 `WHEN old.content IS NOT new.content`（不改已发布迁移），实施见 §12 step 1 |
-| C6 | static-review-2026-11-18 | <3 字符（最常见 2 字中文）退化为全表 LIKE，读全部正文 | 2 字搜索总是全表扫描 | 短查询只投影 id+摘要；用 blog 基准确认达标，见 §8 |
+| C4 | 静态评审 | `notes_update` 触发器在仅元数据更新（ack / set_deleted / purge_state）时也整篇删除重建 FTS 索引 | 1MiB 笔记每次同步多做 1-2 次重建 | 追加迁移 0004，触发器加 `WHEN old.content IS NOT new.content`（不改已发布迁移），实施见 §12 step 1 |
+| C6 | 静态评审 | <3 字符（最常见 2 字中文）退化为全表 LIKE，读全部正文 | 2 字搜索总是全表扫描 | 短查询只投影 id+摘要；用 blog 基准确认达标，见 §8 |
 | — | 本文 | 结果无相关性、无高亮、无片段、无笔记内查找 | 核心体验缺口 | 本文全部覆盖 |
 
 ## 3. 需求细化
@@ -379,7 +379,7 @@ search_notes {
 - [数据模型 §3 notes_fts](../spec/data-model.md)
 - [UI 与 core 接口边界](../spec/core-api.md)
 - [一致性场景 EDIT-01](../spec/conformance/scenarios.md)
-- [静态评审 2026-11-18](../docs/reviews/static-review-2026-11-18.md)（C4/C6）
+- C4/C6 源自 2026-11-18 一次性静态评审（已归档）。
 - [SQLite FTS5 trigram 官方说明](https://www.sqlite.org/fts5.html#the_trigram_tokenizer)
 - CodeMirror 6 search：[@codemirror/search](https://codemirror.net/docs/ref/#search) · [highlightSelectionMatches 文档](https://npmx.dev/package-docs/@codemirror/search/v/6.7.2) · [自绘查找面板 discuss](https://discuss.codemirror.net/t/replace-default-search-panel-with-my-own-component/5885)
 - VS Code：搜索服务与引擎（ripgrep）[Search Issues](https://github.com/microsoft/vscode/wiki/Search-Issues)、[DeepWiki 摘要](https://deepwiki.com/microsoft/vscode/11-workbench-ui-architecture)

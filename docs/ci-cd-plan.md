@@ -42,7 +42,7 @@
 | Go | `go.mod` 声明 1.27.0，实测 1.27.3 | `server/go.mod` |
 | JDK | 实测 JDK 21；产物目标 17 | `android/`、`docs/dev-setup.md` |
 | Gradle / AGP / Kotlin | Wrapper 8.13 / AGP 8.13.0 / Kotlin 2.0.21 | `android/` |
-| Android SDK | compile/target API 36，min 29，NDK 30.0.16248370（r30） | `android/`、`docs/dev-setup-linux.md` |
+| Android SDK | compile/target API 36，min 29，NDK 30.0.16248370（r30） | `android/`、`docs/dev-setup-linux-portable.md` |
 | Tauri | 2.12.5 | `desktop/src-tauri/Cargo.toml` |
 
 CI 中必须在 workflow 内**显式安装并固定**上述版本，不依赖 runner 预装默认值；依赖用 `--locked`、`npm ci`、Gradle Wrapper 锁定。
@@ -85,7 +85,7 @@ CI 中必须在 workflow 内**显式安装并固定**上述版本，不依赖 ru
 
 - CI 在 runner 内完成签名：Windows 用 `TAURI_SIGNING_PRIVATE_KEY` 生成 `.exe.sig`；Android 用原证书 keystore（`DJHX_ANDROID_KEYSTORE_B64` + 口令 + alias）产出已签名 APK。
 - 密钥经 GitHub Secrets 注入，不进仓库、不进日志（GitHub 自动脱敏）。
-- Release 为 draft，随附正式 `SHA256SUMS`；**更新目录签名已 CI 化**（`catalog.yml`，Release 公开后触发，catalog 钥经 `DJHX_CATALOG_SIGNING_KEY` 注入）；**官网部署为 CI 构建 + 半自动脚本**（服务器写权限与 sudo 密码不进 CI）。见 [ADR-0019](adr/0019-update-catalog-website-ci.md) 与 [官网部署 CI 设计](website-deployment-ci.md)。
+- Release 为 draft，随附正式 `SHA256SUMS`；**更新目录签名已 CI 化**（`catalog.yml`，Release 公开后触发，catalog 钥经 `DJHX_CATALOG_SIGNING_KEY` 注入）；**官网部署为 CI 构建 + 半自动脚本**（服务器写权限与 sudo 密码不进 CI）。见 [ADR-0019](adr/0019-update-catalog-website-ci.md) 与 [下载镜像运行手册](download-mirror-deployment.md)。
 - 后续硬化：签名 job 绑定 Environment + Required reviewers + tag ruleset；action 固定 commit SHA。
 
 ## 7. 分阶段实施计划

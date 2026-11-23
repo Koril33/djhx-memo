@@ -1,6 +1,6 @@
 # Linux 公共开发说明
 
-本文面向新克隆仓库的 Linux 主机，命令从仓库根目录执行，不依赖原主机的环境脚本。原 Debian 13 主机的安装路径和探针见[历史记录](dev-setup-linux.md)，不能照搬为其他机器的默认配置。
+本文面向新克隆仓库的 Linux 主机，命令从仓库根目录执行，不依赖原主机的环境脚本。原 Debian 13 主机的安装路径和探针为历史记录（已归档），不能照搬为其他机器的默认配置。
 
 桌面打包基线是 Ubuntu 24.04 x86_64；已记录的实际 GUI 主机为 Debian 13 与 Ubuntu 26.04，不能用容器构建替代 Ubuntu 24.04 真桌面或其他发行版验收。当前证据见[桌面验证](desktop-validation.md)、[界面预览验证](desktop-ui-preview-validation.md)和[验收清单](validation.md)。
 

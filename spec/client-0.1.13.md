@@ -2,7 +2,7 @@
 
 - 日期：2026-11-20；维护者已确认本版范围与下述产品取舍。
 - 状态（2026-11-21更新）：**实现与公开Release已确认；完整设备/升级验收记录仍待补齐。** 当前tag `v0.1.13 / d73bace`，三端/core0.1.13、Android code14、local schema4、server0.1.4/协议2；实际证据与未测项见[发布记录](../docs/releases/0.1.13-validation.md)。下述行为及验收条款保留，不以状态更新自动勾选用例。
-- 本文是 0.1.13 行为的规范来源；实施路径、用例、检查及发布关口见 [开发文档](../docs/client-0.1.13-development.md)。[早期评估](../docs/client-0.1.13-assessment.md)保留调查证据，其中“全部账号”提议已被本次决定替代。
+- 本文是 0.1.13 行为的规范来源；实施路径、用例、检查及发布关口见 [开发文档](../docs/client-0.1.13-development.md)。早期评估（已归档）保留调查证据，其中“全部账号”提议已被本次决定替代。
 - 未被本文替代的行为继续遵守 [product-v1](product-v1.md)、[0.1.11](client-0.1.11.md)、[普通/彻底删除](permanent-deletion.md)、[0.1.6 导入与撤销](client-0.1.6.md)、[自动更新](automatic-updates.md)。
 
 ## 1. 范围与不变量

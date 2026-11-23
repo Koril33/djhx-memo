@@ -1,16 +1,10 @@
 # 本地质量检查与 v1 验收
 
+当前基线（2026-11-22）：客户端/core0.2.2、Android code17，local schema4、server0.1.4/schema2、协议2，已公开；实际检查与未验收项见[0.2.2 验证](releases/0.2.2-validation.md)与[生产部署](releases/0.2.2-deployment.md)。
+
 2026-11-19 更新：维护者确认已完成连续 7 天日常使用，未发现阻断问题；按维护者决定，不再把该试用列为当前待办。仓库未保留逐日明细、设备覆盖与断网/冲突/导出专项记录，因此不据此宣称三端矩阵已独立验收；完整 v1 仍需三端发布清单和完整设备矩阵。
 
-2026-11-14的0.1.8七项UI/官网下载整理、三端构建与实际升级见[本次发布检查](releases/0.1.8-validation.md)，[独立账号/平台评审](reviews/client-0.1.8-review.md)已完成。0.1.6列表/导入及0.1.7安装屏障修正已发布；完整v1矩阵仍按下文单独验收。
-
-2026-11-13的0.1.5历史三端构建和Android原证书补齐见[发布检查](releases/0.1.5-validation.md)，debug/unsigned仅保留资料用途。
-
-0.1.5 Windows/Android 自动更新的实际检查、签名与未验收边界见[增量验证](client-updates-0.1.5-validation.md)；不替代下列完整 v1 验收。
-
-2026-11-11 的 0.1.4 单条彻底删除、协议 2 与桌面控件增量，独立审查见[交叉评审](reviews/client-0.1.4-review.md)，三端构建、实际测试、修复和发布状态见[发布验证](releases/0.1.4-validation.md)。本轮结果不提前勾选下方完整 v1 矩阵或连续 7 天试用（历史记录；该试用已于 2026-11-19 完成）。
-
-0.1.4 本轮 Windows/Android 实际结果、协议升级与 Linux 交接见[增量验证](client-updates-0.1.4-validation.md)。
+历史发布轮的实际检查与独立评审按日期保留：0.1.8 见[发布检查](releases/0.1.8-validation.md)与[独立评审](reviews/client-0.1.8-review.md)；0.1.5 见[发布检查](releases/0.1.5-validation.md)与[增量验证](client-updates-0.1.5-validation.md)；0.1.4 见[发布验证](releases/0.1.4-validation.md)、[交叉评审](reviews/client-0.1.4-review.md)与[增量验证](client-updates-0.1.4-validation.md)。这些记录不替代下列完整 v1 验收。
 
 测试范围与边界的文字描述（不含测试代码）见 [测试用例描述](test-cases.md)。
 

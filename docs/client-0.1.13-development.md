@@ -4,7 +4,7 @@
 
 - 日期：2026-11-20；状态：**产品范围已确认，开发前准备完成；尚未实施、验收或发布**。
 - 目标行为以 [spec/client-0.1.13.md](../spec/client-0.1.13.md) 为准，本文说明实施、接口、测试和交付，不另立一套产品规则。
-- 源码基线：`v0.1.12 / 6f12a73`；三端/core 0.1.12、Android code 13、local schema 4、server 0.1.4/协议 2。继承 [0.1.13 评估](client-0.1.13-assessment.md)的代码调查与隔离布局证据，不将其中旧提议当作定稿。
+- 源码基线：`v0.1.12 / 6f12a73`；三端/core 0.1.12、Android code 13、local schema 4、server 0.1.4/协议 2。继承早期 0.1.13 评估的代码调查与隔离布局证据，不将其中旧提议当作定稿。
 - 本轮只修改文档；下文列出的模块、接口扩展、测试及发布动作均供后续实施，不表示已执行。
 
 ## 1. 已确认的版本范围
@@ -163,7 +163,7 @@ UI 删除所有范围选择、回收站 checkbox、相关组件状态和空白�
 
 ### 5.1 已确认的根因与修正原则
 
-[评估 §4.4](client-0.1.13-assessment.md#44-桌面挤压的实际原因)记录了原 CSS 在 3/10/50 条合成结果下的测量：10/50 条结果从内容所需高度压到 36px，摘要为 0，相邻内容重叠；仅在探针中禁止条目收缩即可消失。这是定位证据，不是产品修复或 Linux 验收。
+早期评估记录了原 CSS 在 3/10/50 条合成结果下的测量：10/50 条结果从内容所需高度压到 36px，摘要为 0，相邻内容重叠；仅在探针中禁止条目收缩即可消失。这是定位证据，不是产品修复或 Linux 验收。
 
 实现时让结果行保持自然内容高度，列表负责纵向滚动。纵向 Flex 的条目应不收缩，父容器的 flex/min-height/overflow 链保持一致；也可用更适合自然行高的等价布局。不得硬编码探针的 112.375px 行高，不通过隐藏元信息或提高最小搜索字数规避。
 
@@ -334,7 +334,7 @@ local schema 保持4、server 0.1.4/协议2保持；不因版本号变化伪造�
 
 ### 9.3 沿用最新流程
 
-按 [ADR-0017](adr/0017-github-actions-ci.md)、[ADR-0019](adr/0019-update-catalog-website-ci.md)与[部署设计](website-deployment-ci.md)：审阅合并并同步公开main/tag → GitHub Actions构建、Windows package/Android原证书签名及draft → 维护者核验公开 → catalog工作流签目录/生成官网bundle → 维护者本机部署、核验下载与更新。
+按 [ADR-0017](adr/0017-github-actions-ci.md)、[ADR-0019](adr/0019-update-catalog-website-ci.md)与[部署运行手册](download-mirror-deployment.md)：审阅合并并同步公开main/tag → GitHub Actions构建、Windows package/Android原证书签名及draft → 维护者核验公开 → catalog工作流签目录/生成官网bundle → 维护者本机部署、核验下载与更新。
 
 目录钥与package钥用途分离，服务器写权限不交给CI。Linux仍手动DEB覆盖。若实施阶段确需修改workflow，必须先由维护者审阅，不由同一修改者自行打tag发版。本次只写文档，不执行版本升级、打包、签名、安装、Release公开或服务器部署。
 

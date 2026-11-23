@@ -1,26 +1,26 @@
-# 0.1.10 客户端使用说明
+# 客户端使用说明
 
-三端 0.1.10 正式安装包已公开，实际发行/升级结果见[0.1.10记录](releases/0.1.10-validation.md)；物理 arm64 Android、完整系统/输入法矩阵仍待完成，连续 7 天日常试用已由维护者确认完成。
+三端 0.2.2 正式安装包已公开，实际发行/升级结果见[0.2.2记录](releases/0.2.2-validation.md)与[生产部署](releases/0.2.2-deployment.md)；物理 arm64 Android、完整系统/输入法矩阵仍待完成，连续 7 天日常试用已由维护者确认完成。
 
 ## 安装客户端
 
-从[官网](https://memo.djhx.site/)或[GitHub Release](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.10)下载，先核对同页SHA256SUMS。编译机的dist位置属于本机发行配置，安装包不提交Git。
+主下载源为[官网](https://memo.djhx.site/)，[GitHub Release](https://github.com/Koril33/djhx-memo/releases/tag/v0.2.2)为备用，下载前先核对同页 SHA256SUMS；三端更新页可切换主/备用安装包来源。编译机的 dist 位置属于本机发行配置，安装包不提交 Git。
 
 | 系统 | 文件 | 安装方式 |
 |---|---|---|
-| Windows x64 | [djhx-memo-0.1.10-windows-x64-setup.exe](https://github.com/Koril33/djhx-memo/releases/download/v0.1.10/djhx-memo-0.1.10-windows-x64-setup.exe) | 运行安装程序，默认当前用户安装；依赖 WebView2，缺失时配置为运行随包引导程序下载 |
-| Linux amd64 | [djhx-memo-0.1.10-linux-amd64.deb](https://github.com/Koril33/djhx-memo/releases/download/v0.1.10/djhx-memo-0.1.10-linux-amd64.deb) | 在下载目录运行下面的 apt 命令，安装 WebKit/AppIndicator 运行依赖 |
-| Android | [djhx-memo-0.1.10-android.apk](https://github.com/Koril33/djhx-memo/releases/download/v0.1.10/djhx-memo-0.1.10-android.apk) | 将 APK 复制到设备并安装；包含 arm64-v8a 与 x86_64，Android 10+ |
+| Windows x64 | [djhx-memo-0.2.2-windows-x64-setup.exe](https://github.com/Koril33/djhx-memo/releases/download/v0.2.2/djhx-memo-0.2.2-windows-x64-setup.exe) | 运行安装程序，默认当前用户安装；依赖 WebView2，缺失时配置为运行随包引导程序下载 |
+| Linux amd64 | [djhx-memo-0.2.2-linux-amd64.deb](https://github.com/Koril33/djhx-memo/releases/download/v0.2.2/djhx-memo-0.2.2-linux-amd64.deb) | 在下载目录运行下面的 apt 命令，安装 WebKit/AppIndicator 运行依赖 |
+| Android | [djhx-memo-0.2.2-android.apk](https://github.com/Koril33/djhx-memo/releases/download/v0.2.2/djhx-memo-0.2.2-android.apk) | 将 APK 复制到设备并安装；包含 arm64-v8a 与 x86_64，Android 10+ |
 
 ```sh
-sudo apt install --reinstall ./djhx-memo-0.1.10-linux-amd64.deb
+sudo apt install --reinstall ./djhx-memo-0.2.2-linux-amd64.deb
 ```
 
 Windows 包尚无代码签名证书；版本和文件来源以本机校验值为准。Linux GNOME 的托盘需要 AppIndicator 支持；无法确认托盘可用时，客户端采用普通窗口模式并说明关闭后退出。
 
-本次为0.1.10客户端：统一sunrise品牌、中英文名称与单篇Markdown导出，保留0.1.8界面整理、回收站单条彻底删除、托盘左右键、列表折叠、离线代码高亮及0.1.6列表/导入功能。账号同步使用协议 2，服务端和各客户端必须配套升级；0.1.3 及更早客户端不能继续同步。Linux 使用上述 `--reinstall` 也可覆盖同版本预览包。桌面安装完成后从托盘退出旧进程再重新打开；Android 沿用同一签名直接覆盖安装，保留既有数据。
+本次为0.2.2客户端：桌面可选 markdownlint（默认关闭）、对照按内容双向同步滚动（默认开启），Android 不做 lint；Linux 提供最新 DEB 浏览器入口，仍手动安装。保留中英文名称、单篇 Markdown 导出、0.1.8 界面整理、回收站单条彻底删除、托盘左右键、列表折叠、离线代码高亮及0.1.6列表/导入功能。账号同步使用协议 2，服务端和各客户端必须配套升级；0.1.3 及更早客户端不能继续同步。Linux 使用上述 `--reinstall` 也可覆盖同版本预览包。桌面安装完成后从托盘退出旧进程再重新打开；Android 沿用同一签名直接覆盖安装，保留既有数据。
 
-安装包也可从[GitHub Release v0.1.10](https://github.com/Koril33/djhx-memo/releases/tag/v0.1.10)下载，并用同页SHA256SUMS核对。
+安装包也可从[GitHub Release v0.2.2](https://github.com/Koril33/djhx-memo/releases/tag/v0.2.2)下载，并用同页SHA256SUMS核对。
 
 ## 新界面入口
 
@@ -60,7 +60,7 @@ Windows/Linux 在“账号与设置 → 偏好设置”（Account & settings →
 
 这些偏好仅保存在当前设备，重启后保留。切换语言或外观即时生效，不清空当前编辑内容；笔记正文和用户自定义名称保持原文。显示时区与语言独立，不调整操作系统时间，也不改变 UTC 存储、导出时间或同步顺序。
 
-从0.1.10起，中文名为 **阳墨随记**，英文名为 **DJHX MEMO**，主图标使用sunrise。后续更名或换图标按[固定流程](brand-change-workflow.md)调整统一配置、归档旧资源并生成三端文件；应用身份和原笔记目录不变。
+从0.1.10起，中文名为 **阳墨随记**，英文名为 **DJHX MEMO**，0.2.0起主图标为 jade-ivory。后续更名或换图标按[固定流程](brand-change-workflow.md)调整统一配置、归档旧资源并生成三端文件；应用身份和原笔记目录不变。
 
 0.1.2 修正桌面下拉文字裁切和 Android 源码编辑滚动；实际复现与回归见[控件与滚动验证](client-fixes-0.1.2-validation.md)。
 

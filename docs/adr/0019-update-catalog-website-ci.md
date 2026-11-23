@@ -1,6 +1,6 @@
 # ADR-0019：更新目录签名与官网部署的自动化边界
 
-- 状态：已接受（目录签名 CI 化已实施；官网部署为 CI 构建 + 半自动脚本，设计见 [website-deployment-ci](../website-deployment-ci.md)）
+- 状态：已接受（目录签名 CI 化已实施；官网部署为 CI 构建 + 半自动脚本，运行手册见 [download-mirror-deployment](../download-mirror-deployment.md)）
 - 日期：2026-11-20
 - 延伸：ADR-0017 中"更新目录签名与官网部署仍在维护者服务器（catalog 钥不进入 GitHub）"的边界
 
@@ -25,7 +25,7 @@
 
 ## 影响
 
-- 新增 `.github/workflows/catalog.yml`、`scripts/build-catalog-manifest.py`；后续新增官网部署脚本（见 [website-deployment-ci](../website-deployment-ci.md)）。
+- 新增 `.github/workflows/catalog.yml`、`scripts/build-catalog-manifest.py`；后续新增官网部署脚本（见 [download-mirror-deployment](../download-mirror-deployment.md)）。
 - `config/update-trust.json` 不变（仍只放公钥）。
 - 维护者一次性动作：把 `catalog.key.dpapi` 导出为 GitHub Secret `DJHX_CATALOG_SIGNING_KEY`（同 Android keystore 导出流程）。
 
