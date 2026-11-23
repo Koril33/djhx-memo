@@ -38,6 +38,24 @@ select_local_python() {
 }
 select_local_python
 
+# Bound dead-connection detection for every SSH channel. A staging upload can be
+# overwritten safely; the privileged promotion cannot be replayed after a lost ACK.
+SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15
+    -o ServerAliveInterval=15 -o ServerAliveCountMax=3)
+retry_staging() {
+    local description="$1" attempt upload_status=1
+    shift
+    for attempt in 1 2 3; do
+        if "$@"; then return 0; else upload_status=$?; fi
+        if [[ "$attempt" -lt 3 ]]; then
+            printf 'WARNING: %s failed (attempt %s/3, exit %s); retrying.\n' "$description" "$attempt" "$upload_status" >&2
+            sleep "$attempt"
+        fi
+    done
+    printf 'ERROR: %s failed after 3 attempts; private staging retained for diagnosis.\n' "$description" >&2
+    return "$upload_status"
+}
+
 TAG="${1:?usage: deploy-website.sh <tag>}"
 VERSION="${TAG#v}"
 SSH_TARGET="${DJHX_DEPLOY_SSH_TARGET:?set DJHX_DEPLOY_SSH_TARGET (e.g. deploy@memo.djhx.site)}"
@@ -90,18 +108,23 @@ REMOTE_STAGING="/tmp/djhx-deploy/${STAMP}"
 
 echo "==> uploading bundle to ${SSH_TARGET} staging"
 DEPLOY_STAGE="upload staging"
-ssh "$SSH_TARGET" "umask 077; mkdir -p '${REMOTE_STAGING}'"
-scp -r "$WORK/site" "$WORK/updates" "$WORK/downloads" "${SSH_TARGET}:${REMOTE_STAGING}/"
-scp "$SCRIPT_DIR/prepare-download-assets.py" "$SCRIPT_DIR/publish-download-assets.py" "${SSH_TARGET}:${REMOTE_STAGING}/"
-scp "$SCRIPT_DIR/deploy-remote-v2.sh" "${SSH_TARGET}:${REMOTE_STAGING}/deploy-remote.sh"
+retry_staging "create private staging" ssh "${SSH_OPTIONS[@]}" "$SSH_TARGET" "umask 077; mkdir -p '${REMOTE_STAGING}'"
+retry_staging "upload bundle files" scp "${SSH_OPTIONS[@]}" -r "$WORK/site" "$WORK/updates" "$WORK/downloads" "${SSH_TARGET}:${REMOTE_STAGING}/"
+retry_staging "upload verification tools" scp "${SSH_OPTIONS[@]}" "$SCRIPT_DIR/prepare-download-assets.py" "$SCRIPT_DIR/publish-download-assets.py" "${SSH_TARGET}:${REMOTE_STAGING}/"
+retry_staging "upload deployment entry" scp "${SSH_OPTIONS[@]}" "$SCRIPT_DIR/deploy-remote-v2.sh" "${SSH_TARGET}:${REMOTE_STAGING}/deploy-remote.sh"
+
+DEPLOY_STAGE="verify remote staging"
+retry_staging "verify uploaded mirror" ssh "${SSH_OPTIONS[@]}" "$SSH_TARGET" \
+    "python3 '${REMOTE_STAGING}/prepare-download-assets.py' --verify '${REMOTE_STAGING}/downloads'"
 
 echo "==> switching site (sudo)"
 DEPLOY_STAGE="remote deployment"
 # sudo password passes on stdin only; the remote script is a file, not stdin.
-printf '%s\n' "$SUDO_PASSWORD" | ssh "$SSH_TARGET" \
+printf '%s\n' "$SUDO_PASSWORD" | ssh "${SSH_OPTIONS[@]}" "$SSH_TARGET" \
     "sudo -S -p '' bash '${REMOTE_STAGING}/deploy-remote.sh' '${STAMP}' '${REMOTE_STAGING}' '${WWW_ROOT}'"
+unset SUDO_PASSWORD
 
 DEPLOY_STAGE="clean remote staging"
-ssh "$SSH_TARGET" "rm -rf '${REMOTE_STAGING}'"
+ssh "${SSH_OPTIONS[@]}" "$SSH_TARGET" "rm -rf '${REMOTE_STAGING}'"
 echo ""
 echo "Deploy complete. The previous release directory is kept for manual rollback; verify then clean up."

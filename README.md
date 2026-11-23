@@ -1,10 +1,10 @@
 # djhx-memo
 
-**当前三端正式版为 [0.2.1](https://github.com/Koril33/djhx-memo/releases/tag/v0.2.1)**：在0.2.0基础上精简桌面空白页、修复Android搜索布局。中文名 **阳墨随记**、英文 **DJHX MEMO**。公开证据和验收边界见[0.2.1记录](docs/releases/0.2.1-validation.md)；完整设备/性能矩阵不因公开状态自动通过。
+**当前三端正式版为 [0.2.2](https://github.com/Koril33/djhx-memo/releases/tag/v0.2.2)**：新增桌面可选markdownlint、对照同步滚动、Linux最新DEB入口和个人服务器主下载源/三端切源。中文名 **阳墨随记**、英文 **DJHX MEMO**。公开证据和验收边界见[0.2.2记录](docs/releases/0.2.2-validation.md)；完整设备/性能矩阵不因公开状态自动通过。
 
-已公开0.2.1为三端客户端0.2.1、Android code16，core0.1.13；local schema4，server0.1.4/schema2、协议2，应用/签名身份保持。连续7天试用已由维护者确认完成，完整v1矩阵仍独立验收。
+已公开0.2.2为三端客户端/core0.2.2、Android code17；local schema4，server0.1.4/schema2、协议2，应用/签名身份保持。连续7天试用已由维护者确认完成，完整v1矩阵仍独立验收。
 
-**[0.2.2 Release draft](https://github.com/Koril33/djhx-memo/releases/tag/untagged-a73c6af0d870a7ed33f2)已生成并核验附件，尚未公开或部署。** 新增桌面可选markdownlint、对照同步滚动、Linux最新DEB入口和个人服务器主下载源/三端切源；见[开发文档](docs/client-0.2.2-development.md)及[目标规范](spec/client-0.2.2.md)。Linux仍手动安装，Android不做lint。
+**[官网主下载源](https://memo.djhx.site)及签名更新目录13已部署。** 生产记录见[部署验证](docs/releases/0.2.2-deployment.md)，功能见[开发文档](docs/client-0.2.2-development.md)及[目标规范](spec/client-0.2.2.md)。GitHub为备用安装包来源；Linux仍手动安装，Android不做lint。
 
 0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](docs/releases/0.1.4-validation.md)。
 
@@ -50,7 +50,7 @@ djhx-memo/
 
 ## 构建与使用
 
-安装和首次使用见 [使用说明](docs/quick-start.md)。面向访客的产品介绍与下载页源码位于 [website/](website/README.md)。公开版本及安装包通过 [GitHub Releases](https://github.com/Koril33/djhx-memo/releases) 分发。
+安装和首次使用见 [使用说明](docs/quick-start.md)。面向访客的产品介绍与下载页源码位于 [website/](website/README.md)。公开安装包主源为[官网](https://memo.djhx.site)，[GitHub Releases](https://github.com/Koril33/djhx-memo/releases)提供备用下载及发布记录。
 
 新开发者先按[公共环境入口](docs/dev-setup.md)选择 [Linux](docs/dev-setup-linux-portable.md)或 [Windows](docs/dev-setup-windows.md)及所需模块。维护者的本机 env.sh、VM、已生成 JNI 和私有签名不是新 clone 的前提。各工程提交 Cargo/npm/Gradle 锁文件，构建步骤见 [server](server/README.md)、[core](core/README.md)、[desktop](desktop/README.md)、[android](android/README.md)。本地检查入口：`bash scripts/validate-local.sh core|server|integration|desktop|android`，每次选择一个模块。
 
@@ -60,7 +60,7 @@ djhx-memo/
 
 安装包和校验值输出到本机忽略目录 `dist/`。发布时将安装包与校验值上传为 GitHub Release 附件，详见[客户端发布流程](docs/client-release.md)。
 
-Windows / Android 已接入自动更新，入口为设置中的“软件更新”；Linux 适配继续后续实施。启用、密钥主机边界与人工发布见[更新发布说明](docs/update-publishing.md)，原[17 项调研](docs/research/rust-gui-auto-update-survey.md)保留供参考。
+Windows / Android 已接入自动更新，入口为设置中的“软件更新”；Linux提供最新DEB浏览器入口，自动更新仍暂缓。三端可在更新页切换主/备用安装包来源，签名目录始终从memo检查。启用、密钥主机边界与人工发布见[更新发布说明](docs/update-publishing.md)，原[17 项调研](docs/research/rust-gui-auto-update-survey.md)保留供参考。
 
 服务端独立打包入口为 `bash scripts/package-server.sh`，输出静态 Linux amd64 二进制及部署资料压缩包；不会部署到云服务器。
 

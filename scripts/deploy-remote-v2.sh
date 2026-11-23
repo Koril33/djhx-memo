@@ -2,6 +2,8 @@
 # Binary files and the monotonic feed stay independent of website rollback.
 # Called only by the maintainer's local, verified deployment process.
 set -euo pipefail
+# Imported helpers must not leave root-owned cache files in the uploader's staging.
+export PYTHONDONTWRITEBYTECODE=1
 STAMP="$1"
 STAGING="$2"
 WWW_ROOT="$3"

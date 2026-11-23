@@ -1,6 +1,6 @@
 # v1 产品与技术契约
 
-发行基线：客户端0.2.1、Android code16、core0.1.13，local schema4、server0.1.4/schema2、协议2，HTTP路径 /v1；更新于2026-11-22。[0.2.1公开记录](../docs/releases/0.2.1-validation.md)区分发行与实际验收。0.2.2源码已实现（客户端/core0.2.2、Android code17），见[规范](client-0.2.2.md)、[开发文档](../docs/client-0.2.2-development.md)和[本轮验证](../docs/releases/0.2.2-validation.md)，尚未公开/部署；同步、鉴权与删除继续遵守既有契约。
+发行基线：客户端/core0.2.2、Android code17，local schema4、server0.1.4/schema2、协议2，HTTP路径 /v1；更新于2026-11-22。0.2.2已公开，官网/个人源镜像及current13已部署，见[规范](client-0.2.2.md)、[开发文档](../docs/client-0.2.2-development.md)、[本轮验证](../docs/releases/0.2.2-validation.md)和[生产部署](../docs/releases/0.2.2-deployment.md)。发行与公网检查不替代真实覆盖升级/设备矩阵；同步、鉴权与删除继续遵守既有契约。
 
 | 文档 | 定义内容 |
 |---|---|
