@@ -26,3 +26,4 @@
 - 架构决策：[adr/README](adr/README.md)，以各条目标明的接受/提议状态为准。
 - 搜索与快捷键：[search-design](search-design.md) / [shortcuts-design](shortcuts-design.md)。
 - 自动更新：[automatic-update-design](automatic-update-design.md)、[update-publishing](update-publishing.md) 与 [调研](research/rust-gui-auto-update-survey.md)。
+- CLI 调研草案：[cli-design](research/cli-design.md) 与 [跨平台编译调研](research/cli-cross-platform-survey.md)（尚未实现，非 spec 契约）。
