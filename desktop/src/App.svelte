@@ -825,8 +825,11 @@
     notify('copied');
   }
   async function openSettings(tab: typeof settingsTab = 'appearance'): Promise<void> {
+    closeMenus();
     settingsTab = tab;
     settings = true;
+    const content = document.querySelector<HTMLElement>('.settings-dialog .dialog-content');
+    if (content) content.scrollTop = 0;
     if (tab === 'devices' && state?.profile.kind === 'account')
       devices = await call<Device[]>({ action: 'devices' });
   }
@@ -886,7 +889,7 @@
     const previous = document.activeElement as HTMLElement | null;
     const focusable = () => [
       ...node.querySelectorAll<HTMLElement>(
-        'button:not(:disabled), input:not(:disabled), select:not(:disabled), [tabindex="0"]',
+        'button:not(:disabled), input:not(:disabled), select:not(:disabled), summary, [tabindex="0"]',
       ),
     ];
     queueMicrotask(() => (focusable()[0] ?? node).focus());
@@ -1930,13 +1933,15 @@
           </div>
           {#if showAuthForm}<div class="auth-form-panel">
               <div class="auth-heading">
-                <h3>
-                  {reauthProfile
+                <Help
+                  id="account-help"
+                  label={t('helpTitle')}
+                  heading={reauthProfile
                     ? t('signInAgain')
                     : authMode === 'login'
                       ? t(hasSavedAccounts ? 'loginOther' : 'signInTitle')
-                      : t('registerInvite')}<Help label={t('helpTitle')}>{t('accountHelp')}</Help>
-                </h3>
+                      : t('registerInvite')}>{t('accountHelp')}</Help
+                >
                 {#if !reauthProfile}<button
                     class="text-button"
                     disabled={busy}
@@ -1953,7 +1958,11 @@
                     on:click={closeAuthForm}><Icon name="x" size={18} /></button
                   >{/if}
               </div>
-              <form novalidate on:submit|preventDefault={() => run(authenticate)}>
+              <form
+                aria-describedby="account-help-text"
+                novalidate
+                on:submit|preventDefault={() => run(authenticate)}
+              >
                 <fieldset disabled={busy}>
                   <label class="field"
                     >{t('serverAddress')}<input
@@ -2019,10 +2028,12 @@
               </form>
             </div>{/if}
         {:else if settingsTab === 'devices'}
-          <h3>{t('devicesTab')}<Help label={t('helpTitle')}>{t('devicesHelp')}</Help></h3>
+          <Help id="devices-help" heading={t('devicesTab')} label={t('helpTitle')}
+            >{t('devicesHelp')}</Help
+          >
           {#if state?.profile.kind !== 'account'}<div class="settings-empty">
               {t('devicesNeedAccount')}
-            </div>{:else}<div class="device-list">
+            </div>{:else}<div class="device-list" aria-describedby="devices-help-text">
               {#each devices as device (device.id)}<div class="device-row">
                   <span class="device-symbol"><Icon name="monitor" size={20} /></span>
                   <div>
@@ -2058,15 +2069,19 @@
         {:else if settingsTab === 'updates'}
           <Updates {language} timeZone={preferences.timeZone} install={installUpdate} />
         {:else if settingsTab === 'editor'}
-          <label class="field"
-            ><span>{t('markdownLint')}<Help label={t('helpTitle')}>{t('lintHelp')}</Help></span
-            ><input
+          <div class="field help-field">
+            <Help id="lint-help" heading={t('markdownLint')} label={t('helpTitle')}
+              >{t('lintHelp')}</Help
+            >
+            <input
+              aria-labelledby="lint-help-label"
+              aria-describedby="lint-help-text"
               type="checkbox"
               role="switch"
               bind:checked={preferences.markdownLintEnabled}
               on:change={updatePreferences}
-            /></label
-          >
+            />
+          </div>
           <label class="field"
             >{t('splitScrollSync')}<input
               type="checkbox"
@@ -2098,14 +2113,22 @@
             </select></label
           >
         {:else}
-          <h3>{t('exportSpace')}<Help label={t('helpTitle')}>{t('exportHelp')}</Help></h3>
-          <button class="secondary-button" disabled={busy} on:click={() => run(exportNotes)}
+          <Help id="export-help" heading={t('exportSpace')} label={t('helpTitle')}
+            >{t('exportHelp')}</Help
+          >
+          <button
+            aria-describedby="export-help-text"
+            class="secondary-button"
+            disabled={busy}
+            on:click={() => run(exportNotes)}
             ><Icon name="file-output" size={18} />{t(
               trash ? 'exportDeleted' : 'exportActive',
             )}</button
           >
           <div class="settings-separator"></div>
-          <h3>{t('copySpace')}<Help label={t('helpTitle')}>{t('copySpaceHelp')}</Help></h3>
+          <Help id="copy-help" heading={t('copySpace')} label={t('helpTitle')}
+            >{t('copySpaceHelp')}</Help
+          >
           {#if state?.profile.kind === 'account'}<label class="field"
               >{t('sourceSpace')}<select bind:value={importSource}
                 >{#each state.profiles.filter((p) => p.kind === 'local' || p.kind === 'recovery') as profile (profile.id)}<option
@@ -2123,6 +2146,7 @@
             <button
               class="secondary-button"
               disabled={busy}
+              aria-describedby="copy-help-text"
               on:click={() => run(() => importNotes(importSource))}
               >{t('copyToAccount')}{importSource === 'local'
                 ? t('noteCountSuffix', { count: state.local_import_count })

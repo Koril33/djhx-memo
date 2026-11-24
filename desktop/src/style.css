@@ -821,6 +821,7 @@ svg {
   overflow: hidden;
 }
 .dialog-header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -838,6 +839,7 @@ svg {
   height: 36px;
 }
 .settings-tabs {
+  flex-shrink: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 4px 16px;
@@ -858,9 +860,21 @@ svg {
 }
 .dialog-content {
   overflow-y: auto;
-  min-height: calc(100vh * 2 / 3);
+  /* Long tabs scroll inside a bounded viewport instead of growing the dialog. */
+  height: min(66.666vh, calc(100vh - 220px));
+  flex: 0 1 auto;
+  min-height: 0;
   scrollbar-gutter: stable;
   padding: 24px;
+}
+.field.help-field:has(input[type='checkbox']) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+}
+.help-field input[type='checkbox'] {
+  margin-top: 8px;
 }
 .dialog-content h3 {
   margin: 0 0 16px;
