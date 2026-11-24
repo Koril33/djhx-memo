@@ -887,11 +887,16 @@
   function modal(node: HTMLElement, close: () => void) {
     modalDepth++;
     const previous = document.activeElement as HTMLElement | null;
-    const focusable = () => [
-      ...node.querySelectorAll<HTMLElement>(
-        'button:not(:disabled), input:not(:disabled), select:not(:disabled), summary, [tabindex="0"]',
-      ),
-    ];
+    const focusable = () =>
+      [
+        ...node.querySelectorAll<HTMLElement>(
+          'button:not(:disabled), input:not(:disabled), select:not(:disabled), summary, [tabindex="0"]',
+        ),
+      ].filter(
+        (element) =>
+          element.getClientRects().length > 0 &&
+          (element.tagName === 'SUMMARY' || !element.closest('details:not([open])')),
+      );
     queueMicrotask(() => (focusable()[0] ?? node).focus());
     const keydown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !busy) {
@@ -1113,7 +1118,16 @@
 
 <svelte:window
   on:pointerdown={(event) => closeMenus(event.target instanceof Node ? event.target : undefined)}
-  on:focusin={(event) => closeMenus(event.target instanceof Node ? event.target : undefined)}
+  on:focusin={(event) => {
+    // Clicking non-focusable prose may focus body. Do not collapse the text
+    // beneath an active selection; pointerdown already handles outside clicks.
+    if (
+      event.target instanceof HTMLElement &&
+      event.target !== document.body &&
+      event.target !== document.documentElement
+    )
+      closeMenus(event.target);
+  }}
   on:blur={blur}
   on:focus={foreground}
   on:online={() => {

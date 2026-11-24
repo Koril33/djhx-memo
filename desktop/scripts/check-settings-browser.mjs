@@ -57,6 +57,14 @@ try{
  const checkbox=dialog.querySelector('[aria-labelledby="lint-help-label"]');const checked=checkbox.checked;
  const help=dialog.querySelector('details.help');const summary=help.querySelector('summary');
  assert(!summary.closest('label,h3'),'invalid nested disclosure');
+ summary.click();await settle();
+ const prose=help.querySelector('.help-body');prose.focus();await settle();
+ assert(help.open,'focusing description closed it');
+ const range=document.createRange();range.selectNodeContents(prose);const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);
+ assert(selection.toString()===prose.textContent,'description cannot be selected');
+ assert(getComputedStyle(prose).userSelect==='text','description selection disabled');
+ document.body.dispatchEvent(new FocusEvent('focusin',{bubbles:true}));await settle();assert(help.open,'body focus collapsed selected prose');
+ selection.removeAllRanges();summary.click();await settle();
  const beforeHelpHeight=dialog.getBoundingClientRect().height;
  for(let i=0;i<20;i++){summary.click();await settle();assert(help.open,'help opens');assert(Math.abs(dialog.getBoundingClientRect().height-beforeHelpHeight)<2,'help grew dialog');assert(summary.getAttribute('aria-expanded')==='true','expanded state');assert(checkbox.checked===checked,'help changed preference');summary.focus();summary.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await settle();assert(!help.open,'Escape closes help');assert(document.querySelector('.settings-dialog'),'Escape closed dialog');assert(document.activeElement===summary,'focus returns');}
  summary.click();await settle();body.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));await settle();assert(!help.open,'outside click closes help');

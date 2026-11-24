@@ -19,7 +19,10 @@
     <span id={`${id}-label`}>{heading}</span>
     <span class="help-trigger"><Icon name="info" size={16} /></span>
   </summary>
-  <div id={`${id}-text`} class="help-body"><slot /></div>
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex (Focusable prose preserves selection and provides keyboard access to the scrollable description.) -->
+  <div id={`${id}-text`} class="help-body" role="region" aria-label={heading} tabindex="0">
+    <slot />
+  </div>
 </details>
 
 <style>
@@ -56,6 +59,9 @@
     background: var(--selected);
   }
   .help-body {
+    user-select: text;
+    -webkit-user-select: text;
+    cursor: text;
     margin-top: 8px;
     padding: 10px 12px;
     background: var(--canvas);
