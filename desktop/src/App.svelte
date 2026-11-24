@@ -432,6 +432,7 @@
         .slice(0, 90) || ''
     );
   }
+  let helpPointerOrigin = false;
   function closeMenus(except?: Node, restoreFocus = false): void {
     document.querySelectorAll<HTMLDetailsElement>('details[data-menu][open]').forEach((menu) => {
       if (!except || !menu.contains(except)) {
@@ -907,6 +908,14 @@
           openMenu.querySelector('summary')?.focus();
           return;
         }
+        if (
+          document.activeElement instanceof HTMLElement &&
+          document.activeElement.closest('[data-help].open')
+        ) {
+          event.preventDefault();
+          window.dispatchEvent(new Event('djhx-esc-help'));
+          return;
+        }
         event.preventDefault();
         close();
       }
@@ -1117,10 +1126,28 @@
 </script>
 
 <svelte:window
-  on:pointerdown={(event) => closeMenus(event.target instanceof Node ? event.target : undefined)}
+  on:pointerdown={(event) => {
+    helpPointerOrigin = event.target instanceof Element && !!event.target.closest('[data-help]');
+    closeMenus(event.target instanceof Node ? event.target : undefined);
+  }}
+  on:click={(event) => {
+    // Help disclosures close only on the click phase and only when the pointer
+    // both landed and went down outside every help. Closing on pointerdown would
+    // shift the layout before a neighbouring disclosure's activation completed,
+    // swallowing its click; helps never exclude each other. Tracking the
+    // pointerdown origin keeps a drag-select that overshoots the description
+    // from collapsing the text under the just-created selection.
+    if (
+      !helpPointerOrigin &&
+      event.target instanceof Element &&
+      !event.target.closest('[data-help]')
+    ) {
+      window.dispatchEvent(new Event('djhx-close-help'));
+    }
+  }}
   on:focusin={(event) => {
     // Clicking non-focusable prose may focus body. Do not collapse the text
-    // beneath an active selection; pointerdown already handles outside clicks.
+    // beneath an active selection; the window click handler closes helps.
     if (
       event.target instanceof HTMLElement &&
       event.target !== document.body &&

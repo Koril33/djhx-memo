@@ -55,27 +55,74 @@ try{
  }
  assert(Math.max(...heights)-Math.min(...heights)<2,'dialog height varies: '+heights);
  const checkbox=dialog.querySelector('[aria-labelledby="lint-help-label"]');const checked=checkbox.checked;
- const help=dialog.querySelector('details.help');const summary=help.querySelector('summary');
- assert(!summary.closest('label,h3'),'invalid nested disclosure');
- summary.click();await settle();
+ const help=dialog.querySelector('[data-help]');const trigger=help.querySelector('.help-trigger');
+ assert(!trigger.closest('label,h3'),'trigger nested in label/h3');
+ assert(!trigger.hasAttribute('aria-describedby'),'describedby on trigger');
+ const heading=help.querySelector('.help-heading');
+ // Heading is plain, selectable text and does not toggle the disclosure.
+ const headingRange=document.createRange();headingRange.selectNodeContents(heading);
+ const selection=window.getSelection();selection.removeAllRanges();selection.addRange(headingRange);
+ assert(selection.toString()===heading.textContent,'heading cannot be selected');
+ selection.removeAllRanges();
+ heading.dispatchEvent(new MouseEvent('click',{bubbles:true}));await settle();
+ assert(!help.classList.contains('open'),'heading click toggled help');
+ const trigRect=trigger.getBoundingClientRect();assert(trigRect.width>=36&&trigRect.height>=36,'small target');
+ trigger.click();await settle();
+ assert(help.classList.contains('open'),'trigger did not open help');
+ assert(trigger.getAttribute('aria-expanded')==='true','expanded state');
+ assert(checkbox.checked===checked,'help changed preference');
+ assert(document.getElementById(checkbox.getAttribute('aria-describedby')),'missing description');
  const prose=help.querySelector('.help-body');prose.focus();await settle();
- assert(help.open,'focusing description closed it');
- const range=document.createRange();range.selectNodeContents(prose);const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);
+ assert(help.classList.contains('open'),'focusing description closed it');
+ const range=document.createRange();range.selectNodeContents(prose);selection.removeAllRanges();selection.addRange(range);
  assert(selection.toString()===prose.textContent,'description cannot be selected');
  assert(getComputedStyle(prose).userSelect==='text','description selection disabled');
- document.body.dispatchEvent(new FocusEvent('focusin',{bubbles:true}));await settle();assert(help.open,'body focus collapsed selected prose');
- selection.removeAllRanges();summary.click();await settle();
+ document.body.dispatchEvent(new FocusEvent('focusin',{bubbles:true}));await settle();assert(help.classList.contains('open'),'body focus collapsed selected prose');
+ selection.removeAllRanges();
+ trigger.click();await settle();
  const beforeHelpHeight=dialog.getBoundingClientRect().height;
- for(let i=0;i<20;i++){summary.click();await settle();assert(help.open,'help opens');assert(Math.abs(dialog.getBoundingClientRect().height-beforeHelpHeight)<2,'help grew dialog');assert(summary.getAttribute('aria-expanded')==='true','expanded state');assert(checkbox.checked===checked,'help changed preference');summary.focus();summary.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await settle();assert(!help.open,'Escape closes help');assert(document.querySelector('.settings-dialog'),'Escape closed dialog');assert(document.activeElement===summary,'focus returns');}
- summary.click();await settle();body.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));await settle();assert(!help.open,'outside click closes help');
- const trigger=help.querySelector('.help-trigger').getBoundingClientRect();assert(trigger.width>=36&&trigger.height>=36,'small target');
- assert(document.getElementById(checkbox.getAttribute('aria-describedby')),'missing description');
- // Check the focus trap includes the new summary when it is the last control.
+ for(let i=0;i<20;i++){trigger.click();await settle();assert(help.classList.contains('open'),'help opens');assert(Math.abs(dialog.getBoundingClientRect().height-beforeHelpHeight)<2,'help grew dialog');assert(trigger.getAttribute('aria-expanded')==='true','expanded state');trigger.focus();trigger.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await settle();assert(!help.classList.contains('open'),'Escape closes help');assert(document.querySelector('.settings-dialog'),'Escape closed dialog');assert(document.activeElement===trigger,'focus returns');}
+ trigger.click();await settle();
+ body.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));await settle();
+ assert(help.classList.contains('open'),'pointerdown outside closed help');
+ prose.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));await settle();
+ body.dispatchEvent(new MouseEvent('click',{bubbles:true}));await settle();
+ assert(help.classList.contains('open'),'drag-select overshoot collapsed prose');
+ prose.focus();await settle();
+ prose.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await settle();
+ assert(!help.classList.contains('open'),'Esc from body did not close help');
+ assert(document.activeElement===trigger,'Esc from body did not return focus');
+ assert(document.querySelector('.settings-dialog'),'Esc closed dialog');
+ trigger.click();await settle();
+ body.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));await settle();
+ body.dispatchEvent(new MouseEvent('click',{bubbles:true}));await settle();
+ assert(!help.classList.contains('open'),'outside click closes help');
+ // Dual help on the data tab: activating one must neither close the other nor be swallowed by a pointerdown-time layout shift.
+ tabs[4].click();await settle();
+ const helps=[...dialog.querySelectorAll('[data-help]')];
+ assert(helps.length>=2,'expected two helps on data tab');
+ const [topHelp,bottomHelp]=helps;
+ const pointerClick=async(el)=>{el.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));el.dispatchEvent(new PointerEvent('pointerup',{bubbles:true}));el.dispatchEvent(new MouseEvent('click',{bubbles:true}));await settle();};
+ topHelp.querySelector('.help-trigger').click();await settle();
+ const bottomRect=bottomHelp.querySelector('.help-trigger').getBoundingClientRect();
+ bottomHelp.querySelector('.help-trigger').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));await settle();
+ assert(Math.abs(bottomHelp.querySelector('.help-trigger').getBoundingClientRect().top-bottomRect.top)<1,'layout shifted under pointer before click');
+ await pointerClick(bottomHelp.querySelector('.help-trigger'));
+ assert(topHelp.classList.contains('open'),'top help closed by bottom activation');
+ assert(bottomHelp.classList.contains('open'),'bottom help did not open (click swallowed)');
+ body.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));await settle();
+ body.dispatchEvent(new MouseEvent('click',{bubbles:true}));await settle();
+ assert(!topHelp.classList.contains('open')&&!bottomHelp.classList.contains('open'),'outside click did not close both');
+ bottomHelp.querySelector('.help-trigger').click();await settle();
+ await pointerClick(topHelp.querySelector('.help-trigger'));
+ assert(bottomHelp.classList.contains('open'),'bottom help closed by top activation');
+ assert(topHelp.classList.contains('open'),'top help did not open');
+ // Check the focus trap wraps from the last help trigger to settings-close.
  profile.kind='local';await new Promise(r=>setTimeout(r,1200));await settle();tabs[1].click();await settle();tabs[3].click();await settle();
  assert(!dialog.querySelector('.device-list'),'local profile fixture refreshed');
- const localSummary=dialog.querySelector('summary');assert(localSummary,'local device help');
- localSummary.focus();localSummary.dispatchEvent(new KeyboardEvent('keydown',{key:'Tab',bubbles:true}));await settle();
- assert(document.activeElement===dialog.querySelector('.settings-close'),'summary wraps focus');
+ const devicesTrigger=dialog.querySelector('[data-help] .help-trigger');assert(devicesTrigger,'devices help trigger');
+ devicesTrigger.focus();devicesTrigger.dispatchEvent(new KeyboardEvent('keydown',{key:'Tab',bubbles:true}));await settle();
+ assert(document.activeElement===dialog.querySelector('.settings-close'),'help trigger wraps focus');
  assert(errors.length===0,'runtime errors: '+errors.join(','));
  document.body.dataset.settingsResult='PASS';document.body.dataset.heights=heights.join(',');
 }catch(e){document.body.dataset.settingsResult='FAIL';document.body.dataset.failure=e.message;}
