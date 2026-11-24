@@ -374,26 +374,15 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                                     if (model.editorOpen && model.selected != null) {
                                         val deleted = model.selected!!.optBoolean("deleted")
                                         val purgeState = model.selected!!.optString("purge_state")
-                                        MemoMenuItem(
-                                            if (deleted) R.drawable.ic_ui_rotate_ccw else R.drawable.ic_ui_trash_2,
-                                            stringResource(if (deleted) R.string.restore else R.string.delete),
-                                            !model.busy && purgeState !in setOf("pending", "purged") &&
-                                                profile?.optBoolean("read_only") != true,
-                                            danger = !deleted
-                                        ) {
-                                            more = false
-                                            model.setDeleted(!deleted)
-                                        }
                                         if (deleted && purgeState != "purged") {
                                             MemoMenuItem(
-                                                R.drawable.ic_ui_trash_2,
-                                                stringResource(R.string.purge_note),
-                                                !model.busy && purgeState != "pending" && profile?.optBoolean("read_only") != true,
-                                                danger = true
+                                                R.drawable.ic_ui_rotate_ccw,
+                                                stringResource(R.string.restore),
+                                                !model.busy && purgeState != "pending" &&
+                                                    profile?.optBoolean("read_only") != true
                                             ) {
                                                 more = false
-                                                purgeTarget = org.json.JSONObject(model.selected.toString())
-                                                    .put("profile_id", profile!!.getString("id"))
+                                                model.setDeleted(false)
                                             }
                                         }
                                     }
@@ -440,6 +429,36 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                                     MemoMenuItem(R.drawable.ic_ui_settings, stringResource(R.string.settings_short)) {
                                         more = false
                                         openSettings("display")
+                                    }
+                                    if (model.editorOpen && model.selected != null) {
+                                        val deleted = model.selected!!.optBoolean("deleted")
+                                        val purgeState = model.selected!!.optString("purge_state")
+                                        if (!deleted || purgeState != "purged") {
+                                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                            if (deleted) {
+                                                MemoMenuItem(
+                                                    R.drawable.ic_ui_trash_2,
+                                                    stringResource(R.string.purge_note),
+                                                    !model.busy && purgeState != "pending" &&
+                                                        profile?.optBoolean("read_only") != true,
+                                                    danger = true
+                                                ) {
+                                                    more = false
+                                                    purgeTarget = org.json.JSONObject(model.selected.toString())
+                                                        .put("profile_id", profile!!.getString("id"))
+                                                }
+                                            } else {
+                                                MemoMenuItem(
+                                                    R.drawable.ic_ui_trash_2,
+                                                    stringResource(R.string.delete),
+                                                    !model.busy && profile?.optBoolean("read_only") != true,
+                                                    danger = true
+                                                ) {
+                                                    more = false
+                                                    model.setDeleted(true)
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }

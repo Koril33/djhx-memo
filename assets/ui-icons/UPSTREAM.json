@@ -44,6 +44,8 @@
     "lucide/list-checks.svg": "08d26ab05aaf724222c4c0cd5a19d5eae753b2a5fff0eb2d81759dde11bac6b6",
     "lucide/recycle.svg": "21ce80a29ae558e16406dfb9143cf7b107c2d76b0174624328ff0e7abeaed7e2",
     "lucide/file-input.svg": "8c654aca5f51c6c814c75c686324d6ab3ce1f6bacfc70e7f4a8473cb063f4321",
-    "lucide/file-output.svg": "94a0abe002d76ae0047b9a7e9ec2e2045381c4f4a81372da1d961d6bc14c5868"
+    "lucide/file-output.svg": "94a0abe002d76ae0047b9a7e9ec2e2045381c4f4a81372da1d961d6bc14c5868",
+    "lucide/arrow-down-up.svg": "36118b38f0c1dfe84b91da00de91ab9e99c070e30e853d661deb580cf171ab32",
+    "lucide/spell-check.svg": "aa3afc695f40d0a27f5b1757ca6385a00e54cc761a07b9a77f8c4903f301dcbf"
   }
 }

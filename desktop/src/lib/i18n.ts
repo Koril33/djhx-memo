@@ -17,6 +17,7 @@ export const messages = {
   lintClear: { 'zh-CN': '没有格式提示', en: 'No style suggestions' },
   lintTruncated: { 'zh-CN': '仅显示前 200 条提示', en: 'Only the first 200 suggestions are shown' },
   close: { 'zh-CN': '关闭', en: 'Close' },
+  helpTitle: { 'zh-CN': '查看说明', en: 'Help' },
   spaceSettings: { 'zh-CN': '空间设置', en: 'Space settings' },
   signInTitle: { 'zh-CN': '登录', en: 'Sign in' },
   addAccount: { 'zh-CN': '添加账号', en: 'Add account' },

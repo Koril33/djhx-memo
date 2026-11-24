@@ -7,6 +7,7 @@
   import type { EditorView } from '@codemirror/view';
   import { splitScroll } from './lib/split-scroll';
   import GlobalSearch from './GlobalSearch.svelte';
+  import Help from './Help.svelte';
   import Icon from './Icon.svelte';
   import Updates from './Updates.svelte';
   import { call, native, errorText, coreErrorText } from './lib/bridge';
@@ -891,6 +892,13 @@
     queueMicrotask(() => (focusable()[0] ?? node).focus());
     const keydown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !busy) {
+        const openMenu = node.querySelector<HTMLDetailsElement>('details[data-menu][open]');
+        if (openMenu) {
+          event.preventDefault();
+          openMenu.open = false;
+          openMenu.querySelector('summary')?.focus();
+          return;
+        }
         event.preventDefault();
         close();
       }
@@ -1289,15 +1297,7 @@
               {#if pendingMarkdown}<button
                   on:click={() => {
                     pendingMarkdown = null;
-                  }}>{t('cancel')} · {t('importMarkdown')}</button
-                >{/if}
-              {#if !trash}<button
-                  disabled={busy || !!state?.profile.read_only}
-                  on:click={() => {
-                    closeMenus();
-                    selecting = !selecting;
-                    selection = new Set();
-                  }}>{t('selectNotes')}</button
+                  }}><Icon name="x" />{t('cancel')} · {t('importMarkdown')}</button
                 >{/if}
               <button disabled={!state || busy} on:click={(event) => menuAction(event, exportNotes)}
                 ><Icon name="file-output" />{t(trash ? 'exportTrash' : 'exportNotes')}</button
@@ -1429,20 +1429,24 @@
             >
           </div>
           {#if mode === 'split'}<button
-              class="text-button"
+              class="icon-button"
+              class:chosen={preferences.splitScrollSync}
               aria-pressed={preferences.splitScrollSync}
+              aria-label={t('splitScrollSync')}
               title={t('splitScrollSync')}
               on:click={() => {
                 preferences.splitScrollSync = !preferences.splitScrollSync;
                 updatePreferences();
-              }}>{t('splitScrollSync')} {preferences.splitScrollSync ? '✓' : ''}</button
+              }}><Icon name="arrow-down-up" size={18} /></button
             >{/if}
           {#if preferences.markdownLintEnabled}<button
-              class="text-button"
+              class="icon-button"
+              aria-label={t('lintProblems')}
+              title={t('lintProblems')}
               on:click={() => {
                 mode = 'source';
                 openLint?.();
-              }}>{t('lintProblems')}</button
+              }}><Icon name="spell-check" size={18} /></button
             >{/if}
           <details class="action-menu" data-menu>
             <!-- svelte-ignore a11y_no_redundant_roles (WebKitGTK exposes an unknown AT-SPI role without this explicit role.) -->
@@ -1459,8 +1463,21 @@
                     editor.note.purge_state === 'pending'}
                   on:click={(event) => menuAction(event, () => setDeleted(false))}
                   ><Icon name="rotate-ccw" />{t('restoreNote')}</button
-                >
-                <button
+                >{/if}
+              <button
+                disabled={busy || !editor.content}
+                on:click={(event) => menuAction(event, copyBuffer)}
+                ><Icon name="copy" />{t('copyText')}</button
+              >
+              <button
+                disabled={busy ||
+                  !editor.content.trim() ||
+                  ['pending', 'purged'].includes(editor.note?.purge_state ?? '')}
+                on:click={(event) => menuAction(event, exportCurrentNote)}
+                ><Icon name="file-output" />{t('exportCurrentNote')}</button
+              >
+              <hr />
+              {#if editor.note?.deleted && editor.note.purge_state !== 'purged'}<button
                   class="danger"
                   disabled={busy ||
                     state?.profile.read_only ||
@@ -1480,18 +1497,6 @@
                   on:click={(event) => menuAction(event, () => setDeleted(true))}
                   ><Icon name="trash-2" />{t('moveToTrash')}</button
                 >{/if}
-              <button
-                disabled={busy || !editor.content}
-                on:click={(event) => menuAction(event, copyBuffer)}
-                ><Icon name="copy" />{t('copyText')}</button
-              >
-              <button
-                disabled={busy ||
-                  !editor.content.trim() ||
-                  ['pending', 'purged'].includes(editor.note?.purge_state ?? '')}
-                on:click={(event) => menuAction(event, exportCurrentNote)}
-                ><Icon name="file-output" />{t('exportCurrentNote')}</button
-              >
             </div>
           </details>
         </div>{/if}
@@ -1930,7 +1935,7 @@
                     ? t('signInAgain')
                     : authMode === 'login'
                       ? t(hasSavedAccounts ? 'loginOther' : 'signInTitle')
-                      : t('registerInvite')}
+                      : t('registerInvite')}<Help label={t('helpTitle')}>{t('accountHelp')}</Help>
                 </h3>
                 {#if !reauthProfile}<button
                     class="text-button"
@@ -2003,9 +2008,6 @@
                         placeholder={t('invitePlaceholder')}
                       /></label
                     >{/if}
-                  <p class="help-text">
-                    {t('accountHelp')}
-                  </p>
                   <button class="primary-button auth-submit" disabled={busy}
                     >{busy
                       ? t('processing')
@@ -2017,8 +2019,7 @@
               </form>
             </div>{/if}
         {:else if settingsTab === 'devices'}
-          <h3>{t('devicesTab')}</h3>
-          <p class="help-text">{t('devicesHelp')}</p>
+          <h3>{t('devicesTab')}<Help label={t('helpTitle')}>{t('devicesHelp')}</Help></h3>
           {#if state?.profile.kind !== 'account'}<div class="settings-empty">
               {t('devicesNeedAccount')}
             </div>{:else}<div class="device-list">
@@ -2058,14 +2059,14 @@
           <Updates {language} timeZone={preferences.timeZone} install={installUpdate} />
         {:else if settingsTab === 'editor'}
           <label class="field"
-            >{t('markdownLint')}<input
+            ><span>{t('markdownLint')}<Help label={t('helpTitle')}>{t('lintHelp')}</Help></span
+            ><input
               type="checkbox"
               role="switch"
               bind:checked={preferences.markdownLintEnabled}
               on:change={updatePreferences}
             /></label
           >
-          <p class="help-text">{t('lintHelp')}</p>
           <label class="field"
             >{t('splitScrollSync')}<input
               type="checkbox"
@@ -2097,20 +2098,14 @@
             </select></label
           >
         {:else}
-          <h3>{t('exportSpace')}</h3>
-          <p class="help-text">
-            {t('exportHelp')}
-          </p>
+          <h3>{t('exportSpace')}<Help label={t('helpTitle')}>{t('exportHelp')}</Help></h3>
           <button class="secondary-button" disabled={busy} on:click={() => run(exportNotes)}
             ><Icon name="file-output" size={18} />{t(
               trash ? 'exportDeleted' : 'exportActive',
             )}</button
           >
           <div class="settings-separator"></div>
-          <h3>{t('copySpace')}</h3>
-          <p class="help-text">
-            {t('copySpaceHelp')}
-          </p>
+          <h3>{t('copySpace')}<Help label={t('helpTitle')}>{t('copySpaceHelp')}</Help></h3>
           {#if state?.profile.kind === 'account'}<label class="field"
               >{t('sourceSpace')}<select bind:value={importSource}
                 >{#each state.profiles.filter((p) => p.kind === 'local' || p.kind === 'recovery') as profile (profile.id)}<option

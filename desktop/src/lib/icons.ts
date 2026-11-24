@@ -4,6 +4,12 @@ export type IconNode = readonly [
   attributes: Readonly<Record<string, string>>,
 ];
 export const icons = {
+  'arrow-down-up': [
+    ['path', { d: 'm3 16 4 4 4-4' }],
+    ['path', { d: 'M7 20V4' }],
+    ['path', { d: 'm21 8-4-4-4 4' }],
+    ['path', { d: 'M17 4v16' }],
+  ],
   'arrow-left': [
     ['path', { d: 'm12 19-7-7 7-7' }],
     ['path', { d: 'M19 12H5' }],
@@ -177,6 +183,11 @@ export const icons = {
   smartphone: [
     ['rect', { width: '14', height: '20', x: '5', y: '2', rx: '2', ry: '2' }],
     ['path', { d: 'M12 18h.01' }],
+  ],
+  'spell-check': [
+    ['path', { d: 'm20 15-5.5 5.5L12 18' }],
+    ['path', { d: 'm4 16 6-12 5.115 10.23' }],
+    ['path', { d: 'M6 12h8' }],
   ],
   sun: [
     ['circle', { cx: '12', cy: '12', r: '4' }],

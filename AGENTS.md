@@ -61,3 +61,5 @@
 - 0.2.0已有五项范围的对应源码增量并公开发布（tag 4b10ac7），Q1–Q4/D1–D6已由维护者定稿；目标见spec/client-0.2.0.md，发行事实与验收边界见docs/releases/0.2.0-validation.md。0.2.1已实施桌面空白页精简及Android搜索布局并于2026-11-22公开，见spec/client-0.2.1.md及docs/releases/0.2.1-validation.md；Windows干净安装任务栏图标及Linux窗口图标/Ctrl+W均已由维护者确认正常，不属于本版修复。
 
 - 0.2.2已实现并公开：桌面markdownlint默认关闭、对照按内容双向同步滚动默认开启，Android不做lint；Linux仅增加最新DEB浏览器入口，仍不自动检查/下载/安装；memo.djhx.site为主下载源、GitHub备用，三端更新页可切源。行为见spec/client-0.2.2.md，依赖/传输边界见ADR0021/0022，实际检查与未验收项见docs/releases/0.2.2-validation.md。维护者已审阅并合并PR #34中的workflow，后续追加授权公开Release、初始化下载路由和正式部署，结果见docs/releases/0.2.2-deployment.md；此授权不泛化为未来版本自动公开/部署。保持旧v1目录兼容、固定镜像路径和原签名，不因切源重置防回放。
+
+- 0.2.3为 UI 整理：桌面设置说明文本改为“ⓘ”按需展开（修订 product-v1 §11 第137条）、设置弹窗正文区最小高度稳定、编辑器工具栏“对照同步滚动/格式提示”图标化（arrow-down-up/spell-check）、桌面列表多选入口去重、两端破坏性菜单位置对齐置底。行为见 spec/client-0.2.3.md，开发方案见 docs/client-0.2.3-development.md；client0.2.3、Android code18，core0.2.2/server0.1.4/协议2/schema 不变，无新依赖。

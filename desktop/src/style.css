@@ -232,6 +232,10 @@ svg {
   color: var(--muted);
   flex-shrink: 0;
 }
+.icon-button.chosen {
+  color: var(--accent);
+  background: var(--selected);
+}
 .search {
   display: flex;
   align-items: center;
@@ -426,6 +430,11 @@ svg {
 }
 .menu-panel button.danger {
   color: var(--danger);
+}
+.menu-panel hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 6px 8px;
 }
 .editor-body {
   flex: 1;
@@ -849,7 +858,8 @@ svg {
 }
 .dialog-content {
   overflow-y: auto;
-  min-height: 0;
+  min-height: calc(100vh * 2 / 3);
+  scrollbar-gutter: stable;
   padding: 24px;
 }
 .dialog-content h3 {
