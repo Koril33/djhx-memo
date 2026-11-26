@@ -279,4 +279,10 @@
     <string name="update_source_received">This package was downloaded from: %1$s</string>
     <string name="update_release_page">View releases on GitHub</string>
     <string name="update_browser_failed">Could not open your browser. Try again.</string>
+    <string name="undo">Undo</string>
+    <string name="purge_confirm_batch">Permanently delete %1$d notes?</string>
+    <string name="purged_count">Permanently deleted %1$d</string>
+    <string name="purged_pending">Permanently deleted %1$d · %2$d requested</string>
+    <string name="outline_title">Outline</string>
+    <string name="outline_empty">No headings</string>
 </resources>

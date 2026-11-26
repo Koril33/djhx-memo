@@ -28,6 +28,7 @@ export const messages = {
   selectAllShort: { 'zh-CN': '全选', en: 'All' },
   undoShort: { 'zh-CN': '撤销', en: 'Undo' },
   trashNotice: { 'zh-CN': '已将 {total} 条笔记移入回收站', en: 'Moved {total} to trash' },
+  restoredNotice: { 'zh-CN': '已恢复 {total} 条 · 撤销', en: 'Restored {total} · Undo' },
   selectShort: { 'zh-CN': '选择', en: 'Select' },
   selectNotes: { 'zh-CN': '选择笔记', en: 'Select notes' },
   selectAll: { 'zh-CN': '全选当前结果', en: 'Select all results' },
@@ -41,6 +42,11 @@ export const messages = {
     'zh-CN': '已恢复 {count} 条 · 失败 {failed} 条',
     en: '{count} restored · {failed} failed',
   },
+  batchPurged: {
+    'zh-CN': '已彻底删除 {purged} 条 · 已请求 {pending} 条',
+    en: 'Permanently deleted {purged} · {pending} requested',
+  },
+  batchPurgedLocal: { 'zh-CN': '已彻底删除 {count} 条', en: 'Permanently deleted {count} notes' },
   importMarkdown: { 'zh-CN': '导入 Markdown', en: 'Import Markdown' },
   importedMarkdown: { 'zh-CN': '已导入到 {space}', en: 'Imported into {space}' },
   importCloud: {
@@ -62,10 +68,19 @@ export const messages = {
   hideNoteList: { 'zh-CN': '隐藏笔记列表', en: 'Hide note list' },
   purgeNote: { 'zh-CN': '彻底删除', en: 'Delete permanently' },
   purgeConfirm: { 'zh-CN': '彻底删除这条笔记？', en: 'Permanently delete this note?' },
+  purgeConfirmBatch: {
+    'zh-CN': '彻底删除 {count} 条笔记？',
+    en: 'Permanently delete {count} notes?',
+  },
   purgeHelp: {
     'zh-CN':
       '应用内无法恢复。账号笔记将在其他设备联网后同步删除；既有历史、备份及已导出文件不会追溯清理。',
     en: 'This cannot be restored in the app. Account notes are removed on other devices when they sync. Existing history, backups and exported files are retained.',
+  },
+  purgeHelpBatch: {
+    'zh-CN':
+      '应用内无法恢复。账号笔记将在其他设备联网后同步删除；既有历史、备份及已导出文件不会追溯清理。',
+    en: 'These cannot be restored in the app. Account notes are removed on other devices when they sync. Existing history, backups and exported files are retained.',
   },
   purgePending: { 'zh-CN': '待彻底删除 · 联网同步后完成', en: 'Permanent deletion pending sync' },
   purgeRejected: {
@@ -465,6 +480,8 @@ export const messages = {
     'zh-CN': '对照',
     en: 'Split',
   },
+  outlineTitle: { 'zh-CN': '目录', en: 'Outline' },
+  outlineEmpty: { 'zh-CN': '暂无标题', en: 'No headings' },
   moveToTrash: {
     'zh-CN': '移到回收站',
     en: 'Move to trash',
@@ -644,6 +661,21 @@ export const messages = {
   devicesNeedAccount: {
     'zh-CN': '进入账号空间后，可以查看和管理设备。',
     en: 'Open an account space to view and manage devices.',
+  },
+  devicesLoading: { 'zh-CN': '正在加载设备…', en: 'Loading devices…' },
+  devicesRefreshing: { 'zh-CN': '正在刷新设备…', en: 'Refreshing devices…' },
+  devicesRefreshFailed: {
+    'zh-CN': '设备列表刷新失败。',
+    en: 'Could not refresh devices.',
+  },
+  devicesStale: { 'zh-CN': '未刷新', en: 'Not refreshed' },
+  revokeFailed: {
+    'zh-CN': '吊销未完成，请重试。',
+    en: 'Revocation did not finish. Try again.',
+  },
+  revokedAndRelogin: {
+    'zh-CN': '已吊销当前设备，需重新登录。本地编辑与导出继续可用。',
+    en: 'This device was revoked. Sign in again. Local editing and export remain available.',
   },
   currentDevice: {
     'zh-CN': '当前设备',
@@ -1045,6 +1077,8 @@ export const englishSingularMessages = {
   selectedCount: '{count} selected',
   batchResult: '{count} moved to trash · {failed} failed',
   undoResult: '{count} restored · {failed} failed',
+  batchPurgedLocal: 'Permanently deleted {count} note',
+  purgeConfirmBatch: 'Permanently delete {count} note?',
   pending: 'Pending · {count}',
   imported: 'Copied {count} note. The original remains in the source space.',
   records: '{count} note',

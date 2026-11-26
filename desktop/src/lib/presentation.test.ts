@@ -61,6 +61,8 @@ describe('device presentation preferences', () => {
       timeZone: 'UTC',
       markdownLintEnabled: true,
       splitScrollSync: false,
+      editorMode: 'split',
+      outlineVisible: true,
     } as const;
     savePreferences(storage, chosen);
     expect(loadPreferences(storage)).toEqual(chosen);
@@ -180,6 +182,16 @@ describe('bilingual UI contract', () => {
         '1 restored · {failed} failed',
         '0 restored · {failed} failed',
         '2 restored · {failed} failed',
+      ],
+      batchPurgedLocal: [
+        'Permanently deleted 1 note',
+        'Permanently deleted 0 notes',
+        'Permanently deleted 2 notes',
+      ],
+      purgeConfirmBatch: [
+        'Permanently delete 1 note?',
+        'Permanently delete 0 notes?',
+        'Permanently delete 2 notes?',
       ],
       pending: ['Pending · 1', 'Pending · 0', 'Pending · 2'],
       imported: [

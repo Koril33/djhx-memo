@@ -1372,6 +1372,105 @@ fn batch_undo_keeps_the_frozen_delete_and_enqueues_a_new_restore() {
 }
 
 #[test]
+fn batch_purge_is_partial_idempotent_and_reduced() {
+    let app = engine();
+    let one = invoke(
+        &app,
+        json!({"action":"create","content":"first","request_id":id()}),
+    );
+    let two = invoke(
+        &app,
+        json!({"action":"create","content":"second","request_id":id()}),
+    );
+    let active = invoke(
+        &app,
+        json!({"action":"create","content":"active","request_id":id()}),
+    );
+    for note in [&one, &two] {
+        invoke(
+            &app,
+            json!({"action":"set_deleted","id":note["id"],"expected_generation":note["generation"],"deleted":true}),
+        );
+    }
+    let items = json!([
+        {"id":one["id"],"expected_generation":"2"},
+        {"id":two["id"],"expected_generation":"99"},
+        {"id":active["id"],"expected_generation":"1"},
+        {"id":one["id"],"expected_generation":"2"}
+    ]);
+    let result = invoke(
+        &app,
+        json!({"action":"batch_purge","profile_id":"local","items":items}),
+    );
+    let results = result["results"].as_array().unwrap();
+    assert_eq!(results.len(), 4);
+    assert_eq!(results[0]["ok"], true);
+    assert_eq!(results[0]["purge_state"], "purged");
+    // Reduced acknowledgement: no body/title/conflict is shipped back.
+    assert!(results[0].get("note").is_none());
+    assert!(results[0].get("content").is_none());
+    assert_eq!(results[1]["error"]["code"], "LOCAL_GENERATION_CONFLICT");
+    assert_eq!(results[2]["error"]["code"], "PURGE_CONFLICT");
+    assert_eq!(results[3]["error"]["code"], "INVALID_REQUEST");
+    // The purged note disappears from the trash list; the conflict remains.
+    assert_eq!(
+        invoke(&app, json!({"action":"list","deleted":true}))
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    // Idempotent: an already purged id with a stale generation is ok:purged.
+    let again = invoke(
+        &app,
+        json!({"action":"batch_purge","profile_id":"local","items":[{"id":one["id"],"expected_generation":"1"}]}),
+    );
+    assert_eq!(again["results"][0]["ok"], true);
+    assert_eq!(again["results"][0]["purge_state"], "purged");
+}
+
+#[test]
+fn batch_purge_account_pending_is_idempotent_without_double_enqueue() {
+    let app = engine();
+    let p = account();
+    {
+        let mut registry = app.registry.lock().unwrap();
+        registry.selected = p.id.clone();
+        registry.profiles.push(p.clone());
+    }
+    let mut database = db::open(&app.path(&p)).unwrap();
+    let note = seed(&mut database, &id());
+    let mut n = db::note(&database, &note.id).unwrap();
+    n.deleted = true;
+    n.generation += 1;
+    db::put(&database, &n).unwrap();
+    let generation = n.generation.to_string();
+    let result = invoke(
+        &app,
+        json!({"action":"batch_purge","profile_id":p.id,"items":[{"id":note.id,"expected_generation":generation}]}),
+    );
+    assert_eq!(result["results"][0]["ok"], true);
+    assert_eq!(result["results"][0]["purge_state"], "pending");
+    let count = |db: &Connection| -> i64 {
+        db.query_row(
+            "SELECT count(*) FROM purge_requests WHERE note_id=?",
+            [&note.id],
+            |r| r.get(0),
+        )
+        .unwrap()
+    };
+    assert_eq!(count(&database), 1);
+    // A pending item is idempotent and never enqueued a second time.
+    let again = invoke(
+        &app,
+        json!({"action":"batch_purge","profile_id":p.id,"items":[{"id":note.id,"expected_generation":generation}]}),
+    );
+    assert_eq!(again["results"][0]["ok"], true);
+    assert_eq!(again["results"][0]["purge_state"], "pending");
+    assert_eq!(count(&database), 1);
+}
+
+#[test]
 fn batch_never_redirects_or_restores_pending_purge_or_writes_recovery() {
     let app = engine();
     let account = account();

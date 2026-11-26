@@ -200,6 +200,14 @@ export const icons = {
     ['path', { d: 'm6.34 17.66-1.41 1.41' }],
     ['path', { d: 'm19.07 4.93-1.41 1.41' }],
   ],
+  'table-of-contents': [
+    ['path', { d: 'M16 5H3' }],
+    ['path', { d: 'M16 12H3' }],
+    ['path', { d: 'M16 19H3' }],
+    ['path', { d: 'M21 5h.01' }],
+    ['path', { d: 'M21 12h.01' }],
+    ['path', { d: 'M21 19h.01' }],
+  ],
   'trash-2': [
     ['path', { d: 'M10 11v6' }],
     ['path', { d: 'M14 11v6' }],

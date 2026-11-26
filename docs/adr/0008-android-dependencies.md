@@ -21,6 +21,7 @@
 | org.jetbrains.kotlinx:kotlinx-coroutines-android | 1.9.0 | Apache-2.0，[JetBrains](https://github.com/Kotlin/kotlinx.coroutines/releases/tag/1.9.0) | IO 调度、保存防抖与互斥 |
 | net.java.dev.jna:jna (aar) | 5.17.0 | Apache-2.0 / LGPL-2.1-or-later 双许可，[JNA](https://github.com/java-native-access/jna) | UniFFI 官方 Kotlin JVM/Android FFI 运行时，沿用 ADR-0002 |
 | org.commonmark:commonmark | 0.24.0 | BSD-2-Clause，[CommonMark](https://github.com/commonmark/commonmark-java/releases/tag/commonmark-parent-0.24.0) | 解析 Markdown AST，原生渲染而非 WebView |
+| org.commonmark:commonmark-ext-gfm-strikethrough | 0.24.0 | BSD-2-Clause，[CommonMark](https://github.com/commonmark/commonmark-java/releases/tag/commonmark-parent-0.24.0) | 删除线（`~~x~~`/`~x~`），0.2.7 起对齐桌面 |
 | detekt plugin / detekt-formatting | 1.23.8 | Apache-2.0，[detekt](https://detekt.dev/docs/1.23.8/gettingstarted/gradle/) | 静态检查与 Kotlin 格式检查 |
 | junit:junit | 4.13.2 | EPL-1.0，[JUnit](https://github.com/junit-team/junit4) | Markdown 与保存调度单测 |
 | androidx.test:runner / core | 1.6.2 / 1.6.1 | Apache-2.0，[AndroidX Test](https://github.com/android/android-test) | 真实 JNI / SQLite / Keystore 仪器测试 |
@@ -37,3 +38,7 @@ Android SDK compile/target 36，最低 API 29（Android 10），JDK 21 编译为
 源码编辑用 Android EditText，语法着色只添加本应用的 spans，不重设输入文本，不移除 IME composing spans。CommonMark 只作为解析器；HTML 以文本展示，图片仅展示替代文本，不加载远端资源；链接仅允许 http/https 并交系统浏览器。
 
 保存与后台工作均调用同一进程单例 MemoApp。UI 只管理未提交缓冲与提交调度，不实现同步、冲突、账号数据库与 outbox 逻辑。ZIP 由 core 生成，SAF 创建新文档并以完整写入成功为导出成功条件。
+
+## 变更记录
+
+- 0.2.7：新增 `org.commonmark:commonmark-ext-gfm-strikethrough 0.24.0`（BSD-2-Clause，与 commonmark 同源同版本）以支持删除线；已更新 gradle lockfile、APK 依赖许可通知并复核 docs/licensing.md。

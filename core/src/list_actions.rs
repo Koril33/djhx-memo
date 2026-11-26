@@ -43,6 +43,42 @@ impl Engine {
         Ok(json!({"results":results}))
     }
 
+    pub(crate) fn batch_purge(&self, request: &Value, profile: &Profile) -> Result<Value> {
+        let items = request["items"]
+            .as_array()
+            .filter(|v| v.len() <= 10_000)
+            .ok_or_else(|| AppError::new("INVALID_REQUEST", "批次无效"))?;
+        let mut seen = std::collections::HashSet::new();
+        let mut results = Vec::with_capacity(items.len());
+        for item in items {
+            let result = (|| {
+                let id = text(item, "id")?;
+                if !seen.insert(id.clone()) {
+                    return Err(AppError::new("INVALID_REQUEST", "批次中存在重复笔记"));
+                }
+                let _guard = self.writable(profile)?;
+                let mut database = db::open(&self.path(profile))?;
+                let note = crate::purge::request(
+                    &mut database,
+                    &id,
+                    counter(&text(item, "expected_generation")?)?,
+                    profile.kind == "account",
+                )?;
+                Ok(note.purge_state.clone())
+            })();
+            match result {
+                Ok(purge_state) => {
+                    self.changed(profile);
+                    // Reduced acknowledgement: no body/title/conflict, so a 10_000-item
+                    // batch cannot balloon the bridge response.
+                    results.push(json!({"id":item["id"],"ok":true,"purge_state":purge_state}));
+                }
+                Err(error) => results.push(json!({"id":item["id"],"ok":false,"error":error})),
+            }
+        }
+        Ok(json!({"results":results}))
+    }
+
     pub(crate) fn import_markdown(&self, request: &Value, profile: &Profile) -> Result<Value> {
         let name = text(request, "filename")?;
         if !name.to_ascii_lowercase().ends_with(".md") {
