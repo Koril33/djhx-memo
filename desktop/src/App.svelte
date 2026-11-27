@@ -13,7 +13,7 @@
   import { call, native, errorText, coreErrorText } from './lib/bridge';
   import { EditorSession } from './lib/editor-session';
   import { renderMarkdown } from './lib/markdown';
-  import { locateHeadings } from './lib/headings';
+  import { locateHeadings, type Heading } from './lib/headings';
   import type { CodeHighlights } from './lib/code-highlights';
   import { isLargeNote } from './lib/note-size';
   import { PreviewState, taskSnapshotMatches } from './lib/preview-state';
@@ -1122,15 +1122,13 @@
       failure = error;
     });
   }
-  function jumpToHeading(line: number): void {
+  function jumpToHeading(heading: Heading): void {
     if (effectiveMode === 'preview') {
-      const source = previewSnapshot.source.replace(/\r\n?/g, '\n');
-      const offset = source.split('\n').slice(0, line).join('\n').length;
       document
-        .querySelector(`.preview-pane [data-source-from="${offset}"]`)
-        ?.scrollIntoView({ block: 'start' });
+        .querySelector(`.preview-pane [data-source-from="${heading.offset}"]`)
+        ?.scrollIntoView({ block: 'start', inline: 'nearest' });
     } else {
-      outlineApi?.jump(line);
+      outlineApi?.jump(heading.line);
     }
   }
   function focusNoteList(): void {
@@ -1899,7 +1897,7 @@
                 {#each outline as heading, i (i)}<button
                     class="outline-item"
                     style={`--outline-level: ${heading.level}`}
-                    on:click={() => jumpToHeading(heading.line)}>{heading.label}</button
+                    on:click={() => jumpToHeading(heading)}>{heading.label}</button
                   >{/each}
               </div>{:else}<div class="outline-empty">{t('outlineEmpty')}</div>{/if}
           </aside>{/if}

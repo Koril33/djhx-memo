@@ -35,19 +35,18 @@ internal data class MarkdownStyle(
     val quoteBar: Color,
     val ruleColor: Color,
     val completed: Color,
+    val listGutter: Dp,
 )
 
 /** 预览块级间距（top 为前距、bottom 为后距），相邻块取两者较大值合并，首块 top 归零。 */
 @Immutable
 internal data class BlockSpacing(val top: Dp, val bottom: Dp)
 
-/** 渲染上下文：层级、前一兄弟块、紧凑列表与有序标记宽度，收敛长参数列表。 */
+/** 渲染上下文：列表层级与前一兄弟块，收敛长参数列表。 */
 @Immutable
 internal data class MarkdownContext(
-    val depth: Int = 0,
+    val listLevel: Int = 0,
     val previous: BlockKind? = null,
-    val tight: Boolean = false,
-    val markerWidth: Dp = 20.dp,
 )
 
 internal enum class BlockKind {
@@ -55,7 +54,7 @@ internal enum class BlockKind {
 
     val spacing: BlockSpacing
         get() = when (this) {
-            PARAGRAPH -> BlockSpacing(12.dp, 0.dp)
+            PARAGRAPH -> BlockSpacing(16.dp, 0.dp)
             H1 -> BlockSpacing(28.dp, 12.dp)
             H2 -> BlockSpacing(24.dp, 8.dp)
             H3 -> BlockSpacing(20.dp, 6.dp)
@@ -95,6 +94,7 @@ private val fallbackMarkdownStyle = MarkdownStyle(
     quoteBar = Color(0xFFCCCCCC),
     ruleColor = Color(0xFFCCCCCC),
     completed = Color(0xFF777777),
+    listGutter = 8.dp,
 )
 
 internal val LocalMarkdownStyle = compositionLocalOf { fallbackMarkdownStyle }
@@ -146,5 +146,6 @@ internal fun rememberMarkdownStyle(largeNote: Boolean): MarkdownStyle {
         quoteBar = colors.outlineVariant,
         ruleColor = colors.outlineVariant,
         completed = colors.onSurfaceVariant,
+        listGutter = 8.dp,
     )
 }

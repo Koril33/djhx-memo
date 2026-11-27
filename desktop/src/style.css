@@ -539,6 +539,15 @@ svg {
   max-width: 720px;
   margin: auto;
 }
+/* Outline jumps land the heading below the pane's top padding instead of flush. */
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4,
+.markdown h5,
+.markdown h6 {
+  scroll-margin-top: 32px;
+}
 .markdown h1 {
   font-size: 27px;
   font-weight: 600;

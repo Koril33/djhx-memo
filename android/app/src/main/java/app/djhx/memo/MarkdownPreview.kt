@@ -25,6 +25,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -35,6 +36,7 @@ import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Dp
@@ -132,14 +134,16 @@ private fun MarkdownBlock(
     onTask: (Int) -> Unit,
     onLink: (String) -> Unit,
     codeHighlights: CodeHighlights?,
-    context: MarkdownContext
+    context: MarkdownContext,
+    dropTask: Boolean = false,
+    completed: Boolean = false
 ) {
     val kind = blockKind(block)
     val spaceBefore = if (context.previous == null) 0.dp else gapBetween(context.previous!!, kind)
     Column(Modifier.fillMaxWidth().padding(top = spaceBefore)) {
         when (block) {
             is Heading -> MarkdownText(block, onLink, heading = block.level)
-            is Paragraph -> MarkdownText(block, onLink)
+            is Paragraph -> MarkdownText(block, onLink, dropTask = dropTask, completed = completed)
             is FencedCodeBlock -> {
                 val code = block.literal.removeSuffix("\n")
                 CodeBlock(
@@ -164,7 +168,7 @@ private fun MarkdownBlock(
                         onTask,
                         onLink,
                         codeHighlights,
-                        context.copy(depth = context.depth + 1)
+                        context
                     )
                 }
             }
@@ -201,12 +205,24 @@ private fun ListBlock(
     context: MarkdownContext
 ) {
     val ordered = block is OrderedList
-    val tight = if (block is ListBlock) block.isTight else false
+    val tight = (block as? ListBlock)?.isTight ?: false
     val items = block.children().filterIsInstance<ListItem>()
     val start = if (ordered) (block as OrderedList).markerStartNumber ?: 1 else 1
-    val maxNumber = start + items.size - 1
-    val markerWidth = if (ordered) (maxNumber.toString().length * 8 + 8).dp else context.markerWidth
-    val itemGap = if (tight) 4.dp else 8.dp
+    val delimiter = if (ordered && (block as OrderedList).markerDelimiter == ")") ")" else "."
+    val style = LocalMarkdownStyle.current
+    val density = LocalDensity.current
+    val textMeasurer = rememberTextMeasurer()
+    val markerStyle = style.body.copy(fontFeatureSettings = "tnum")
+    // Measure the widest marker so the content column starts after the longest
+    // number and the gutter gap is explicit, independent of the column width.
+    val widestMarker = if (ordered) "${start + items.size - 1}$delimiter" else "•"
+    val markerWidth = with(density) {
+        maxOf(textMeasurer.measure(AnnotatedString(widestMarker), markerStyle).size.width.toDp(), 12.dp)
+    }
+    // Loose lists follow the paragraph leading; tight lists stay minimal.
+    val itemGap = if (tight) 4.dp else BlockKind.PARAGRAPH.spacing.top
+    // Center the 20dp checkbox on the first line's glyph (body line box centers it).
+    val checkboxTopPadding = with(density) { ((style.body.lineHeight?.toDp() ?: 27.dp) - 20.dp) / 2 }
     Column {
         items.forEachIndexed { index, item ->
             if (index > 0) Box(Modifier.height(itemGap))
@@ -216,37 +232,37 @@ private fun ListBlock(
                     val taskLabel = stringResource(R.string.task_accessibility, task.first + 1)
                     CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
                         Checkbox(
-                            modifier = Modifier.size(20.dp).semantics { contentDescription = taskLabel },
+                            modifier = Modifier.padding(top = checkboxTopPadding).size(20.dp)
+                                .semantics { contentDescription = taskLabel },
                             checked = task.second,
                             enabled = editable,
                             onCheckedChange = { onTask(task.first) }
                         )
                     }
-                    Box(Modifier.width(4.dp))
                 } else {
-                    Marker(block, index, start, markerWidth, context.depth)
+                    Marker(
+                        if (ordered) "${start + index}$delimiter" else bulletFor(context.listLevel),
+                        markerWidth,
+                        if (ordered) TextAlign.End else TextAlign.Start
+                    )
                 }
+                Box(Modifier.width(style.listGutter))
                 Column(Modifier.weight(1f)) {
-                    item.children().forEachIndexed { childIndex, child ->
-                        val itemContext = context.copy(previous = null, tight = tight)
-                        if (child is Paragraph) {
-                            MarkdownText(
-                                child,
-                                onLink,
-                                dropTask = task != null && childIndex == 0,
-                                completed = task?.second == true
-                            )
-                        } else {
-                            MarkdownBlock(
-                                child,
-                                lines,
-                                editable,
-                                onTask,
-                                onLink,
-                                codeHighlights,
-                                itemContext.copy(depth = context.depth + 1)
-                            )
-                        }
+                    val children = item.children()
+                    children.forEachIndexed { childIndex, child ->
+                        val previous = if (childIndex == 0) null else blockKind(children[childIndex - 1])
+                        val childContext = context.copy(previous = previous, listLevel = context.listLevel + 1)
+                        MarkdownBlock(
+                            child,
+                            lines,
+                            editable,
+                            onTask,
+                            onLink,
+                            codeHighlights,
+                            childContext,
+                            dropTask = task != null && childIndex == 0,
+                            completed = task?.second == true
+                        )
                     }
                 }
             }
@@ -254,23 +270,21 @@ private fun ListBlock(
     }
 }
 
+private fun bulletFor(level: Int): String = when (level % 3) {
+    0 -> "•"
+    1 -> "◦"
+    else -> "▪"
+}
+
 @Composable
-private fun Marker(block: Node, index: Int, start: Int, markerWidth: Dp, depth: Int) {
-    val label = if (block is OrderedList) {
-        val delimiter = if (block.markerDelimiter == ")") ")" else "."
-        "${start + index}$delimiter"
-    } else {
-        when (depth % 3) {
-            0 -> "•"
-            1 -> "◦"
-            else -> "▪"
-        }
-    }
+private fun Marker(label: String, markerWidth: Dp, textAlign: TextAlign) {
     Text(
         label,
-        Modifier.width(markerWidth).padding(top = 4.dp),
-        textAlign = TextAlign.End,
-        style = LocalMarkdownStyle.current.body.copy(fontFeatureSettings = "tnum")
+        Modifier.width(markerWidth),
+        textAlign = textAlign,
+        style = LocalMarkdownStyle.current.body.copy(fontFeatureSettings = "tnum"),
+        maxLines = 1,
+        softWrap = false,
     )
 }
 

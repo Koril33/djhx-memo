@@ -2,10 +2,12 @@ import { Marked, type Token, type Tokens } from 'marked';
 
 /**
  * A derived heading entry for the outline panel. `line` is the 0-based logical
- * line index after normalizing `\r\n`/`\r` to `\n`, matching CodeMirror's
- * logical line numbering and the `data-source-from` offsets of the preview.
+ * line index after normalizing `\r\n`/`\r` to `\n`; `offset` is the character
+ * offset of the heading token in the same normalized source and equals the
+ * `data-source-from` attribute that `renderMarkdown` stamps on the heading.
+ * Keeping both here avoids recomputing the offset in the UI (single source).
  */
-export type Heading = { level: number; label: string; line: number };
+export type Heading = { level: number; label: string; line: number; offset: number };
 
 /** Walk inline tokens to their plain text, dropping emphasis/code/link/image syntax. */
 function inlinePlainText(tokens: Token[]): string {
@@ -70,6 +72,7 @@ export function locateHeadings(source: string): Heading[] {
         level: heading.depth,
         label: decodeEntities(inlinePlainText(heading.tokens)),
         line: source.slice(0, position).split('\n').length - 1,
+        offset: position,
       });
     }
     position += token.raw.length;

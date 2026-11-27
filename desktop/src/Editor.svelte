@@ -64,7 +64,9 @@
   const lintConfig = new Compartment();
   const lintController = new LintController((next) => {
     lintState = next;
-    if (view && lintModule)
+    // Never mutate decorations during IME composition: WebView2/Chromium can
+    // re-anchor the composition window when the content DOM shifts mid-compose.
+    if (view && lintModule && !view.composing)
       view.dispatch({
         effects: lintModule.setDiagnosticsEffect.of(
           next.issues.map((issue) => ({
@@ -96,7 +98,7 @@
   $: t = createTranslator(language);
   $: if (view) void configureLint(lintEnabled);
   $: lintController.update(value, lintEnabled, composing);
-  $: if (view && lintEnabled && lintModule && language) {
+  $: if (view && lintEnabled && lintModule && language && !composing) {
     view.dispatch({
       effects: lintModule.setDiagnosticsEffect.of(
         lintState.issues.map((issue) => ({
