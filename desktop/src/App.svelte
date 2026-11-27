@@ -2369,7 +2369,9 @@
             </div>{:else}<div class="device-list" aria-describedby="devices-help-text">
               {#if revokeError}<div class="inline-error">{t('revokeFailed')}</div>{/if}
               {#if devicesError && devices.length === 0}<div class="inline-error">
-                  {t('devicesRefreshFailed')}
+                  {t('devicesRefreshFailed')}<button on:click={() => void loadDevices()}
+                    >{t('retry')}</button
+                  >
                 </div>{/if}
               {#if devicesStale}<div class="inline-notice">
                   {t('devicesStale')}<button on:click={() => void loadDevices()}

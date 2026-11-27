@@ -53,7 +53,7 @@
 
 **core 增量（D1）**：新增 action `batch_purge`，协议形状复用 `batch_set_deleted`（`items[{id,expected_generation}] → results[{id,ok,error?,purge_state?}]`）。**逐项复用 `purge::request`（每项独立 Immediate 事务，与现有 `batch_set_deleted` 逐项开库一致，非单事务）**；回执用**精简视图**（仅 id/ok/error/purge_state，不含正文/标题/冲突，避免 10_000 项回执体积）。`profile_id` 经既有 `self.profile()` 校验（[lib.rs:221-239](../core/src/lib.rs#L221-L239)），与选中空间不符返回 `PROFILE_CHANGED`；重复 id 返回 `INVALID_REQUEST`；上限 10_000。连带：core 0.2.2→0.2.3、`spec/core-api.md`+`spec/core-bridge.md` 请求表加一行、修订 `permanent-deletion.md:7` 与 `client-0.1.6.md:16`、AGENTS.md 禁止事项第 21 行、按 AGENTS.md:13 属删除语义变更须独立交叉评审、重建 Android UniFFI/JNI 与桌面绑定。
 
-**幂等语义与计数**：`purge::request` 顺序是 已 `purged` → 幂等 Ok（代次检查前）；代次不符 → `LOCAL_GENERATION_CONFLICT`；非回收站 → `PURGE_CONFLICT`；已 `pending` → 幂等 Ok（**不重复入队、不计为本次新请求**）。UI 按回执 `purge_state` 区分 `purged`=已彻底删除、`pending`=已请求，报“已彻底删除 X · 已请求 Y”（账号空间）或“已彻底删除 N”（本机空间）。**`permanent-deletion.md:15` 的 pending “禁止重复请求”须补批量幂等回执例外**。
+**幂等语义与计数**：`purge::request` 顺序是 已 `purged` → 幂等 Ok（代次检查前）；代次不符 → `LOCAL_GENERATION_CONFLICT`；非回收站 → `PURGE_CONFLICT`；已 `pending` → 幂等 Ok（**不重复写入 purge_requests、不计新增请求；回执仍为 pending，计入“待同步”**）。UI 按回执 `purge_state` 区分 `purged`=已彻底删除、`pending`=待同步，报“已彻底删除 X · 待同步 Y”（账号空间，含本就 pending 者）或“已彻底删除 N”（本机空间）；失败项保留选中并提示“失败 Z 条”。**`permanent-deletion.md:15` 的 pending “禁止重复请求”须补批量幂等回执例外**。
 
 **冻结快照与确认**：二次确认在**打开确认框时**冻结 `(profile_id, id, generation)` 快照（与 Android 单条 purge 一致，[MainActivity.kt:435](../android/app/src/main/java/app/djhx/memo/MainActivity.kt#L435)），确认时按快照提交；确认期间 1s 轮询刷新不得改变提交范围。提交前走既有 flush/IME 屏障（照 [App.svelte:165](../desktop/src/App.svelte#L165)）。
 
@@ -132,7 +132,7 @@
 | ID | 场景 | 必须满足 |
 |---|---|---|
 | T01 | 两端回收站多选：进入/退出、全选（含 pending/rejected）、恢复 | 入口唯一；恢复提供“已恢复 N 条·撤销”；pending 恢复失败计入提示 |
-| T02 | 两端批量彻底删除（含账号空间 pending） | 打开确认框冻结快照；“已彻底删除 X·已请求 Y”；不可撤销；含当前编辑笔记时按结果关闭/保留编辑器 |
+| T02 | 两端批量彻底删除（含账号空间 pending） | 打开确认框冻结快照；“已彻底删除 X·待同步 Y”（失败项保留选中并提示失败数）；不可撤销；含当前编辑笔记时按结果关闭/保留编辑器 |
 | T03 | 批量恢复撤销 | 撤销=重新移回回收站，方向正确；仅成功项、用成功后代次；部分失败/撤销前远端修改/切空间/离线重启 |
 | L01 | 桌面行号逻辑行、暗色 gutter、窄窗/split、与 lint/Ctrl+F 叠加 | 逻辑行号；暗色无亮灰 gutter；行号两位跨三位长笔记下滚动/查找定位不漂移；同步滚动重测 |
 | O01 | 两端目录解析（共享识别范围、代码围栏排除、blockquote/list 内标题不入） | 两端一致；CRLF/单独 CR 偏移正确；纯文本标签剥离行内标记与实体 |
