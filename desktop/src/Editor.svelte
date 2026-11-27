@@ -52,11 +52,8 @@
   export let onFindApi: ((api: EditorFindApi) => void) | undefined = undefined;
   export let onOutlineApi:
     ((api: { jump: (line: number) => void } | undefined) => void) | undefined = undefined;
-  export let onReanchorApi: ((api: { force: () => void } | undefined) => void) | undefined =
-    undefined;
   let host: HTMLDivElement;
   let view: EditorView | undefined;
-  let pendingReanchor = false;
   export let lintEnabled = false;
   export let onView: ((view: EditorView | undefined) => void) | undefined = undefined;
   export let onLintApi: ((open: (() => void) | undefined) => void) | undefined = undefined;
@@ -128,34 +125,6 @@
     },
     provide: (field) => EditorView.decorations.from(field),
   });
-  // A re-anchor effect: after a window resize WebView2 can stop reporting the
-  // caret bounds, parking the IME candidate window at the screen origin
-  // (WebView2Feedback#5675). Toggling a decoration forces docView.update to
-  // redraw and re-write the DOM selection, which re-reports the caret. No
-  // focus change, no flush, no visible glyph.
-  const setReanchor = StateEffect.define<DecorationSet>();
-  const reanchorDecorations = StateField.define<DecorationSet>({
-    create: () => Decoration.none,
-    update(current, transaction) {
-      for (const effect of transaction.effects) if (effect.is(setReanchor)) return effect.value;
-      return current;
-    },
-    provide: (field) => EditorView.decorations.from(field),
-  });
-  function reanchorNow(): void {
-    if (!view || view.compositionStarted) return;
-    const length = Math.min(1, view.state.doc.length);
-    if (length === 0) return;
-    // Add then remove an invisible mark so the first dispatch redraws and
-    // re-writes the DOM selection (re-reporting caret bounds), while the
-    // second restores the decoration set.
-    view.dispatch({
-      effects: setReanchor.of(
-        Decoration.set([Decoration.mark({ class: 'cm-reanchor' }).range(0, length)]),
-      ),
-    });
-    view.dispatch({ effects: setReanchor.of(Decoration.none) });
-  }
   function languageExtensions(locale: Language) {
     const t = createTranslator(locale);
     return [
@@ -358,7 +327,6 @@
           lineNumbers(),
           markdown(),
           codeColors,
-          reanchorDecorations,
           syntaxHighlighting(
             HighlightStyle.define(
               defaultHighlightStyle.specs.map((spec) =>
@@ -404,13 +372,7 @@
               onComposition(true);
             },
             compositionend: () => {
-              setTimeout(() => {
-                onComposition(false);
-                if (pendingReanchor) {
-                  pendingReanchor = false;
-                  reanchorNow();
-                }
-              }, 0);
+              setTimeout(() => onComposition(false), 0);
             },
           }),
         ],
@@ -442,19 +404,11 @@
         view.focus();
       },
     });
-    onReanchorApi?.({
-      force() {
-        // Defer while composing; compositionend consumes the pending request.
-        if (view?.compositionStarted) pendingReanchor = true;
-        else reanchorNow();
-      },
-    });
     return () => {
       lintController.cancel();
       onView?.(undefined);
       onLintApi?.(undefined);
       onOutlineApi?.(undefined);
-      onReanchorApi?.(undefined);
       editor.destroy();
     };
   });

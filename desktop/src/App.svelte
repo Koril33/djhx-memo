@@ -448,7 +448,8 @@
   let globalSearchOpen = false;
   let findApi: EditorFindApi | undefined;
   let outlineApi: { jump: (line: number) => void } | undefined;
-  let reanchorApi: { force: () => void } | undefined;
+  let reanchoring = false;
+  let pendingReanchor = false;
   let reanchorTimer: ReturnType<typeof setTimeout> | undefined;
   let pendingFindQuery: string | null = null;
   let editor = new EditorSession(
@@ -1119,10 +1120,37 @@
     editorFocused = true;
   }
   function handleEditorBlur(): void {
+    // A re-anchor blur is our own; it must not trigger a save/flush.
+    if (reanchoring) return;
     editorFocused = false;
     void editor.flush().catch((error) => {
       failure = error;
     });
+  }
+  // After a window resize, WebView2 can stop reporting caret bounds and park the
+  // IME candidate window at the screen origin (WebView2Feedback#5675). A native
+  // focus round-trip rebuilds the TSF text-store association; blur is deferred
+  // from focus so Chromium doesn't batch the two into a no-op.
+  function reanchorEditor(): void {
+    const view = sourceView;
+    if (!view || reanchoring) return;
+    if (editor.composing || view.compositionStarted) {
+      pendingReanchor = true;
+      return;
+    }
+    if (
+      !editorFocused ||
+      modalDepth > 0 ||
+      !document.hasFocus() ||
+      document.visibilityState !== 'visible'
+    )
+      return;
+    reanchoring = true;
+    view.contentDOM.blur();
+    setTimeout(() => {
+      view.focus();
+      reanchoring = false;
+    }, 50);
   }
   function jumpToHeading(heading: Heading): void {
     if (effectiveMode === 'preview') {
@@ -1229,11 +1257,10 @@
     const changedLanguage = () => {
       systemLanguage = navigator.language;
     };
-    // After the window settles from a resize, WebView2 can stop reporting the
-    // caret bounds (WebView2Feedback#5675), so nudge the editor to re-anchor.
+    // Debounce resize to a trailing settle before re-anchoring the IME caret.
     const changedWindow = () => {
       clearTimeout(reanchorTimer);
-      reanchorTimer = setTimeout(() => reanchorApi?.force(), 180);
+      reanchorTimer = setTimeout(() => reanchorEditor(), 180);
     };
     void refreshSystemAppearance();
     const appearancePoll = setInterval(() => {
@@ -1308,7 +1335,6 @@
     clearTimeout(highlightTimer);
     clearInterval(poll);
     clearTimeout(searchTimer);
-    clearTimeout(reanchorTimer);
     unlisteners.forEach((stop) => stop());
     editor.dispose();
   });
@@ -1940,10 +1966,15 @@
                   openLint = open;
                 }}
                 onOutlineApi={(api) => (outlineApi = api)}
-                onReanchorApi={(api) => (reanchorApi = api)}
                 readonly={readOnly}
                 onEdit={(text) => editor.edit(text)}
-                onComposition={(active) => editor.setComposing(active)}
+                onComposition={(active) => {
+                  editor.setComposing(active);
+                  if (!active && pendingReanchor) {
+                    pendingReanchor = false;
+                    reanchorEditor();
+                  }
+                }}
                 onFocus={handleEditorFocus}
                 onBlur={handleEditorBlur}
                 onFindApi={receiveFindApi}
