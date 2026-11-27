@@ -25,6 +25,7 @@
 | create | content, request_id（UUID） | NoteView；重试同 request_id 返回同笔记 |
 | import_markdown | profile_id, filename, bytes_base64, request_id（UUID） | NoteView；UTF-8/BOM/行尾及大小由 core 校验，同请求幂等 |
 | batch_set_deleted | profile_id, deleted, items: [{id,expected_generation}]（最多10000项） | `{results:[{id,ok,note? ,error?}]}`；逐项事务、严格原 ID/代次，不沿冲突映射重定向；重复 ID 仅首项执行 |
+| batch_purge | profile_id, items: [{id,expected_generation}]（最多10000项） | `{results:[{id,ok,purge_state? ,error?}]}`（精简回执，不含正文/标题/冲突）；逐项复用 purge 语义、逐项事务、重复 ID 返回 `INVALID_REQUEST`；`purge_state` 为 `purged`/`pending` |
 | save | id, expected_generation, content | NoteView |
 | purge | id, expected_generation | NoteView；pending/purged 语义见增量契约 |
 | set_deleted | id, expected_generation, deleted | NoteView |

@@ -167,8 +167,17 @@ fn show_window(app: &tauri::AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.show();
         let _ = window.unminimize();
-        let _ = window.set_focus();
     }
+    // Defer moving focus into the webview until activation settles. Moving focus
+    // synchronously during show/unminimize is the trigger behind WebView2's
+    // "IME composition window detaches to the screen origin" on window restore.
+    let handle = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(80));
+        if let Some(window) = handle.get_webview_window("main") {
+            let _ = window.set_focus();
+        }
+    });
 }
 
 fn request_lifecycle(app: &tauri::AppHandle, desired: Lifecycle) {

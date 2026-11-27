@@ -16,6 +16,7 @@
     EditorView,
     keymap,
     highlightActiveLine,
+    lineNumbers,
     placeholder,
     runScopeHandlers,
     type DecorationSet,
@@ -49,6 +50,8 @@
   export let onComposition: (active: boolean) => void;
   export let onFocus: (() => void) | undefined = undefined;
   export let onFindApi: ((api: EditorFindApi) => void) | undefined = undefined;
+  export let onOutlineApi:
+    ((api: { jump: (line: number) => void } | undefined) => void) | undefined = undefined;
   let host: HTMLDivElement;
   let view: EditorView | undefined;
   export let lintEnabled = false;
@@ -61,7 +64,11 @@
   const lintConfig = new Compartment();
   const lintController = new LintController((next) => {
     lintState = next;
-    if (view && lintModule)
+    // Never mutate decorations during IME composition: WebView2/Chromium can
+    // re-anchor the composition window when the content DOM shifts mid-compose.
+    // compositionStarted covers the compositionstart→first-DOM-change window
+    // that view.composing misses.
+    if (view && lintModule && !view.compositionStarted)
       view.dispatch({
         effects: lintModule.setDiagnosticsEffect.of(
           next.issues.map((issue) => ({
@@ -93,7 +100,7 @@
   $: t = createTranslator(language);
   $: if (view) void configureLint(lintEnabled);
   $: lintController.update(value, lintEnabled, composing);
-  $: if (view && lintEnabled && lintModule && language) {
+  $: if (view && lintEnabled && lintModule && language && !composing) {
     view.dispatch({
       effects: lintModule.setDiagnosticsEffect.of(
         lintState.issues.map((issue) => ({
@@ -138,6 +145,12 @@
     '.cm-selectionBackground': { backgroundColor: 'var(--editor-selection) !important' },
     '&.cm-focused': { outline: 'none' },
     '.cm-placeholder': { color: 'var(--muted)' },
+    '.cm-gutters': {
+      backgroundColor: 'transparent',
+      color: 'var(--muted)',
+      borderRight: '1px solid var(--border)',
+    },
+    '.cm-lineNumbers .cm-gutterElement': { color: 'var(--muted)' },
   });
 
   /**
@@ -311,6 +324,7 @@
         extensions: [
           history(),
           highlightActiveLine(),
+          lineNumbers(),
           markdown(),
           codeColors,
           syntaxHighlighting(
@@ -382,10 +396,19 @@
       },
       focus: () => editor.focus(),
     });
+    onOutlineApi?.({
+      jump(line) {
+        if (!view || view.state.doc.toString() !== value.replace(/\r\n?/g, '\n')) return;
+        const pos = view.state.doc.line(line + 1).from;
+        view.dispatch({ effects: EditorView.scrollIntoView(pos, { y: 'center' }) });
+        view.focus();
+      },
+    });
     return () => {
       lintController.cancel();
       onView?.(undefined);
       onLintApi?.(undefined);
+      onOutlineApi?.(undefined);
       editor.destroy();
     };
   });

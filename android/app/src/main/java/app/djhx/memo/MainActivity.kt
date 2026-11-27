@@ -39,6 +39,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -113,14 +114,22 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
     var statusDetails by remember { mutableStateOf(false) }
     var preview by rememberSaveable { mutableStateOf(false) }
     var purgeTarget by remember { mutableStateOf<org.json.JSONObject?>(null) }
+    var purgeBatchTarget by remember { mutableStateOf<List<org.json.JSONObject>?>(null) }
+    var outlineSheet by rememberSaveable { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     val accessibility = androidx.compose.ui.platform.LocalAccessibilityManager.current
-    val undoLabel = stringResource(R.string.undo_trash)
     val undoGroup = model.trashUndo
-    val undoText = if ((undoGroup?.failed ?: 0) > 0) {
-        stringResource(R.string.batch_result, undoGroup?.notes?.size ?: 0, undoGroup?.failed ?: 0)
-    } else {
-        stringResource(R.string.trashed_count, undoGroup?.notes?.size ?: 0)
+    val undoRestoring = undoGroup?.deleted == true
+    val undoLabel = stringResource(if (undoRestoring) R.string.undo else R.string.undo_trash)
+    val undoText = when {
+        (undoGroup?.failed ?: 0) > 0 && undoRestoring ->
+            stringResource(R.string.undo_result, undoGroup?.notes?.size ?: 0, undoGroup?.failed ?: 0)
+        (undoGroup?.failed ?: 0) > 0 ->
+            stringResource(R.string.batch_result, undoGroup?.notes?.size ?: 0, undoGroup?.failed ?: 0)
+        undoRestoring ->
+            stringResource(R.string.restored_count, undoGroup?.notes?.size ?: 0)
+        else ->
+            stringResource(R.string.trashed_count, undoGroup?.notes?.size ?: 0)
     }
     val actionNotice = model.actionNotice
     val noticeContext = LocalContext.current
@@ -285,14 +294,35 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                             enabled = !model.busy && model.notes.isNotEmpty(),
                             modifier = Modifier.semantics { contentDescription = allLabel }
                         )
-                        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.error) {
+                        if (model.trash) {
                             MemoIconButton(
-                                R.drawable.ic_ui_trash_2,
-                                stringResource(R.string.move_trash),
-                                !model.busy && model.selection.isNotEmpty(),
-                                danger = true
+                                R.drawable.ic_ui_rotate_ccw,
+                                stringResource(R.string.restore),
+                                !model.busy && model.selection.isNotEmpty()
                             ) {
-                                model.trashNotes(model.notes.filter { it.getString("id") in model.selection })
+                                model.restoreTrashNotes(model.notes.filter { it.getString("id") in model.selection })
+                            }
+                            CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.error) {
+                                MemoIconButton(
+                                    R.drawable.ic_ui_trash_2,
+                                    stringResource(R.string.purge_note),
+                                    !model.busy && model.selection.isNotEmpty(),
+                                    danger = true
+                                ) {
+                                    purgeBatchTarget = model.notes.filter { it.getString("id") in model.selection }
+                                        .map { org.json.JSONObject(it.toString()) }
+                                }
+                            }
+                        } else {
+                            CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.error) {
+                                MemoIconButton(
+                                    R.drawable.ic_ui_trash_2,
+                                    stringResource(R.string.move_trash),
+                                    !model.busy && model.selection.isNotEmpty(),
+                                    danger = true
+                                ) {
+                                    model.trashNotes(model.notes.filter { it.getString("id") in model.selection })
+                                }
                             }
                         }
                     }
@@ -369,6 +399,16 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                                         ) {
                                             more = false
                                             model.openFind()
+                                        }
+                                    }
+                                    if (model.editorOpen && model.selected != null && !readOnly) {
+                                        MemoMenuItem(
+                                            R.drawable.ic_ui_table_of_contents,
+                                            stringResource(R.string.outline_title),
+                                            !model.busy
+                                        ) {
+                                            more = false
+                                            outlineSheet = true
                                         }
                                     }
                                     if (model.editorOpen && model.selected != null) {
@@ -504,7 +544,9 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                         onFindClose = model::closeFind,
                         onBlur = model::retrySave,
                         onComposition = model::composing,
-                        onEdit = model::edit
+                        onEdit = model::edit,
+                        outlineTarget = model.outlineTarget,
+                        onOutlineTargetConsumed = model::consumeOutlineTarget
                     )
                     if (preview || readOnly) {
                         MarkdownPreview(
@@ -579,6 +621,45 @@ private fun MemoScreen(model: MemoModel, onLink: (String) -> Unit) {
                 }
             },
             dismissButton = { TextButton(onClick = { purgeTarget = null }) { Text(stringResource(R.string.cancel)) } }
+        )
+    }
+    purgeBatchTarget?.let { targets ->
+        MemoAlertDialog(
+            onDismissRequest = { purgeBatchTarget = null },
+            title = { Text(stringResource(R.string.purge_confirm_batch, targets.size)) },
+            text = { Text(stringResource(R.string.purge_help)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        purgeBatchTarget = null
+                        model.purgeNotes(targets)
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    )
+                ) {
+                    MemoIcon(R.drawable.ic_ui_trash_2)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.purge_note))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { purgeBatchTarget = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+    if (outlineSheet) {
+        OutlineSheet(
+            model.headings,
+            onHeadingClick = { heading ->
+                outlineSheet = false
+                if (preview) preview = false
+                model.requestOutlineJump(heading.line)
+            },
+            onDismiss = { outlineSheet = false }
         )
     }
     model.message?.let { message ->
@@ -1139,4 +1220,50 @@ private fun cloudLabel(sync: JSONObject?): String = when (sync?.optString("state
     "recovery_required" -> stringResource(R.string.cloud_recovery)
     "error" -> stringResource(R.string.cloud_error)
     else -> stringResource(R.string.cloud_opening)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun OutlineSheet(
+    headings: List<OutlineHeading>,
+    onHeadingClick: (OutlineHeading) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                stringResource(R.string.outline_title),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.weight(1f)
+            )
+            MemoIconButton(R.drawable.ic_ui_x, stringResource(R.string.close), onClick = onDismiss)
+        }
+        if (headings.isEmpty()) {
+            Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                Text(stringResource(R.string.outline_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        } else {
+            LazyColumn(Modifier.fillMaxWidth().fillMaxHeight(0.7f).padding(bottom = 24.dp)) {
+                items(headings, key = { it.line }) { heading ->
+                    TextButton(
+                        onClick = { onHeadingClick(heading) },
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
+                    ) {
+                        Text(
+                            heading.label,
+                            Modifier.padding(start = ((heading.level - 1) * 16).dp),
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Start,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

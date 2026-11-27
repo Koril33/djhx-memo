@@ -201,6 +201,16 @@ internal class SourceFindHost(
         }
     }
 
+    /** 目录跳转：只滚动到指定字符偏移所在逻辑行，不移动选区/光标。 */
+    fun scrollToOffset(offset: Int) {
+        editor.post {
+            val layout = editor.layout ?: return@post
+            val line = layout.getLineForOffset(offset.coerceIn(0, editor.text.length))
+            viewport.scrollTo(0, (layout.getLineTop(line) + editor.paddingTop).coerceAtLeast(0))
+            repaintVisible()
+        }
+    }
+
     private fun applyAllHighlights(found: List<IntRange>) {
         found.forEach { range ->
             editor.text.setSpan(

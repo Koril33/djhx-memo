@@ -13,6 +13,7 @@
 | create_note | profile、首份非空白正文、客户端本地请求 ID → NoteView | core 生成 UUID；同本地请求 ID 重试返回同一笔记，创建与幂等映射一起提交 |
 | save_note | profile、note_id、expected_generation、content → 新 generation | 乐观并发校验；同事务保存 notes/索引/待发状态 |
 | purge | profile、note_id、expected_generation → NoteView | 仅单条回收站；持久化请求、永久标记及错误见增量契约 |
+| batch_purge | profile、items[{id,expected_generation}]（最多10000项）→ results[{id,ok,error?,purge_state?}] | 0.2.7 批量彻底删除；逐项复用 purge 语义、精简回执、逐项事务 |
 | set_deleted | profile、note_id、expected_generation、deleted → 新 generation | 删除和恢复保留正文，过期 UI 不能覆盖更新内容 |
 | search_notes | profile、literal_query、limit → 本地结果 | 字面搜索，短词兜底，过滤回收站；0.1.11 起扩展为跨空间搜索，签名见文末 [0.1.11 搜索扩展](#0111-搜索扩展) |
 | export_notes | profile、范围 → 导出数据/结果 | 核心生成 ZIP 内容，平台层选择目标位置并原子写入 |
@@ -79,3 +80,7 @@ NoteView 同时带 generation、正文、删除/冲突元数据、本地保存�
 snapshot新增`download_source`、`source_error`、`source_changing`、`downloaded_from`、`manual_download_supported`。来源失败用`UPDATE_SOURCE`；准备安装时切源为`UPDATE_BUSY`，损坏安全状态继续保留`UPDATE_STORAGE`。`downloaded_from`只表示本进程实际校验完成缓存的传输来源，重启后未知就不显示来源，不猜测。
 
 偏好文件`transport-preferences.json`（version1/source）与原`state.json`独立；损坏偏好默认memo并提示，不能清防回放sequence/digest。固定路径、签名与缓存行为见[0.2.2](client-0.2.2.md)。
+
+## 0.2.7 批量彻底删除
+
+`batch_purge` 是[0.2.7 契约](client-0.2.7.md)新增的回收站批量彻底删除入口，逐项复用[单条 purge](permanent-deletion.md)语义，不改变同步协议/schema。输入 `profile_id` 经既有 `self.profile()` 校验、`items` 上限 10_000、重复 id 返回 `INVALID_REQUEST`；输出为**精简回执** `results[{id,ok,error?,purge_state?}]`（不含正文/标题/冲突，避免大批次回执体积）。逐项 Immediate 事务，与 `batch_set_deleted` 一致；`purged`/`pending` 幂等 Ok、代次不符 `LOCAL_GENERATION_CONFLICT`、非回收站 `PURGE_CONFLICT`。参数字段见[桥接接口](core-bridge.md)。

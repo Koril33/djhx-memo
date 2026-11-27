@@ -480,6 +480,9 @@ impl Engine {
         if action == "batch_set_deleted" {
             return self.batch_deleted(request, &profile);
         }
+        if action == "batch_purge" {
+            return self.batch_purge(request, &profile);
+        }
         if action == "import_markdown" {
             return self.import_markdown(request, &profile);
         }

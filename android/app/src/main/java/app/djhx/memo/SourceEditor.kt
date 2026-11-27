@@ -61,7 +61,9 @@ internal fun SourceEditor(
     onBlur: () -> Unit = {
     },
     onComposition: (Boolean) -> Unit = {},
-    onEdit: (String) -> Unit
+    onEdit: (String) -> Unit,
+    outlineTarget: MemoModel.OutlineTarget? = null,
+    onOutlineTargetConsumed: () -> Unit = {}
 ) {
     val dark = LocalDarkAppearance.current
     val editorHint = stringResource(R.string.editor_hint)
@@ -86,6 +88,12 @@ internal fun SourceEditor(
     // 查询/开关/宿主就绪时，重新执行字面查找；关闭时清空高亮。
     LaunchedEffect(findOpen, findQuery, host) {
         if (findOpen) host?.search(findQuery) else host?.clear()
+    }
+
+    // 目录跳转目标：宿主就绪时滚动定位，不移动选区/光标；目标已按当前笔记作用域作废。
+    LaunchedEffect(outlineTarget?.serial, host) {
+        outlineTarget?.let { target -> host?.scrollToOffset(target.offset) }
+        onOutlineTargetConsumed()
     }
 
     Column(modifier) {

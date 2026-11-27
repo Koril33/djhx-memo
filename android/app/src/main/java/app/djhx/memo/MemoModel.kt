@@ -87,7 +87,18 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         private set
     var selection by mutableStateOf(emptySet<String>())
         private set
-    data class TrashUndo(val profile: String, val notes: List<JSONObject>, val serial: Long, val failed: Int = 0)
+
+    /**
+     * deleted = 撤销时提交的删除方向：移入回收站后撤销为恢复(false)，
+     * 批量恢复后撤销为重新移回(true)。
+     */
+    data class TrashUndo(
+        val profile: String,
+        val notes: List<JSONObject>,
+        val serial: Long,
+        val failed: Int = 0,
+        val deleted: Boolean = false
+    )
     var trashUndo by mutableStateOf<TrashUndo?>(null)
         private set
     var actionNotice by mutableStateOf<UiText?>(null)
@@ -96,13 +107,46 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
     private var undoSerial = 0L
     private val markdownImport = MarkdownImportSession(gateway)
 
+    /** 目录跳转目标；serial 区分重复点击，noteId 判断跨笔记过期。 */
+    data class OutlineTarget(val offset: Int, val serial: Long, val noteId: String)
+    var headings by mutableStateOf(emptyList<OutlineHeading>())
+        private set
+    var outlineTarget by mutableStateOf<OutlineTarget?>(null)
+        private set
+    private var outlineRevision = 0L
+    private var outlineSerial = 0L
+    private var outlineJob: Job? = null
+
+    /** 防抖解析标题目录（Dispatchers.Default + 版本号作废），大笔记不逐事件重解析。 */
+    fun refreshOutline() {
+        outlineJob?.cancel()
+        val request = ++outlineRevision
+        outlineJob = viewModelScope.launch {
+            delay(120)
+            val noteId = selected?.optString("id")
+            val source = content
+            val parsed = withContext(Dispatchers.Default) { MarkdownSafety.headings(source) }
+            if (request == outlineRevision && selected?.optString("id") == noteId) headings = parsed
+        }
+    }
+
+    /** 由底部弹层点击触发：把逻辑行换算为字符偏移，供源码编辑区滚动定位。 */
+    fun requestOutlineJump(line: Int) {
+        val note = selected ?: return
+        val offset = content.split('\n').take(line).sumOf { it.length + 1 }.coerceAtMost(content.length)
+        outlineTarget = OutlineTarget(offset, ++outlineSerial, note.getString("id"))
+    }
+
+    fun consumeOutlineTarget() { outlineTarget = null }
+
     fun cancelSelection() {
         selecting = false
         selection = emptySet()
     }
     fun toggleSelection(id: String) {
         if (busy) return
-        if (trash || state.optJSONObject("profile")?.optBoolean("read_only") == true) return
+        // 0.2.7：回收站同样支持多选，仅只读空间仍拦截。
+        if (state.optJSONObject("profile")?.optBoolean("read_only") == true) return
         selecting = true
         selection = if (id in selection) selection - id else selection + id
     }
@@ -147,13 +191,13 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
             editorOpen = false
         }
         if (saved.isNotEmpty()) {
-            val previous = trashUndo?.takeIf { mergeUndo && it.profile == profile }?.notes.orEmpty()
+            val previous = trashUndo?.takeIf { mergeUndo && it.profile == profile && !it.deleted }?.notes.orEmpty()
             trashUndo = TrashUndo(
                 profile,
                 (previous + saved).associateBy {
                     it.getString("id")
                 }.values.toList(),
-                ++undoSerial, results.size - saved.size
+                ++undoSerial, results.size - saved.size, deleted = false
             )
         }
         if (saved.isEmpty() && results.isNotEmpty()) {
@@ -170,6 +214,80 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
             if (group.profile == currentProfileId()) restoreTrashGroup(group)
         }
     }
+
+    /** 回收站批量恢复；撤销 = 重新移回回收站（deleted:true），仅撤销成功项并使用成功后代次。 */
+    fun restoreTrashNotes(targets: List<JSONObject>) = action {
+        val profile = currentProfileId()
+        if (compositionActive) {
+            reportText(R.string.finish_composition)
+            return@action
+        }
+        if (!flush()) return@action
+        val items = targets.map { original ->
+            val note = selected?.takeIf { it.optString("id") == original.optString("id") } ?: original
+            JSONObject().put("id", note.getString("id")).put("expected_generation", note.getString("generation"))
+        }
+        val results = gateway.obj(
+            "batch_set_deleted",
+            "profile_id" to profile,
+            "deleted" to false,
+            "items" to JSONArray(items)
+        ).getJSONArray("results").objects()
+        val saved = results.filter { it.optBoolean("ok") }.map { it.getJSONObject("note") }
+        if (currentProfileId() != profile) return@action
+        selection = results.filterNot { it.optBoolean("ok") }.map { it.getString("id") }.toSet()
+        selecting = selection.isNotEmpty()
+        if (saved.any { it.getString("id") == selected?.optString("id") }) {
+            selected = null
+            content = ""
+            editorOpen = false
+        }
+        if (saved.isNotEmpty()) {
+            trashUndo = TrashUndo(profile, saved, ++undoSerial, results.size - saved.size, deleted = true)
+        }
+        loadNotes()
+    }
+
+    /** 回收站批量彻底删除；快照在打开确认框时冻结，确认后逐项提交，不可撤销。 */
+    fun purgeNotes(targets: List<JSONObject>) = action {
+        val profile = currentProfileId()
+        if (compositionActive) {
+            reportText(R.string.finish_composition)
+            return@action
+        }
+        if (!flush()) return@action
+        val items = targets.map { target ->
+            val note = selected?.takeIf { it.optString("id") == target.optString("id") } ?: target
+            JSONObject().put("id", note.getString("id")).put("expected_generation", note.getString("generation"))
+        }
+        val results = gateway.obj(
+            "batch_purge",
+            "profile_id" to profile,
+            "items" to JSONArray(items)
+        ).getJSONArray("results").objects()
+        if (currentProfileId() != profile) return@action
+        val purged = results.count { it.optBoolean("ok") && it.optString("purge_state") == "purged" }
+        val pending = results.count { it.optBoolean("ok") && it.optString("purge_state") == "pending" }
+        val failed = results.count { !it.optBoolean("ok") }
+        val currentId = selected?.optString("id")
+        if (currentId != null && results.any { it.optString("id") == currentId && it.optBoolean("ok") }) {
+            selected = null
+            content = ""
+            editorOpen = false
+        }
+        // Keep failed items selected so the user can review and retry.
+        selection = results.filterNot { it.optBoolean("ok") }.map { it.getString("id") }.toSet()
+        selecting = selection.isNotEmpty()
+        val account = state.optJSONObject("profile")?.optString("kind") == "account"
+        actionNotice = when {
+            failed > 0 && account -> UiText(R.string.purged_pending_failed, listOf(purged, pending, failed))
+            failed > 0 -> UiText(R.string.purged_count_failed, listOf(purged, failed))
+            account -> UiText(R.string.purged_pending, listOf(purged, pending))
+            else -> UiText(R.string.purged_count, listOf(purged))
+        }
+        loadNotes()
+    }
+
     private fun restoreTrashGroup(group: TrashUndo) = action {
         if (group.profile != currentProfileId()) return@action
         val items = group.notes.map {
@@ -181,7 +299,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         val results = gateway.obj(
             "batch_set_deleted",
             "profile_id" to group.profile,
-            "deleted" to false,
+            "deleted" to group.deleted,
             "items" to JSONArray(items)
         ).getJSONArray("results").objects()
         val restored = results.count { it.optBoolean("ok") }
@@ -228,6 +346,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
             cancelSelection()
             localStatus = UiText(R.string.save_success)
             actionNotice = UiText(R.string.markdown_imported)
+            refreshOutline()
             loadNotes()
         }
     }
@@ -300,6 +419,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         pending = true
         localStatus = UiText(R.string.save_pending)
         noteLargeNoteIfNeeded()
+        refreshOutline()
         scheduleSave()
     }
 
@@ -462,6 +582,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         } else if (canRefreshEditor() && revision == currentRevision) {
             selected = fresh
             content = fresh.optString("content")
+            refreshOutline()
         }
     }
 
@@ -594,6 +715,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         revision++
         largeNoteNotified = false
         noteLargeNoteIfNeeded()
+        refreshOutline()
         findQuery = searchQuery
         findOpen = true
         loadNotes()
@@ -636,6 +758,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         localStatus = UiText(R.string.save_blank)
         revision++
         largeNoteNotified = false
+        refreshOutline()
     }
 
     fun open(note: JSONObject) = action {
@@ -649,6 +772,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         revision++
         largeNoteNotified = false
         noteLargeNoteIfNeeded()
+        refreshOutline()
     }
 
     fun backToList() = action { if (flush()) { editorOpen = false; closeFind() } }
@@ -722,6 +846,7 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         content = next.getString("content")
         revision++
         localStatus = UiText(R.string.save_success)
+        refreshOutline()
         loadNotes()
     }
 
@@ -898,6 +1023,10 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         query = ""
         trash = false
         largeNoteNotified = false
+        headings = emptyList()
+        outlineTarget = null
+        outlineJob?.cancel()
+        outlineJob = null
         revision++
     }
 

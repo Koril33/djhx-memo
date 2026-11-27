@@ -13,6 +13,8 @@
   import { call, native, errorText, coreErrorText } from './lib/bridge';
   import { EditorSession } from './lib/editor-session';
   import { renderMarkdown } from './lib/markdown';
+  import { clearRevoking, receiptIsCurrent } from './lib/devices';
+  import { locateHeadings, type Heading } from './lib/headings';
   import type { CodeHighlights } from './lib/code-highlights';
   import { isLargeNote } from './lib/note-size';
   import { PreviewState, taskSnapshotMatches } from './lib/preview-state';
@@ -135,8 +137,27 @@
   let notes: Note[] = [];
   let selecting = false;
   let selection = new Set<string>();
-  type BatchResult = { results: { id: string; ok: boolean; note?: Note }[] };
-  let undoGroup: { profile: string; notes: Note[] } | null = null;
+  type BatchResult = {
+    results: {
+      id: string;
+      ok: boolean;
+      note?: Note;
+      error?: { code: string; message: string };
+    }[];
+  };
+  type BatchPurgeResult = {
+    results: {
+      id: string;
+      ok: boolean;
+      purge_state?: 'purged' | 'pending';
+      error?: { code: string; message: string };
+    }[];
+  };
+  let undoGroup: { profile: string; notes: Note[]; deleted: boolean } | null = null;
+  let purgeBatchConfirmation: {
+    profile: string;
+    items: { id: string; generation: string }[];
+  } | null = null;
   let undoTimer: ReturnType<typeof setTimeout> | undefined;
   function clearListActions(): void {
     selecting = false;
@@ -155,10 +176,10 @@
     clearTimeout(undoTimer);
     if (undoGroup) undoTimer = setTimeout(clearUndo, 8000);
   }
-  function offerUndo(profile: string, saved: Note[]): void {
+  function offerUndo(profile: string, saved: Note[], deleted: boolean): void {
     if (!saved.length) return;
     clearUndo();
-    undoGroup = { profile, notes: saved };
+    undoGroup = { profile, notes: saved, deleted };
     // Keep the action available while focused/hovered for keyboard and assistive use.
     restartUndoTimer();
   }
@@ -181,13 +202,97 @@
         documentKey++;
       }
       if (saved.length) notice = null;
-      offerUndo(profile, saved);
+      offerUndo(profile, saved, false);
       await refreshState(true);
       if (saved.length !== result.results.length)
         notify('batchResult', {
           count: saved.length,
           failed: result.results.length - saved.length,
         });
+    });
+  }
+  async function batchRestore(targets = notes.filter((n) => selection.has(n.id))): Promise<void> {
+    const profile = state!.profile.id;
+    await editor.finishLifecycle(async () => {
+      targets = targets.map((n) => (n.id === editor.note?.id ? editor.note! : n));
+      const result = await call<BatchResult>({
+        action: 'batch_set_deleted',
+        profile_id: profile,
+        deleted: false,
+        items: targets.map((n) => ({ id: n.id, expected_generation: n.generation })),
+      });
+      const saved = result.results.flatMap((r) => (r.ok && r.note ? [r.note] : []));
+      selection = new Set(result.results.filter((r) => !r.ok).map((r) => r.id));
+      selecting = selection.size > 0;
+      if (saved.some((n) => n.id === editor.note?.id)) {
+        await editor.open(null);
+        enterWelcome();
+        documentKey++;
+      }
+      if (saved.length) notice = null;
+      offerUndo(profile, saved, true);
+      await refreshState(true);
+      if (saved.length !== result.results.length)
+        notify('batchResult', {
+          count: saved.length,
+          failed: result.results.length - saved.length,
+        });
+    });
+  }
+  function openBatchPurgeConfirmation(): void {
+    if (!state) return;
+    const targets = notes.filter((n) => selection.has(n.id));
+    if (!targets.length) return;
+    purgeBatchConfirmation = {
+      profile: state.profile.id,
+      items: targets.map((n) => ({ id: n.id, generation: n.generation })),
+    };
+  }
+  async function confirmBatchPurge(): Promise<void> {
+    const target = purgeBatchConfirmation;
+    if (!target) return;
+    if (target.profile !== state?.profile.id) throw new LocalizedError('profileChanged');
+    const account = state?.profile.kind === 'account';
+    await editor.finishLifecycle(async () => {
+      const result = await call<BatchPurgeResult>({
+        action: 'batch_purge',
+        profile_id: target.profile,
+        items: target.items.map((item) => ({
+          id: item.id,
+          expected_generation: item.generation,
+        })),
+      });
+      purgeBatchConfirmation = null;
+      const purged = result.results.filter((r) => r.ok && r.purge_state === 'purged').length;
+      const pending = result.results.filter((r) => r.ok && r.purge_state === 'pending').length;
+      const failed = result.results.filter((r) => !r.ok).length;
+      const currentId = editor.note?.id;
+      const currentSucceeded =
+        currentId !== undefined &&
+        result.results.some(
+          (r) =>
+            r.id === currentId &&
+            r.ok &&
+            (r.purge_state === 'purged' || r.purge_state === 'pending'),
+        );
+      if (currentSucceeded) {
+        await editor.open(null);
+        enterWelcome();
+        documentKey++;
+      }
+      // Keep failed items selected so the user can review and retry.
+      selection = new Set(result.results.filter((r) => !r.ok).map((r) => r.id));
+      selecting = selection.size > 0;
+      await refreshState(true);
+      const key =
+        failed > 0
+          ? account
+            ? 'batchPurgedFailed'
+            : 'batchPurgedLocalFailed'
+          : account
+            ? 'batchPurged'
+            : 'batchPurgedLocal';
+      notify(key, { purged, pending, count: purged, failed });
     });
   }
   async function undoTrash(): Promise<void> {
@@ -200,7 +305,7 @@
     const result = await call<BatchResult>({
       action: 'batch_set_deleted',
       profile_id: group.profile,
-      deleted: false,
+      deleted: group.deleted,
       items: group.notes.map((n) => ({ id: n.id, expected_generation: n.generation })),
     });
     await refreshState(true);
@@ -274,7 +379,17 @@
   }
   let query = '';
   let trash = false;
-  let mode: 'source' | 'preview' | 'split' = 'source';
+  let mode: 'source' | 'preview' | 'split' = preferences.editorMode;
+  const narrowQuery = window.matchMedia('(max-width: 850px)');
+  let narrow = narrowQuery.matches;
+  $: effectiveMode = narrow && mode === 'split' ? 'source' : mode;
+  function setEditorMode(next: 'source' | 'preview' | 'split', persist: boolean): void {
+    mode = next;
+    if (persist) {
+      preferences.editorMode = next;
+      updatePreferences();
+    }
+  }
   type EditorPage = 'welcome' | 'draft' | 'note';
   let editorPage: EditorPage = 'welcome';
   let transitioning = false;
@@ -319,6 +434,13 @@
     { platform: /Windows/i.test(navigator.userAgent) ? 'Windows' : 'Linux' },
   );
   let devices: Device[] = [];
+  let devicesLoading = false;
+  let devicesRefreshing = false;
+  let devicesError: unknown = null;
+  let devicesStale = false;
+  let devicesSession = 0;
+  let revoking: string | null = null;
+  let revokeError: unknown = null;
   let showImport = false;
   let importSource = 'local';
   let documentKey = 0;
@@ -336,6 +458,10 @@
   let modalDepth = 0;
   let globalSearchOpen = false;
   let findApi: EditorFindApi | undefined;
+  let outlineApi: { jump: (line: number) => void } | undefined;
+  let reanchoring = false;
+  let pendingReanchor = false;
+  let reanchorTimer: ReturnType<typeof setTimeout> | undefined;
   let pendingFindQuery: string | null = null;
   let editor = new EditorSession(
     call,
@@ -354,6 +480,7 @@
     documentKey,
     noteId: editor.note?.id ?? null,
   });
+  $: outline = locateHeadings(previewSnapshot.source);
   let highlightTimer: ReturnType<typeof setTimeout> | undefined;
   let highlightRequest = 0;
   let highlighted: { source: string; result: CodeHighlights } | undefined;
@@ -364,7 +491,7 @@
   // generation until preview or split is actually shown. Preview/split recompute on
   // the next render because `mode` is a reactive dependency here.
   $: preview =
-    mode === 'source'
+    effectiveMode === 'source'
       ? ''
       : renderMarkdown(
           previewSnapshot.source,
@@ -523,6 +650,7 @@
     const next = await call<AppState>({ action: 'state' });
     if (request !== stateRequestCounter) return;
     if (state && next.profile.id !== state.profile.id) {
+      invalidateDevices();
       if (editor.unsaved || editor.saving || editor.composing || editor.error) {
         latestState = next;
         activeMismatch = true;
@@ -541,6 +669,7 @@
     const changed =
       force || !state || next.profile.id !== state.profile.id || next.event_seq !== state.event_seq;
     if (state?.profile.id !== next.profile.id) {
+      invalidateDevices();
       clearListActions();
       clearUndo();
       pendingMarkdown = null;
@@ -628,6 +757,7 @@
     clearListActions();
     clearUndo();
     pendingMarkdown = null;
+    invalidateDevices();
     state = null;
     await refreshState(true);
     notify('profileSwitched');
@@ -673,6 +803,7 @@
       clearListActions();
       clearUndo();
       pendingMarkdown = null;
+      invalidateDevices();
       state = null;
       query = '';
       trash = false;
@@ -713,7 +844,7 @@
     state = null;
     query = '';
     trash = false;
-    devices = [];
+    invalidateDevices();
     await refreshState(true);
     notify(result.remote_revoked ? 'loggedOut' : 'loggedOutOffline');
   }
@@ -831,8 +962,45 @@
     settings = true;
     const content = document.querySelector<HTMLElement>('.settings-dialog .dialog-content');
     if (content) content.scrollTop = 0;
-    if (tab === 'devices' && state?.profile.kind === 'account')
-      devices = await call<Device[]>({ action: 'devices' });
+    if (tab === 'devices' && state?.profile.kind === 'account') void loadDevices();
+  }
+  async function loadDevices(force = false): Promise<void> {
+    if (!state?.profile || state.profile.kind !== 'account') return;
+    // Coalesce button-triggered refreshes; a post-revoke refresh forces through.
+    if (!force && (devicesLoading || devicesRefreshing)) return;
+    const profileId = state.profile.id;
+    const session = ++devicesSession;
+    if (devices.length === 0) devicesLoading = true;
+    else devicesRefreshing = true;
+    try {
+      const next = await call<Device[]>({ action: 'devices', profile_id: profileId });
+      if (receiptIsCurrent(session, devicesSession, profileId, state?.profile.id)) {
+        devices = next;
+        devicesError = null;
+        devicesStale = false;
+        revokeError = null;
+      }
+    } catch (error) {
+      if (receiptIsCurrent(session, devicesSession, profileId, state?.profile.id)) {
+        devicesError = error;
+        devicesStale = devices.length > 0;
+      }
+    } finally {
+      if (session === devicesSession) {
+        devicesLoading = false;
+        devicesRefreshing = false;
+      }
+    }
+  }
+  function invalidateDevices(): void {
+    devicesSession++;
+    devices = [];
+    devicesError = null;
+    devicesStale = false;
+    devicesLoading = false;
+    devicesRefreshing = false;
+    revoking = null;
+    revokeError = null;
   }
   async function installUpdate(): Promise<void> {
     if (busy || lifecyclePending) throw new Error('UPDATE_BUSY');
@@ -846,10 +1014,23 @@
     }
   }
   async function revoke(id: string): Promise<void> {
-    await call({ action: 'revoke_device', id });
-    devices = await call<Device[]>({ action: 'devices' });
-    await refreshState(true);
-    notify('revokedNotice');
+    if (!state?.profile || state.profile.kind !== 'account') return;
+    const profileId = state.profile.id;
+    const self = devices.find((device) => device.id === id)?.current ?? false;
+    revoking = id;
+    revokeError = null;
+    try {
+      await call({ action: 'revoke_device', profile_id: profileId, id });
+      void loadDevices(true);
+      await refreshState(true);
+      notify(self ? 'revokedAndRelogin' : 'revokedNotice');
+    } catch (error) {
+      revokeError = error;
+    } finally {
+      // loadDevices() advances the shared session before this finally runs, so
+      // gate on the revoke id instead of the session: only clear our own flag.
+      revoking = clearRevoking(revoking, id);
+    }
   }
   function search(): void {
     clearListActions();
@@ -954,10 +1135,46 @@
     editorFocused = true;
   }
   function handleEditorBlur(): void {
+    // A re-anchor blur is our own; it must not trigger a save/flush.
+    if (reanchoring) return;
     editorFocused = false;
     void editor.flush().catch((error) => {
       failure = error;
     });
+  }
+  // After a window resize, WebView2 can stop reporting caret bounds and park the
+  // IME candidate window at the screen origin (WebView2Feedback#5675). A native
+  // focus round-trip rebuilds the TSF text-store association; blur is deferred
+  // from focus so Chromium doesn't batch the two into a no-op.
+  function reanchorEditor(): void {
+    const view = sourceView;
+    if (!view || reanchoring) return;
+    if (editor.composing || view.compositionStarted) {
+      pendingReanchor = true;
+      return;
+    }
+    if (
+      !editorFocused ||
+      modalDepth > 0 ||
+      !document.hasFocus() ||
+      document.visibilityState !== 'visible'
+    )
+      return;
+    reanchoring = true;
+    view.contentDOM.blur();
+    setTimeout(() => {
+      view.focus();
+      reanchoring = false;
+    }, 50);
+  }
+  function jumpToHeading(heading: Heading): void {
+    if (effectiveMode === 'preview') {
+      document
+        .querySelector(`.preview-pane [data-source-from="${heading.offset}"]`)
+        ?.scrollIntoView({ block: 'start', inline: 'nearest' });
+    } else {
+      outlineApi?.jump(heading.line);
+    }
   }
   function focusNoteList(): void {
     const target =
@@ -1017,14 +1234,14 @@
   async function openInNoteFind(): Promise<void> {
     if (!editor.note) return;
     if (mode !== 'source') {
-      mode = 'source';
+      setEditorMode('source', false);
       await tick();
     }
     findApi?.open();
   }
   async function openGlobalSearchHit(hit: SearchHit, term: string): Promise<void> {
     await run(async () => {
-      if (mode === 'preview') mode = 'source';
+      if (mode === 'preview') setEditorMode('source', false);
       if (state?.profile.id !== hit.profile_id) {
         await switchProfile(hit.profile_id);
       }
@@ -1049,19 +1266,32 @@
     const changedTheme = (event: MediaQueryListEvent) => {
       browserDark = event.matches;
     };
+    const changedNarrow = (event: MediaQueryListEvent) => {
+      narrow = event.matches;
+    };
     const changedLanguage = () => {
       systemLanguage = navigator.language;
+    };
+    // Debounce resize to a trailing settle before re-anchoring the IME caret.
+    const changedWindow = () => {
+      clearTimeout(reanchorTimer);
+      reanchorTimer = setTimeout(() => reanchorEditor(), 180);
     };
     void refreshSystemAppearance();
     const appearancePoll = setInterval(() => {
       if (preferences.theme === 'system') void refreshSystemAppearance();
     }, 2000);
     colorScheme.addEventListener('change', changedTheme);
+    narrowQuery.addEventListener('change', changedNarrow);
     window.addEventListener('languagechange', changedLanguage);
+    window.addEventListener('resize', changedWindow);
     const cleanup = () => {
       clearInterval(appearancePoll);
+      clearTimeout(reanchorTimer);
       colorScheme.removeEventListener('change', changedTheme);
+      narrowQuery.removeEventListener('change', changedNarrow);
       window.removeEventListener('languagechange', changedLanguage);
+      window.removeEventListener('resize', changedWindow);
     };
     void (async () => {
       try {
@@ -1292,30 +1522,46 @@
                 />{/if}</span
             >{t('selectAllShort')}
           </button>
-          <button
-            class="icon-button selection-trash"
-            disabled={busy || !selection.size}
-            aria-label={t('moveToTrash')}
-            title={t('moveToTrash')}
-            on:click={() => run(() => batchTrash())}><Icon name="trash-2" size={18} /></button
-          >
+          {#if trash}
+            <button
+              class="icon-button selection-restore"
+              disabled={busy || !selection.size}
+              aria-label={t('restoreNote')}
+              title={t('restoreNote')}
+              on:click={() => run(() => batchRestore())}
+              ><Icon name="rotate-ccw" size={18} /></button
+            >
+            <button
+              class="icon-button selection-trash"
+              disabled={busy || !selection.size}
+              aria-label={t('purgeNote')}
+              title={t('purgeNote')}
+              on:click={openBatchPurgeConfirmation}><Icon name="trash-2" size={18} /></button
+            >
+          {:else}
+            <button
+              class="icon-button selection-trash"
+              disabled={busy || !selection.size}
+              aria-label={t('moveToTrash')}
+              title={t('moveToTrash')}
+              on:click={() => run(() => batchTrash())}><Icon name="trash-2" size={18} /></button
+            >
+          {/if}
         {:else}
           <h1>{t(trash ? 'trash' : 'allNotes')}</h1>
           <span>{t(query ? 'matches' : 'records', { count: notes.length })}</span>
-          {#if !trash}
-            <button
-              class="icon-button list-select-button"
-              title={t('selectNotes')}
-              disabled={busy || !state || state.profile.read_only}
-              aria-label={t('selectNotes')}
-              on:click={() => {
-                selecting = true;
-                selection = new Set();
-              }}
-            >
-              <Icon name="list-checks" size={18} />
-            </button>
-          {/if}
+          <button
+            class="icon-button list-select-button"
+            title={t('selectNotes')}
+            disabled={busy || !state || state.profile.read_only}
+            aria-label={t('selectNotes')}
+            on:click={() => {
+              selecting = true;
+              selection = new Set();
+            }}
+          >
+            <Icon name="list-checks" size={18} />
+          </button>
           <button
             class="icon-button"
             aria-label={t('refreshList')}
@@ -1448,31 +1694,36 @@
               class:chosen={mode === 'source'}
               aria-label={t('source')}
               title={t('source')}
-              aria-pressed={mode === 'source'}
-              on:click={() => {
-                mode = 'source';
-              }}><Icon name="pencil" /></button
+              aria-pressed={effectiveMode === 'source'}
+              on:click={() => setEditorMode('source', true)}><Icon name="pencil" /></button
             >
             <button
               class:chosen={mode === 'preview'}
               aria-label={t('preview')}
               title={t('preview')}
-              aria-pressed={mode === 'preview'}
-              on:click={() => {
-                mode = 'preview';
-              }}><Icon name="eye" /></button
+              aria-pressed={effectiveMode === 'preview'}
+              on:click={() => setEditorMode('preview', true)}><Icon name="eye" /></button
             >
             <button
               class:chosen={mode === 'split'}
               aria-label={t('split')}
               title={t('split')}
-              aria-pressed={mode === 'split'}
-              on:click={() => {
-                mode = 'split';
-              }}><Icon name="columns-2" /></button
+              aria-pressed={effectiveMode === 'split'}
+              on:click={() => setEditorMode('split', true)}><Icon name="columns-2" /></button
             >
           </div>
-          {#if mode === 'split'}<button
+          <button
+            class="icon-button"
+            class:chosen={preferences.outlineVisible}
+            aria-pressed={preferences.outlineVisible}
+            aria-label={t('outlineTitle')}
+            title={t('outlineTitle')}
+            on:click={() => {
+              preferences.outlineVisible = !preferences.outlineVisible;
+              updatePreferences();
+            }}><Icon name="table-of-contents" size={18} /></button
+          >
+          {#if effectiveMode === 'split'}<button
               class="icon-button"
               class:chosen={preferences.splitScrollSync}
               aria-pressed={preferences.splitScrollSync}
@@ -1488,7 +1739,7 @@
               aria-label={t('lintProblems')}
               title={t('lintProblems')}
               on:click={() => {
-                mode = 'source';
+                setEditorMode('source', false);
                 openLint?.();
               }}><Icon name="spell-check" size={18} /></button
             >{/if}
@@ -1677,51 +1928,90 @@
             </button>
           </div>
         </div>
-      </div>{:else}<div
-        class="editor-body"
-        class:split={mode === 'split'}
-        use:splitScroll={{
-          enabled: mode === 'split' && preferences.splitScrollSync,
-          view: sourceView,
-          version: previewSnapshot.version,
-        }}
-      >
+      </div>{:else}<div class="editor-region">
+        {#if preferences.outlineVisible}<aside
+            class="outline-panel"
+            class:overlay={narrow}
+            aria-label={t('outlineTitle')}
+          >
+            <div class="outline-heading">
+              <strong>{t('outlineTitle')}</strong>
+              <button
+                class="icon-button"
+                aria-label={t('close')}
+                title={t('close')}
+                on:click={() => {
+                  preferences.outlineVisible = false;
+                  updatePreferences();
+                }}><Icon name="x" size={16} /></button
+              >
+            </div>
+            {#if outline.length}<div class="outline-list">
+                {#each outline as heading, i (i)}<button
+                    class="outline-item"
+                    style={`--outline-level: ${heading.level}`}
+                    on:click={() => jumpToHeading(heading)}>{heading.label}</button
+                  >{/each}
+              </div>{:else}<div class="outline-empty">{t('outlineEmpty')}</div>{/if}
+          </aside>{/if}
         <div
-          class="source-pane"
-          class:concealed={mode === 'preview'}
-          aria-hidden={mode === 'preview'}
+          class="editor-body"
+          class:split={effectiveMode === 'split'}
+          use:splitScroll={{
+            enabled: effectiveMode === 'split' && preferences.splitScrollSync,
+            view: sourceView,
+            version: previewSnapshot.version,
+          }}
         >
-          {#key documentKey}<Editor
-              value={editor.content}
-              highlights={codeHighlights}
-              composing={editor.composing}
-              {language}
-              lintEnabled={preferences.markdownLintEnabled}
-              onView={(view) => {
-                sourceView = view;
-              }}
-              onLintApi={(open) => {
-                openLint = open;
-              }}
-              readonly={readOnly}
-              onEdit={(text) => editor.edit(text)}
-              onComposition={(active) => editor.setComposing(active)}
-              onFocus={handleEditorFocus}
-              onBlur={handleEditorBlur}
-              onFindApi={receiveFindApi}
-            />{/key}
-        </div>
-        <div
-          class="preview-pane"
-          class:concealed={mode === 'source'}
-          aria-hidden={mode === 'source'}
-        >
-          <article class="markdown" use:previewEvents role="document" aria-label={t('safePreview')}>
-            {#if editor.content}{@html preview}{:else}<div class="preview-empty">
-                <Icon name="file-text" size={24} />
-                <h2>{t('emptyNoteTitle')}</h2>
-              </div>{/if}
-          </article>
+          <div
+            class="source-pane"
+            class:concealed={effectiveMode === 'preview'}
+            aria-hidden={effectiveMode === 'preview'}
+          >
+            {#key documentKey}<Editor
+                value={editor.content}
+                highlights={codeHighlights}
+                composing={editor.composing}
+                {language}
+                lintEnabled={preferences.markdownLintEnabled}
+                onView={(view) => {
+                  sourceView = view;
+                }}
+                onLintApi={(open) => {
+                  openLint = open;
+                }}
+                onOutlineApi={(api) => (outlineApi = api)}
+                readonly={readOnly}
+                onEdit={(text) => editor.edit(text)}
+                onComposition={(active) => {
+                  editor.setComposing(active);
+                  if (!active && pendingReanchor) {
+                    pendingReanchor = false;
+                    reanchorEditor();
+                  }
+                }}
+                onFocus={handleEditorFocus}
+                onBlur={handleEditorBlur}
+                onFindApi={receiveFindApi}
+              />{/key}
+          </div>
+          <div
+            class="preview-pane"
+            class:concealed={effectiveMode === 'source'}
+            aria-hidden={effectiveMode === 'source'}
+          >
+            <article
+              class="markdown"
+              use:previewEvents
+              role="document"
+              aria-label={t('safePreview')}
+            >
+              {#if editor.content}{@html preview}{:else}<div class="preview-empty">
+                  <Icon name="file-text" size={24} />
+                  <h2>{t('emptyNoteTitle')}</h2>
+                </div>{/if}
+            </article>
+          </div>
         </div>
       </div>{/if}
     <footer class="editor-footer">
@@ -2074,7 +2364,21 @@
           >
           {#if state?.profile.kind !== 'account'}<div class="settings-empty">
               {t('devicesNeedAccount')}
+            </div>{:else if devicesLoading}<div class="settings-empty">
+              {t('devicesLoading')}
             </div>{:else}<div class="device-list" aria-describedby="devices-help-text">
+              {#if revokeError}<div class="inline-error">{t('revokeFailed')}</div>{/if}
+              {#if devicesError && devices.length === 0}<div class="inline-error">
+                  {t('devicesRefreshFailed')}<button on:click={() => void loadDevices()}
+                    >{t('retry')}</button
+                  >
+                </div>{/if}
+              {#if devicesStale}<div class="inline-notice">
+                  {t('devicesStale')}<button on:click={() => void loadDevices()}
+                    >{t('retry')}</button
+                  >
+                </div>{/if}
+              {#if devicesRefreshing}<div class="inline-notice">{t('devicesRefreshing')}</div>{/if}
               {#each devices as device (device.id)}<div class="device-row">
                   <span class="device-symbol"><Icon name="monitor" size={20} /></span>
                   <div>
@@ -2097,15 +2401,19 @@
                   </div>
                   <button
                     class="text-button danger"
-                    disabled={busy || !!device.revoked_at}
-                    on:click={() => run(() => revoke(device.id))}
-                    >{device.revoked_at ? t('revoked') : t('revoke')}</button
+                    disabled={revoking !== null || !!device.revoked_at}
+                    on:click={() => void revoke(device.id)}
+                    >{device.revoked_at
+                      ? t('revoked')
+                      : revoking === device.id
+                        ? t('processing')
+                        : t('revoke')}</button
                   >
-                </div>{:else}<div class="settings-empty">
-                  {t('noDevices')}<button on:click={() => run(() => openSettings('devices'))}
-                    >{t('reload')}</button
-                  >
-                </div>{/each}
+                </div>{:else}{#if !devicesError}<div class="settings-empty">
+                    {t('noDevices')}<button on:click={() => void loadDevices()}
+                      >{t('reload')}</button
+                    >
+                  </div>{/if}{/each}
             </div>{/if}
         {:else if settingsTab === 'updates'}
           <Updates {language} timeZone={preferences.timeZone} install={installUpdate} />
@@ -2325,6 +2633,44 @@
   </div>
 {/if}
 
+{#if purgeBatchConfirmation}
+  <div class="modal-backdrop" role="presentation">
+    <div
+      class="import-dialog"
+      use:modal={() => {
+        purgeBatchConfirmation = null;
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="purge-batch-heading"
+      tabindex="-1"
+    >
+      <h2 id="purge-batch-heading">
+        {t('purgeConfirmBatch', {
+          count: purgeBatchConfirmation.items.length,
+        })}
+      </h2>
+      <p>{t('purgeHelpBatch')}</p>
+      <div class="dialog-actions">
+        <button
+          class="secondary-button"
+          disabled={busy}
+          on:click={() => {
+            purgeBatchConfirmation = null;
+          }}>{t('cancel')}</button
+        >
+        <button
+          class="danger destructive-solid"
+          disabled={busy}
+          on:click={() => run(confirmBatchPurge)}
+          ><Icon name="trash-2" size={18} />{t('purgeNote')}</button
+        >
+      </div>
+      {#if failure}<p class="inline-error">{errorText(failure, language)}</p>{/if}
+    </div>
+  </div>
+{/if}
+
 {#if undoGroup}
   <div
     class="trash-snackbar"
@@ -2339,7 +2685,11 @@
     }}
   >
     <span class="snackbar-mark" aria-hidden="true"><Icon name="check" size={18} /></span>
-    <span class="snackbar-message">{t('trashNotice', { total: undoGroup.notes.length })}</span>
+    <span class="snackbar-message"
+      >{t(undoGroup.deleted ? 'restoredNotice' : 'trashNotice', {
+        total: undoGroup.notes.length,
+      })}</span
+    >
     <button
       class="snackbar-undo"
       disabled={busy}

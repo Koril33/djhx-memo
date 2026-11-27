@@ -279,4 +279,12 @@
     <string name="update_source_received">本包下载来源：%1$s</string>
     <string name="update_release_page">在 GitHub 查看发行版本</string>
     <string name="update_browser_failed">无法打开浏览器，请重试。</string>
+    <string name="undo">撤销</string>
+    <string name="purge_confirm_batch">彻底删除 %1$d 条笔记？</string>
+    <string name="purged_count">已彻底删除 %1$d 条</string>
+    <string name="purged_count_failed">已彻底删除 %1$d 条 · 失败 %2$d 条</string>
+    <string name="purged_pending">已彻底删除 %1$d 条 · 待同步 %2$d 条</string>
+    <string name="purged_pending_failed">已彻底删除 %1$d 条 · 待同步 %2$d 条 · 失败 %3$d 条</string>
+    <string name="outline_title">目录</string>
+    <string name="outline_empty">暂无标题</string>
 </resources>

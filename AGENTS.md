@@ -3,7 +3,7 @@
 ## 阅读顺序与当前状态
 
 - 阅读 [README](README.md)、[项目计划](djhx-memo-project-plan.md)、[spec 索引](spec/README.md) 及工作目录中的 `AGENTS.md`。
-- 当前公开客户端/core0.2.2、Android code17（保留空白页/两段式Ctrl+W、固定搜索及Android列表续写），新增桌面lint/同步滚动、三端下载源和Linux最新DEB浏览器入口；local schema4、server0.1.4/schema2、协议2。官网/个人源镜像、latest及签名current13已按维护者授权部署，见docs/releases/0.2.2-validation.md及docs/releases/0.2.2-deployment.md。不把CI/公网下载当Linux GUI或真实覆盖升级已验收。完整产品v1/三端性能与设备矩阵仍独立验收；连续7天试用已由维护者确认完成，逐日明细未入库，不替代三端矩阵。
+- 当前公开客户端/core **0.2.6**、Android code21，local schema4、server0.1.4/schema2、协议2；0.2.4/0.2.5/0.2.6 为 0.2.3 设置交互热修、均已公开发布但 spec/docs 未单独入库（0.2.7 按“基线段注明”收口，公开与入库分开记录）。官网/个人源镜像、latest及签名current13已部署，见 docs/releases/0.2.2-validation.md 及 docs/releases/0.2.2-deployment.md。不把CI/公网下载当Linux GUI或真实覆盖升级已验收。完整产品v1/三端性能与设备矩阵仍独立验收；连续7天试用已由维护者确认完成，逐日明细未入库，不替代三端矩阵。
 - `spec/` 是产品与实现行为的唯一事实来源。改行为先改规范，规范与实现同批提交；不得把计划或占位内容当作已实现的能力。
 
 ## 工作方式
@@ -18,7 +18,7 @@
 ## 禁止事项
 
 - 不使用客户端时间判断笔记新旧，不以自增 ID 作为跨设备笔记标识。
-- 普通删除保留正文和墓碑；维护者已批准 0.1.4 单条彻底删除，按 spec/permanent-deletion.md 清除当前正文并保留永久删除标记，不实现自动清理。
+- 普通删除保留正文和墓碑；维护者已批准 0.1.4 单条彻底删除与 0.2.7 回收站批量彻底删除，按 spec/permanent-deletion.md 与 spec/client-0.2.7.md 清除当前正文并保留永久删除标记，不实现自动清理。
 - 不在 UI 层实现同步或冲突规则，不用 `dirty` 布尔值代替可靠待发送操作。
 - 不在日志和错误信息中输出正文、密码、邀请码或 token；凭据不得入仓库。
 - 不修改已发布迁移，只追加版本化迁移，并验证升级路径。
@@ -63,3 +63,5 @@
 - 0.2.2已实现并公开：桌面markdownlint默认关闭、对照按内容双向同步滚动默认开启，Android不做lint；Linux仅增加最新DEB浏览器入口，仍不自动检查/下载/安装；memo.djhx.site为主下载源、GitHub备用，三端更新页可切源。行为见spec/client-0.2.2.md，依赖/传输边界见ADR0021/0022，实际检查与未验收项见docs/releases/0.2.2-validation.md。维护者已审阅并合并PR #34中的workflow，后续追加授权公开Release、初始化下载路由和正式部署，结果见docs/releases/0.2.2-deployment.md；此授权不泛化为未来版本自动公开/部署。保持旧v1目录兼容、固定镜像路径和原签名，不因切源重置防回放。
 
 - 0.2.3为 UI 整理：桌面设置说明文本改为“ⓘ”按需展开（修订 product-v1 §11 第137条）、设置弹窗正文区最小高度稳定、编辑器工具栏“对照同步滚动/格式提示”图标化（arrow-down-up/spell-check）、桌面列表多选入口去重、两端破坏性菜单位置对齐置底。行为见 spec/client-0.2.3.md，开发方案见 docs/client-0.2.3-development.md；client0.2.3、Android code18，core0.2.2/server0.1.4/协议2/schema 不变，无新依赖。
+
+- 0.2.7为五项改动：回收站多选＋批量恢复/批量彻底删除（core 新增 `batch_purge`，core 0.2.2→0.2.3）、桌面源码行号（始终开启）、两端 Markdown 标题目录（派生展示、点击仅滚动）、桌面登录设备独立加载状态（修复闪屏/切账号残留/行内重试）、Android 预览集中排版美化＋删除线。行为见 spec/client-0.2.7.md，开发方案见 docs/client-0.2.7-development.md，实际检查见 docs/releases/0.2.7-validation.md；client0.2.7、Android code22、core0.2.3，server0.1.4/协议2/schema 不变。删除语义与鉴权并发须独立交叉评审，本版发布为 GitHub Release draft，公开/官网/更新目录推广由维护者后续验收。

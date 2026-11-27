@@ -9,6 +9,8 @@ export interface Preferences {
   timeZone: 'Asia/Shanghai' | 'UTC' | 'system';
   markdownLintEnabled: boolean;
   splitScrollSync: boolean;
+  editorMode: 'source' | 'preview' | 'split';
+  outlineVisible: boolean;
 }
 export const defaultPreferences: Readonly<Preferences> = {
   language: 'system',
@@ -16,6 +18,8 @@ export const defaultPreferences: Readonly<Preferences> = {
   timeZone: 'Asia/Shanghai',
   markdownLintEnabled: false,
   splitScrollSync: true,
+  editorMode: 'source',
+  outlineVisible: false,
 };
 type StorageReader = Pick<Storage, 'getItem'>;
 type StorageWriter = Pick<Storage, 'setItem'>;
@@ -26,6 +30,10 @@ export function loadPreferences(storage: StorageReader): Preferences {
       markdownLintEnabled:
         typeof value?.markdownLintEnabled === 'boolean' ? value.markdownLintEnabled : false,
       splitScrollSync: typeof value?.splitScrollSync === 'boolean' ? value.splitScrollSync : true,
+      editorMode: ['source', 'preview', 'split'].includes(value?.editorMode ?? '')
+        ? value.editorMode!
+        : defaultPreferences.editorMode,
+      outlineVisible: typeof value?.outlineVisible === 'boolean' ? value.outlineVisible : false,
       language: ['system', 'zh-CN', 'en'].includes(value?.language ?? '')
         ? value.language!
         : defaultPreferences.language,
