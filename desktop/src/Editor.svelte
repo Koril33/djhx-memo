@@ -66,7 +66,9 @@
     lintState = next;
     // Never mutate decorations during IME composition: WebView2/Chromium can
     // re-anchor the composition window when the content DOM shifts mid-compose.
-    if (view && lintModule && !view.composing)
+    // compositionStarted covers the compositionstart→first-DOM-change window
+    // that view.composing misses.
+    if (view && lintModule && !view.compositionStarted)
       view.dispatch({
         effects: lintModule.setDiagnosticsEffect.of(
           next.issues.map((issue) => ({
