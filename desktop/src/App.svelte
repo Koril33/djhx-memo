@@ -448,6 +448,8 @@
   let globalSearchOpen = false;
   let findApi: EditorFindApi | undefined;
   let outlineApi: { jump: (line: number) => void } | undefined;
+  let reanchorApi: { force: () => void } | undefined;
+  let reanchorTimer: ReturnType<typeof setTimeout> | undefined;
   let pendingFindQuery: string | null = null;
   let editor = new EditorSession(
     call,
@@ -1227,6 +1229,12 @@
     const changedLanguage = () => {
       systemLanguage = navigator.language;
     };
+    // After the window settles from a resize, WebView2 can stop reporting the
+    // caret bounds (WebView2Feedback#5675), so nudge the editor to re-anchor.
+    const changedWindow = () => {
+      clearTimeout(reanchorTimer);
+      reanchorTimer = setTimeout(() => reanchorApi?.force(), 180);
+    };
     void refreshSystemAppearance();
     const appearancePoll = setInterval(() => {
       if (preferences.theme === 'system') void refreshSystemAppearance();
@@ -1234,11 +1242,14 @@
     colorScheme.addEventListener('change', changedTheme);
     narrowQuery.addEventListener('change', changedNarrow);
     window.addEventListener('languagechange', changedLanguage);
+    window.addEventListener('resize', changedWindow);
     const cleanup = () => {
       clearInterval(appearancePoll);
+      clearTimeout(reanchorTimer);
       colorScheme.removeEventListener('change', changedTheme);
       narrowQuery.removeEventListener('change', changedNarrow);
       window.removeEventListener('languagechange', changedLanguage);
+      window.removeEventListener('resize', changedWindow);
     };
     void (async () => {
       try {
@@ -1297,6 +1308,7 @@
     clearTimeout(highlightTimer);
     clearInterval(poll);
     clearTimeout(searchTimer);
+    clearTimeout(reanchorTimer);
     unlisteners.forEach((stop) => stop());
     editor.dispose();
   });
@@ -1928,6 +1940,7 @@
                   openLint = open;
                 }}
                 onOutlineApi={(api) => (outlineApi = api)}
+                onReanchorApi={(api) => (reanchorApi = api)}
                 readonly={readOnly}
                 onEdit={(text) => editor.edit(text)}
                 onComposition={(active) => editor.setComposing(active)}
