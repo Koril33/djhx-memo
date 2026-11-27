@@ -13,6 +13,7 @@
   import { call, native, errorText, coreErrorText } from './lib/bridge';
   import { EditorSession } from './lib/editor-session';
   import { renderMarkdown } from './lib/markdown';
+  import { clearRevoking, receiptIsCurrent } from './lib/devices';
   import { locateHeadings, type Heading } from './lib/headings';
   import type { CodeHighlights } from './lib/code-highlights';
   import { isLargeNote } from './lib/note-size';
@@ -250,6 +251,8 @@
   async function confirmBatchPurge(): Promise<void> {
     const target = purgeBatchConfirmation;
     if (!target) return;
+    if (target.profile !== state?.profile.id) throw new LocalizedError('profileChanged');
+    const account = state?.profile.kind === 'account';
     await editor.finishLifecycle(async () => {
       const result = await call<BatchPurgeResult>({
         action: 'batch_purge',
@@ -262,6 +265,7 @@
       purgeBatchConfirmation = null;
       const purged = result.results.filter((r) => r.ok && r.purge_state === 'purged').length;
       const pending = result.results.filter((r) => r.ok && r.purge_state === 'pending').length;
+      const failed = result.results.filter((r) => !r.ok).length;
       const currentId = editor.note?.id;
       const currentSucceeded =
         currentId !== undefined &&
@@ -276,12 +280,19 @@
         enterWelcome();
         documentKey++;
       }
-      clearListActions();
+      // Keep failed items selected so the user can review and retry.
+      selection = new Set(result.results.filter((r) => !r.ok).map((r) => r.id));
+      selecting = selection.size > 0;
       await refreshState(true);
-      notify(
-        state?.profile.kind === 'account' ? 'batchPurged' : 'batchPurgedLocal',
-        state?.profile.kind === 'account' ? { purged, pending } : { count: purged },
-      );
+      const key =
+        failed > 0
+          ? account
+            ? 'batchPurgedFailed'
+            : 'batchPurgedLocalFailed'
+          : account
+            ? 'batchPurged'
+            : 'batchPurgedLocal';
+      notify(key, { purged, pending, count: purged, failed });
     });
   }
   async function undoTrash(): Promise<void> {
@@ -953,21 +964,24 @@
     if (content) content.scrollTop = 0;
     if (tab === 'devices' && state?.profile.kind === 'account') void loadDevices();
   }
-  async function loadDevices(): Promise<void> {
+  async function loadDevices(force = false): Promise<void> {
     if (!state?.profile || state.profile.kind !== 'account') return;
+    // Coalesce button-triggered refreshes; a post-revoke refresh forces through.
+    if (!force && (devicesLoading || devicesRefreshing)) return;
     const profileId = state.profile.id;
     const session = ++devicesSession;
     if (devices.length === 0) devicesLoading = true;
     else devicesRefreshing = true;
     try {
       const next = await call<Device[]>({ action: 'devices', profile_id: profileId });
-      if (session === devicesSession && state?.profile.id === profileId) {
+      if (receiptIsCurrent(session, devicesSession, profileId, state?.profile.id)) {
         devices = next;
         devicesError = null;
         devicesStale = false;
+        revokeError = null;
       }
     } catch (error) {
-      if (session === devicesSession && state?.profile.id === profileId) {
+      if (receiptIsCurrent(session, devicesSession, profileId, state?.profile.id)) {
         devicesError = error;
         devicesStale = devices.length > 0;
       }
@@ -1002,19 +1016,20 @@
   async function revoke(id: string): Promise<void> {
     if (!state?.profile || state.profile.kind !== 'account') return;
     const profileId = state.profile.id;
-    const session = devicesSession;
     const self = devices.find((device) => device.id === id)?.current ?? false;
     revoking = id;
     revokeError = null;
     try {
       await call({ action: 'revoke_device', profile_id: profileId, id });
-      void loadDevices();
+      void loadDevices(true);
       await refreshState(true);
       notify(self ? 'revokedAndRelogin' : 'revokedNotice');
     } catch (error) {
       revokeError = error;
     } finally {
-      if (session === devicesSession && state?.profile.id === profileId) revoking = null;
+      // loadDevices() advances the shared session before this finally runs, so
+      // gate on the revoke id instead of the session: only clear our own flag.
+      revoking = clearRevoking(revoking, id);
     }
   }
   function search(): void {
@@ -2392,9 +2407,11 @@
                         ? t('processing')
                         : t('revoke')}</button
                   >
-                </div>{:else}<div class="settings-empty">
-                  {t('noDevices')}<button on:click={() => void loadDevices()}>{t('reload')}</button>
-                </div>{/each}
+                </div>{:else}{#if !devicesError}<div class="settings-empty">
+                    {t('noDevices')}<button on:click={() => void loadDevices()}
+                      >{t('reload')}</button
+                    >
+                  </div>{/if}{/each}
             </div>{/if}
         {:else if settingsTab === 'updates'}
           <Updates {language} timeZone={preferences.timeZone} install={installUpdate} />

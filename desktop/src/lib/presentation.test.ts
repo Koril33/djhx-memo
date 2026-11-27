@@ -188,6 +188,11 @@ describe('bilingual UI contract', () => {
         'Permanently deleted 0 notes',
         'Permanently deleted 2 notes',
       ],
+      batchPurgedLocalFailed: [
+        'Permanently deleted 1 note · {failed} failed',
+        'Permanently deleted 0 notes · {failed} failed',
+        'Permanently deleted 2 notes · {failed} failed',
+      ],
       purgeConfirmBatch: [
         'Permanently delete 1 note?',
         'Permanently delete 0 notes?',

@@ -282,7 +282,9 @@
     <string name="undo">Undo</string>
     <string name="purge_confirm_batch">Permanently delete %1$d notes?</string>
     <string name="purged_count">Permanently deleted %1$d</string>
-    <string name="purged_pending">Permanently deleted %1$d · %2$d requested</string>
+    <string name="purged_count_failed">Permanently deleted %1$d · %2$d failed</string>
+    <string name="purged_pending">Permanently deleted %1$d · %2$d pending sync</string>
+    <string name="purged_pending_failed">Permanently deleted %1$d · %2$d pending · %3$d failed</string>
     <string name="outline_title">Outline</string>
     <string name="outline_empty">No headings</string>
 </resources>

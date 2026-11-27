@@ -268,18 +268,22 @@ class MemoModel(application: Application, private val gateway: CoreBridge) : And
         if (currentProfileId() != profile) return@action
         val purged = results.count { it.optBoolean("ok") && it.optString("purge_state") == "purged" }
         val pending = results.count { it.optBoolean("ok") && it.optString("purge_state") == "pending" }
+        val failed = results.count { !it.optBoolean("ok") }
         val currentId = selected?.optString("id")
         if (currentId != null && results.any { it.optString("id") == currentId && it.optBoolean("ok") }) {
             selected = null
             content = ""
             editorOpen = false
         }
-        cancelSelection()
+        // Keep failed items selected so the user can review and retry.
+        selection = results.filterNot { it.optBoolean("ok") }.map { it.getString("id") }.toSet()
+        selecting = selection.isNotEmpty()
         val account = state.optJSONObject("profile")?.optString("kind") == "account"
-        actionNotice = if (account) {
-            UiText(R.string.purged_pending, listOf(purged, pending))
-        } else {
-            UiText(R.string.purged_count, listOf(purged))
+        actionNotice = when {
+            failed > 0 && account -> UiText(R.string.purged_pending_failed, listOf(purged, pending, failed))
+            failed > 0 -> UiText(R.string.purged_count_failed, listOf(purged, failed))
+            account -> UiText(R.string.purged_pending, listOf(purged, pending))
+            else -> UiText(R.string.purged_count, listOf(purged))
         }
         loadNotes()
     }

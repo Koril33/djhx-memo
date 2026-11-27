@@ -43,10 +43,18 @@ export const messages = {
     en: '{count} restored · {failed} failed',
   },
   batchPurged: {
-    'zh-CN': '已彻底删除 {purged} 条 · 已请求 {pending} 条',
-    en: 'Permanently deleted {purged} · {pending} requested',
+    'zh-CN': '已彻底删除 {purged} 条 · 待同步 {pending} 条',
+    en: 'Permanently deleted {purged} · {pending} pending sync',
+  },
+  batchPurgedFailed: {
+    'zh-CN': '已彻底删除 {purged} 条 · 待同步 {pending} 条 · 失败 {failed} 条',
+    en: 'Permanently deleted {purged} · {pending} pending · {failed} failed',
   },
   batchPurgedLocal: { 'zh-CN': '已彻底删除 {count} 条', en: 'Permanently deleted {count} notes' },
+  batchPurgedLocalFailed: {
+    'zh-CN': '已彻底删除 {count} 条 · 失败 {failed} 条',
+    en: 'Permanently deleted {count} notes · {failed} failed',
+  },
   importMarkdown: { 'zh-CN': '导入 Markdown', en: 'Import Markdown' },
   importedMarkdown: { 'zh-CN': '已导入到 {space}', en: 'Imported into {space}' },
   importCloud: {
@@ -1078,6 +1086,7 @@ export const englishSingularMessages = {
   batchResult: '{count} moved to trash · {failed} failed',
   undoResult: '{count} restored · {failed} failed',
   batchPurgedLocal: 'Permanently deleted {count} note',
+  batchPurgedLocalFailed: 'Permanently deleted {count} note · {failed} failed',
   purgeConfirmBatch: 'Permanently delete {count} note?',
   pending: 'Pending · {count}',
   imported: 'Copied {count} note. The original remains in the source space.',

@@ -25,15 +25,15 @@
 - 全选包含所有可见条目（含 `purge_state=pending`/`rejected`；`purged` 不在列表）。`pending` 条目置灰标记但可勾选。
 - 工具栏动作：恢复（`rotate-ccw`）+ 彻底删除（`trash-2`，危险色，二次确认）。恢复走 `batch_set_deleted(deleted:false)`；彻底删除走新增 `batch_purge`。
 - 批量彻底删除的二次确认在**打开确认框时**冻结 `(profile_id, id, generation)` 快照，确认时按快照提交；确认期间列表刷新不得改变提交范围。提交前走既有 flush/IME 屏障。
-- 结果口径：恢复按“已恢复 N · 撤销”提示，撤销 = 把刚恢复条目重新移回回收站（`batch_set_deleted(deleted:true)`），仅撤销成功项、使用恢复成功后的代次；彻底删除按“已彻底删除 X · 已请求 Y”（账号空间 `pending`）或“已彻底删除 N”（本机空间），不可撤销、不并入撤销模型。
+- 结果口径：恢复按“已恢复 N · 撤销”提示，撤销 = 把刚恢复条目重新移回回收站（`batch_set_deleted(deleted:true)`），仅撤销成功项、使用恢复成功后的代次；彻底删除按“已彻底删除 X · 待同步 Y”（账号空间 `pending`，含本就 `pending` 且本次幂等成功的条目，不重复入队）或“已彻底删除 N”（本机空间），不可撤销、不并入撤销模型；失败项保留选中并提示失败数（“已彻底删除 X · 待同步 Y · 失败 Z”）。
 - 含当前编辑笔记的批次：仅当成功进入 `pending`/`purged`（彻底删除）或恢复成功（恢复）才关闭编辑器；失败或代次冲突的当前笔记保留编辑器。
 - `pending` 条目恢复时返回 `PURGE_PENDING` 计入失败提示，彻底删除时幂等成功。
 
 ### 2.1 `batch_purge` 接口
 
-- 输入：`profile_id`（非空，经 `self.profile()` 校验，与选中空间不符返回 `PROFILE_CHANGED`）、`items[{id, expected_generation}]`，上限 10_000，重复 id 返回 `INVALID_REQUEST`。
+- 输入：`profile_id`（两端 UI 均显式携带，经 `self.profile()` 校验，与选中空间不符返回 `PROFILE_CHANGED`）、`items[{id, expected_generation}]`，上限 10_000，重复 id 返回 `INVALID_REQUEST`。
 - 输出：`results[{id, ok, error?, purge_state?}]`（**精简视图**，不含正文/标题/冲突，避免大批次回执体积）。
-- 逐项复用 `purge::request` 单条语义：已 `purged` 幂等 Ok（代次检查前）；代次不符 `LOCAL_GENERATION_CONFLICT`；非回收站 `PURGE_CONFLICT`；已 `pending` 幂等 Ok（**不重复入队、不计为本次新请求**）；否则本机空间直接 `purged`、账号空间入队 `pending`。
+- 逐项复用 `purge::request` 单条语义：已 `purged` 幂等 Ok（代次检查前）；代次不符 `LOCAL_GENERATION_CONFLICT`；非回收站 `PURGE_CONFLICT`；已 `pending` 幂等 Ok（**不重复写入 purge_requests、不计新增请求；回执仍为 pending，计入“待同步”**）；否则本机空间直接 `purged`、账号空间入队 `pending`。
 - 逐项事务与可写校验、整批错误与逐项错误、中断后已提交结果，语义同 `batch_set_deleted`。
 
 ## 3 桌面编辑区行号
@@ -58,7 +58,8 @@
 本条把 [client-0.2.0.md](client-0.2.0.md) §3.1 的 Devices 状态表适用范围扩展到 Windows/Linux。
 
 - 设备列表读取使用独立状态（`devicesLoading/devicesRefreshing/devicesError/devicesStale/devicesSession/revoking/revokeError`），不切换全局 `busy`；三态：无缓存→加载、有缓存→后台刷新不闪空、失败→保留旧列表 + “未刷新” + 行内重试。
-- 请求显式携带发起时 `profile_id`（复用 core 既有 `self.profile()` 校验，空间不符返回 `PROFILE_CHANGED`）；回执按会话序号与回执时 profile 双重作废；覆盖注销、切空间、同账号重新登录与重复刷新上限。
+- 请求显式携带发起时 `profile_id`（复用 core 既有 `self.profile()` 校验，空间不符返回 `PROFILE_CHANGED`）；回执按会话序号与回执时 profile 双重作废；覆盖注销、切空间、同账号重新登录与重复刷新（按钮触发的在途刷新合并、吊销后强制刷新；旧回执按会话序号作废）。
+- 吊销使用「当前活动吊销 id」而非会话序号来复位 `revoking`（刷新会在同会话内推进序号），保证同一会话可连续吊销多台设备，失败项行内提示并在成功刷新后清除。
 - 切空间/重新登录后清空设备缓存；自吊销当前设备后 core 清凭据，呈现“吊销成功 + 需重新登录”并保留离线编辑；吊销成功与随后刷新失败是两个独立结果。
 - 设备页说明“ⓘ”结构与文本选择（0.2.6 已修）不得回归。
 
