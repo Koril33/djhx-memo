@@ -1,71 +1,120 @@
-# djhx-memo
+<div align="center">
 
-**当前三端正式版为 [0.2.2](https://github.com/Koril33/djhx-memo/releases/tag/v0.2.2)**：新增桌面可选markdownlint、对照同步滚动、Linux最新DEB入口和个人服务器主下载源/三端切源。中文名 **阳墨随记**、英文 **DJHX MEMO**。公开证据和验收边界见[0.2.2记录](docs/releases/0.2.2-validation.md)；完整设备/性能矩阵不因公开状态自动通过。
+<img src="assets/brand/master.svg" width="112" height="112" alt="DJHX MEMO logo" />
 
-已公开0.2.2为三端客户端/core0.2.2、Android code17；local schema4，server0.1.4/schema2、协议2，应用/签名身份保持。连续7天试用已由维护者确认完成，完整v1矩阵仍独立验收。
+# DJHX MEMO
 
-**[官网主下载源](https://memo.djhx.site)及签名更新目录13已部署。** 生产记录见[部署验证](docs/releases/0.2.2-deployment.md)，功能见[开发文档](docs/client-0.2.2-development.md)及[目标规范](spec/client-0.2.2.md)。GitHub为备用安装包来源；Linux仍手动安装，Android不做lint。
+**阳墨随记**
 
-0.1.4 已公开发布，其三端验证、原发布签名和协议 2 部署记录见[发布验证](docs/releases/0.1.4-validation.md)。
+<!-- UPDATE: Before each release, verify the supported platforms, tagline, badge, and download table against the current release assets. -->
 
-面向个人和少数朋友的 Markdown 备忘录，支持本地优先保存和多设备云同步。
+Write first, sync later.<br/>
+A local-first Markdown notebook for Windows, Linux and Android.
 
-**v1 目标：Windows、Android、Linux 三端可日常使用。** 桌面端包含托盘；允许未登录记笔记，提供邀请码注册、登录、同步、搜索、回收站和 Markdown 导出。Web、Apple、全局快捷键、系统分享暂缓。
+English | [简体中文](README.zh-CN.md)
 
-0.1.4起的既有版本已公开发布，当前客户端保持协议2，local schema4包含后续搜索触发器迁移，core提供本地列表/文件入口。Windows/Linux/Android 客户端已实现，公开安装包以 Release 列出的平台为准。已执行核心/服务端联调及目标系统的部分实际使用验证；完整设备矩阵仍待完成；连续 7 天日常试用已由维护者确认完成（逐日明细未入库，三端矩阵仍独立验收），完整产品 v1 尚未正式发布。实际结果和限制见各模块验证记录。
+[![Release](https://img.shields.io/github/v/release/Koril33/djhx-memo?label=release)](https://github.com/Koril33/djhx-memo/releases/latest)
+[![License](https://img.shields.io/github/license/Koril33/djhx-memo)](LICENSE)
+![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Linux%20%7C%20Android-blue)
 
-## 从这里开始
+[Website](https://memo.djhx.site/) · [Download](https://github.com/Koril33/djhx-memo/releases/latest)
 
-- [项目计划与实施顺序](djhx-memo-project-plan.md)
-- [产品行为与 v1 验收](spec/product-v1.md)
-- [同步、数据与接口契约](spec/README.md)
-- [架构与模块边界](docs/architecture.md)
-- [开发环境与本机配置边界](docs/dev-setup.md)
-- [本地验证与三端验收](docs/validation.md)
-- [核心验证](docs/core-validation.md) / [服务端验证](docs/server-validation.md) / [桌面验证](docs/desktop-validation.md) / [Android 验证](docs/android-validation.md)
-- [部署、备份与恢复](docs/operations.md)
-- [品牌母版、图标尺寸与统一替换](docs/brand-guidelines.md)
-- [0.1.2 控件与滚动修正验证](docs/client-fixes-0.1.2-validation.md)
-- [0.1.1 界面设计](docs/ui-design.md) / [桌面预览验证](docs/desktop-ui-preview-validation.md) / [Android 预览验证](docs/android-ui-preview-validation.md)
-- [已接受决策](docs/adr/0001-v1-baseline.md)
-- [协作规范](AGENTS.md) / [贡献流程](CONTRIBUTING.md) / [AI 开发指南](docs/ai-development.md)
-- [MIT 许可与第三方边界](docs/licensing.md) / [安全与隐私](SECURITY.md) / [开源准备检查](docs/open-source-readiness.md)
+</div>
 
-## 仓库结构
+## What is DJHX MEMO?
 
-```text
-djhx-memo/
-├── spec/          # 产品行为、同步、模型、接口和一致性场景
-├── docs/          # 架构、开发、验证、运维、ADR
-├── core/          # Rust + SQLite：本地数据与客户端同步状态机
-├── server/        # Go + SQLite：账号、权威版本、同步和 SSE 通知
-├── android/       # Kotlin + Compose，经 UniFFI 调用 core
-├── desktop/       # Tauri 2 + Svelte + TypeScript，Windows / Linux
-├── website/       # 产品介绍与下载的静态官网
-├── web/           # 暂缓，仅保留说明；桌面前端归 desktop
-└── apple/         # 暂缓，仅保留说明
+DJHX MEMO is a Markdown notebook built around one idea: your notes belong on your own device first. Open the app and start writing; no account or network connection is required. When you want the same account-space notes on more than one device, connect to a sync server and sync them across Windows, Linux and Android.
+
+## Highlights
+
+- **Local-first.** Notes are stored on your device. Writing, searching, trash and export work offline.
+- **Markdown, rendered safely.** Edit the source or preview it, tick task-list items in the preview, and highlight code offline. Raw HTML is shown as text, and external images are not loaded automatically.
+- **Conflicts stay visible.** When two devices edit the same note from different versions, the server keeps its current version and saves the incoming edit as a separate conflict copy.
+- **Two separate spaces.** Notes in the local space stay on the device. Moving them to an account space is an explicit copy that you choose to make.
+- **Portable notes.** Export a space as a Markdown ZIP archive, or import one Markdown file at a time.
+- **Self-hostable sync.** Cloud sync uses a small server that you can run yourself.
+- **Everyday comforts.** English and Simplified Chinese UI, light and dark themes, a desktop system tray, and a native Android app.
+
+## How it works
+
+### Local first, sync second
+
+```mermaid
+flowchart LR
+    P["Android<br/>local notes"] <-->|sync| S[("Server<br/>authoritative account-space state")]
+    D["Windows / Linux<br/>local notes"] <-->|sync| S
 ```
 
-`.github/workflows/` 承载 CI/CD 工作流。构建、测试自动化、签名与发布草案采用 GitHub Actions：自建 Gitea 无法提供稳定的编译/打包虚拟机，故使用 GitHub 托管 runner 构建并签名四类产物、运行可自动化的测试（见 [CI/CD 计划](docs/ci-cd-plan.md) 与 [ADR-0017](docs/adr/0017-github-actions-ci.md)）。真实设备验收、更新目录部署与 Release 公开仍由维护者本地完成；实施后的质量检查在开发机与目标设备上运行并记录结果。
+Each device reads and writes its local data, so notes remain available offline. When connected, devices exchange changes with the server, which makes account-space changes available to your other devices and keeps the authoritative state.
 
-## 构建与使用
+### Local space and account space
 
-安装和首次使用见 [使用说明](docs/quick-start.md)。面向访客的产品介绍与下载页源码位于 [website/](website/README.md)。公开安装包主源为[官网](https://memo.djhx.site)，[GitHub Releases](https://github.com/Koril33/djhx-memo/releases)提供备用下载及发布记录。
+```mermaid
+flowchart LR
+    subgraph Device["Your device"]
+        L["Local space<br/>no account, not uploaded"]
+        A["Account space<br/>syncs with your server"]
+    end
+    L -.->|"you choose to copy notes"| A
+    A <-->|sync| S[("Your server")]
+```
 
-新开发者先按[公共环境入口](docs/dev-setup.md)选择 [Linux](docs/dev-setup-linux-portable.md)或 [Windows](docs/dev-setup-windows.md)及所需模块。维护者的本机 env.sh、VM、已生成 JNI 和私有签名不是新 clone 的前提。各工程提交 Cargo/npm/Gradle 锁文件，构建步骤见 [server](server/README.md)、[core](core/README.md)、[desktop](desktop/README.md)、[android](android/README.md)。本地检查入口：`bash scripts/validate-local.sh core|server|integration|desktop|android`，每次选择一个模块。
+Without an account, you work in the local space and its notes are not uploaded. Signing in gives you a separate account space. Importing notes from the local space copies them into the account space; the original notes stay in the local space, and later edits do not link the two copies.
 
-客户端中文显示 **阳墨随记**、英文显示 **DJHX MEMO**。语言支持简体中文、英文和跟随系统；外观支持浅色、深色和跟随系统；时间默认显示为上海（UTC+08:00）。入口与偏好说明见 [使用说明](docs/quick-start.md#语言外观与显示时区)。
+### When two devices edit the same note
 
-客户端首次打开即可离线记录，本机空间不会自动上传。候选服务默认地址为 `https://memo.djhx.site`，使用管理员生成的一次性邀请码注册；登录后可明确选择将本机笔记复制到账号空间。该域名根路径提供[产品官网](https://memo.djhx.site)，同步API仍在 `/v1`；当前没有独立Web笔记客户端。部署检查见 [云部署记录](docs/cloud-deployment.md)，备份恢复见 [operations](docs/operations.md)。
+```mermaid
+sequenceDiagram
+    participant A as Device A
+    participant S as Server
+    participant B as Device B
+    A->>S: Save an edit from its known state
+    B->>S: Save another edit from a stale state
+    S-->>A: Accepted as the current version
+    S-->>B: Version mismatch
+    Note over B: Keep the server version.<br/>Save this edit as a conflict copy.
+```
 
-安装包和校验值输出到本机忽略目录 `dist/`。发布时将安装包与校验值上传为 GitHub Release 附件，详见[客户端发布流程](docs/client-release.md)。
+If a note changed on the server since a device last saw it, the server keeps its current version and saves the incoming edit as a separate, editable conflict copy. You can then review and merge the two versions yourself.
 
-Windows / Android 已接入自动更新，入口为设置中的“软件更新”；Linux提供最新DEB浏览器入口，自动更新仍暂缓。三端可在更新页切换主/备用安装包来源，签名目录始终从memo检查。启用、密钥主机边界与人工发布见[更新发布说明](docs/update-publishing.md)，原[17 项调研](docs/research/rust-gui-auto-update-survey.md)保留供参考。
+### Markdown rendering
 
-服务端独立打包入口为 `bash scripts/package-server.sh`，输出静态 Linux amd64 二进制及部署资料压缩包；不会部署到云服务器。
+Notes are plain Markdown text. Edit the source or switch to the preview, and tick task-list items in the preview; only the matching task marker in the source changes. Fenced code blocks are highlighted offline. For safety, raw HTML is displayed as text, external images are not loaded automatically, and allowed web links open in your system browser.
 
-## 贡献与许可
+## Download
 
-原创代码与文档采用 [MIT](LICENSE)，便于学习、修改和复用，也允许第三方商用；分发时保留版权及许可声明。依赖、图标和安装器模板继续遵守各自许可，见[许可说明](docs/licensing.md)。贡献前阅读 CONTRIBUTING 与相应 AGENTS；AI 协作者遵守相同 spec、验证和隐私规则。
+Get the latest available installers from [GitHub Releases](https://github.com/Koril33/djhx-memo/releases/latest). Check the download against the `SHA256SUMS` file on its release page.
 
-服务端当前依赖 Unix 文件锁，Windows 开发者通过 WSL/Linux 开发服务端。Windows 桌面客户端使用原生 MSVC/WebView2，Android 使用原生 PowerShell 或 Linux Bash 完成 JNI、绑定生成和 APK 打包。参见 [Windows 开发说明](docs/dev-setup-windows.md)与 [Android 构建入口](android/README.md#构建)。
+| Platform | Package |
+| --- | --- |
+| Windows (x64) | Installer (`.exe`) |
+| Linux (amd64) | Debian package (`.deb`) |
+| Android | APK |
+
+<!-- UPDATE: Review client availability before each release; revise this sentence if macOS, iOS, or web clients become available. -->
+
+There are currently no macOS, iOS or web clients.
+
+## Cloud sync and self-hosting
+
+<!-- UPDATE: Before each release, verify the end-to-end encryption statement against the product's current security model. -->
+
+Cloud sync requires a server. You can use the configured server or run your own. Account-space notes are sent to that server, which can read their contents; end-to-end encryption is not available.
+
+<!-- UPDATE: Before each release, verify the default server address and registration policy. -->
+
+The app currently pre-fills `https://memo.djhx.site` as its server address. Registration requires a one-time invitation; open public registration is not available.
+
+To use your own server:
+
+1. Deploy the server, a small Go program backed by SQLite. See the documentation index below for the operations guide.
+2. Create an invitation with the server's administrative command.
+3. In the app's account settings, enter your server's HTTPS address and register with the invitation.
+
+## Documentation
+
+Guides for getting started, self-hosting and the project's technical reference are indexed in [docs/](docs/README.md).
+
+## License
+
+[MIT](LICENSE). Third-party dependencies, icons and installer templates retain their own licenses; see the documentation index above for details.
